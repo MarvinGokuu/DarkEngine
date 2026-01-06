@@ -1,0 +1,21 @@
+// Script de Prueba de Sectores
+// Este script simula la creación y movimiento de entidades entre sectores.
+
+// 1. Configuración de Entidades
+ajustar.entidad1.x = 50;
+ajustar.entidad1.y = 50;
+ajustar.entidad2.x = 150;
+ajustar.entidad2.y = 150;
+
+// 2. Registro Inicial en Sectores
+sector.actualizar = entidad1;
+sector.actualizar = entidad2;
+
+// 3. Movimiento de Entidad 1 al Sector de Entidad 2
+ajustar.entidad1.x = 120;
+ajustar.entidad1.y = 120;
+sector.actualizar = entidad1;
+
+// 4. Verificación de Soberanía
+// El log del motor debería mostrar la transición de la Entidad 1.
+System.out.println("PRUEBA_SECTORES_COMPLETADA");

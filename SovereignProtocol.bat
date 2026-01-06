@@ -12,7 +12,7 @@ mkdir bin
 ::  PASO 2: Compilacion Integral (Java 25 + FFM)
 :: No usamos taskkill aqui para no desconectar al agente
 javac -d bin --enable-preview --source 25 -cp src ^
-src\sv\volcan\VolcanEngineMaster.java ^
+src\sv\volcan\state\VolcanEngineMaster.java ^
 src\sv\volcan\kernel\*.java ^
 src\sv\volcan\core\*.java ^
 src\sv\volcan\core\memory\*.java ^

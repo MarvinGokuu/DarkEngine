@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>VOLCAN COMMAND CENTER</title>
+    <style>
+        :root { --neon: #00ff41; --dim: #00441b; --bg: #050505; --alert: #ff003c; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Consolas', monospace; margin: 0; overflow: hidden; }
+        
+        .top-bar { 
+            background: rgba(0, 255, 65, 0.05); 
+            border-bottom: 1px solid var(--neon); 
+            padding: 10px 20px; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--dim); border-bottom: 1px solid var(--dim); }
+        .module { background: var(--bg); padding: 25px; position: relative; }
+        
+        .val { font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; }
+        .unit { font-size: 1rem; color: var(--neon); opacity: 0.6; margin-left: 5px; }
+        .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--neon); margin-bottom: 10px; }
+
+        .log-container { padding: 20px; background: #000; height: 30vh; overflow-y: hidden; }
+        .log-entry { font-size: 0.8rem; border-left: 2px solid var(--dim); padding-left: 10px; margin-bottom: 5px; animation: slideIn 0.2s ease-out; }
+        
+        @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .status-pulse { display: inline-block; width: 10px; height: 10px; background: var(--alert); border-radius: 50%; box-shadow: 0 0 10px var(--alert); }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>VOLCAN_ENGINE // <span style="opacity: 0.5">ESTADO_DEL_NUCLEO</span></div>
+        <div>MODO: <b style="color: white;">SOBERANO_V3.0</b> <span class="status-pulse"></span></div>
+    </div>
+
+    <div class="dashboard">
+        <div class="module">
+            <div class="label">Throughput Atómico</div>
+            <div class="val" id="ops">0.0<span class="unit">M ops/s</span></div>
+        </div>
+        <div class="module">
+            <div class="label">Latencia Memory-Vault</div>
+            <div class="val" id="latency">0.0<span class="unit">μs</span></div>
+        </div>
+        <div class="module">
+            <div class="label">Saturación del Bus</div>
+            <div class="val" id="bus">0<span class="unit">%</span></div>
+        </div>
+    </div>
+
+    <div class="log-container" id="terminal">
+        <div class="log-entry">> Inicializando escucha en VolcanNetworkRelay:9999...</div>
+    </div>
+
+    <script>
+        // Lógica de actualización reactiva
+        const updateMetric = (id, value) => { document.getElementById(id).firstChild.textContent = value; };
+        
+        // Simulación de flujo binario (Para la ignición final se usa WebSocket)
+        setInterval(() => {
+            updateMetric('ops', (Math.random() * 5 + 30).toFixed(1));
+            updateMetric('latency', (Math.random() * 0.3 + 0.9).toFixed(2));
+            updateMetric('bus', Math.floor(Math.random() * 15));
+            
+            const log = document.getElementById('terminal');
+            const e = document.createElement('div');
+            e.className = 'log-entry';
+            e.innerHTML = `> [SIGNAL] Ox${Math.random().toString(16).slice(2,10).toUpperCase()} -> PERSISTIDO EN VAULT_OFFSET_${Math.floor(Math.random()*64)}`;
+            log.prepend(e);
+            if(log.childNodes.length > 15) log.removeChild(log.lastChild);
+        }, 500);
+    </script>
+</body>
+</html>
+
+//actualizado
