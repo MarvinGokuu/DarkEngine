@@ -1,0 +1,39 @@
+# [VOLCAN ENGINE - GIT OBLIVION PROTOCOL]
+
+# --- BINARIOS Y COMPILACIÓN ---
+bin/
+out/
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# --- ARTEFACTOS NATIVOS ---
+*.so
+*.dll
+*.dylib
+*.exe
+*.obj
+
+# --- ESTADO Y TELEMETRÍA (VAULT) ---
+*.vault
+*.log
+*.dump
+debug_view.html
+telemetry_cache/
+
+# --- CONFIGURACIÓN DE ENTORNO ---
+.env
+.gemini/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# --- TEMPORALES DEL SISTEMA ---
+tmp/
+temp/
+
+
+//actualizado3/1/26
