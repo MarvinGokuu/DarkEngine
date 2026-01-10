@@ -5,14 +5,17 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Contenedor inmutable de snapshots para persistencia, red y
- * rollback.
- * GARANTÍAS: Copia binaria exacta (memcpy nativo), alineación de 64-bytes,
- * zero-heap.
- * PROHIBICIONES: Prohibido modificar los datos una vez capturados; prohibido
- * usar tipos no primitivos.
- * DOMINIO CRÍTICO: State / Continuidad temporal
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Snapshots inmutables de estado del mundo.
+ * DEPENDENCIAS: MemorySegment, Arena
+ * MÉTRICAS: Copia <50ns (memcpy), Alineación 64-byte
+ * 
+ * Contenedor de estado off-heap para persistencia, red y rollback.
+ * Garantiza copia binaria exacta y acceso alineado a memoria nativa.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class WorldStateFrame {
 

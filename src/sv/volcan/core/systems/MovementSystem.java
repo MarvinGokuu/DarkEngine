@@ -7,16 +7,18 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 
 /**
- * AUTORIDAD: Sector
- * RESPONSABILIDAD: Procesamiento lineal de cinemática de alta frecuencia.
- * GARANTÍAS: Acceso secuencial a memoria (Cache-friendly), zero-allocation,
- * pre-calculado para optimización SIMD.
- * DOMINIO CRÍTICO: Ejecución
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Motor de Cinemática Lineal (Physical Motion).
+ * DEPENDENCIAS: EntityLayout, MemorySegment
+ * MÉTRICAS: SIMD-Optimized Stride Access
  * 
- * PATRÓN: Strategy Pattern (implementa SovereignSystem)
- * PRINCIPIO SOLID: Single Responsibility - Solo calcula movimiento
- * CONCEPTO: Cache Locality - Acceso secuencial para maximizar L1 hits
- * ROL: Performance Engineer aplicando Mechanical Sympathy
+ * Procesa la física de movimiento (posición += velocidad * dt) iterando
+ * linealmente sobre la memoria de entidades para maximizar el prefetching de
+ * CPU.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class MovementSystem implements SovereignSystem {
 

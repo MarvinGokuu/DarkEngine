@@ -3,13 +3,18 @@ package sv.volcan.core.systems; // Sincronizado con la ruta src/sv/volcan/core/s
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: UI-Logic (Sub-sistema de Simulación)
- * RESPONSABILIDAD: Cálculo determinista del scroll de créditos mediante
- * aritmética de punto fijo.
- * GARANTÍAS: Zero-allocation, invariante de posición en el WorldState.
- * PROHIBICIONES: Prohibido almacenar tipos de punto flotante (float/double) en
- * el WorldStateFrame.
- * DOMINIO CRÍTICO: Tiempo y Estado.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Lógica de UI Determinista (Créditos).
+ * DEPENDENCIAS: WorldStateFrame
+ * MÉTRICAS: Fixed-Point Arithmetic
+ * 
+ * Sistema de lógica para elementos de UI. Calcula el desplazamiento de los
+ * créditos
+ * utilizando aritmética de punto fijo para mantener el determinismo.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class CreditsLogic {
 

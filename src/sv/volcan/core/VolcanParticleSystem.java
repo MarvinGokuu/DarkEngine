@@ -5,14 +5,18 @@ import java.lang.foreign.ValueLayout;
 import java.lang.foreign.Arena;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Simulación de partículas masivas mediante memoria nativa
- * contigua.
- * GARANTÍAS: Zero-GC, Cache-locality extrema, alineación de 64-bytes
- * (SIMD-ready).
- * PROHIBICIONES: Prohibido instanciar objetos 'Particle'; prohibido el acceso
- * indexado no lineal.
- * DOMINIO CRÍTICO: Visualización / FX (Cómputo Intensivo)
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Simulación Masiva de Partículas Off-Heap.
+ * DEPENDENCIAS: MemorySegment, Arena
+ * MÉTRICAS: Zero-GC, SIMD-Friendly Memory Layout
+ * 
+ * Sistema de partículas de alto rendimiento. Utiliza un bloque contiguo
+ * de memoria nativa para maximizar la localidad de caché y permitir
+ * actualizaciones vectorizadas.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanParticleSystem {
 

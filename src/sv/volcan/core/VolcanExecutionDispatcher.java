@@ -3,16 +3,17 @@ package sv.volcan.core; // Sincronizado con la ruta src/sv/volcan/core/
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Ejecución de instrucciones de bajo nivel sobre el estado
- * soberano.
- * GARANTÍAS: Ejecución O(1), zero-branching en path crítico, aislamiento de
- * dominio.
- * PROHIBICIONES: Prohibido llamar a unidades de visualización (Debug),
- * prohibido realizar
- * búsquedas dinámicas (Map/List), prohibido el uso de lógica condicional sobre
- * offsets.
- * DOMINIO CRÍTICO: Ejecución
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Ejecución de Instrucciones de Bajo Nivel sobre el Estado.
+ * DEPENDENCIAS: WorldStateFrame
+ * MÉTRICAS: O(1) Execution, Zero-Branching Critical Path
+ * 
+ * Despachador de ejecución directa. Inyecta valores primitivos directamente
+ * en los offsets de memoria del WorldStateFrame sin intermediarios.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanExecutionDispatcher {
 

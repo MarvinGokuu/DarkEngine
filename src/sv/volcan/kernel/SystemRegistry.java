@@ -8,28 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ═══════════════════════════════════════════════════════════════════════════
- * REGISTRO DE SISTEMAS (System Registry)
- * ═══════════════════════════════════════════════════════════════════════════
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Registro y Orquestación de Sistemas (Logic & Render).
+ * DEPENDENCIAS: SovereignSystem, VolcanRenderSystem
+ * MÉTRICAS: O(N) Execution, Zero-GC en Runtime
  * 
- * AUTORIDAD: Sovereign Kernel
- * RESPONSABILIDAD: Gestionar el registro y ejecución de todos los sistemas del
- * motor.
+ * Implementa el patrón Registry + Strategy para gestionar el ciclo de vida
+ * y la ejecución ordenada de todos los sistemas del motor.
  * 
- * PATRÓN: Registry Pattern + Strategy Pattern
- * PRINCIPIO SOLID: Open/Closed Principle
- * ROL: Software Architect
- * 
- * GARANTÍAS:
- * - Ejecución en orden determinista
- * - Separación entre lógica y renderizado
- * - Medición de tiempo por sistema
- * 
- * DOMINIO CRÍTICO: Kernel / Orquestación
- * 
- * @author MarvinDev
+ * @author Marvin-Dev
  * @version 1.0
- * @since 2026-01-03
+ * @since 2026-01-05
  */
 public final class SystemRegistry {
 
@@ -42,12 +31,19 @@ public final class SystemRegistry {
     // Métricas de performance
     private long lastExecutionTimeNs;
 
+    // [NEURONA_048 STEP 4] Parallel Execution Infrastructure
+    private SystemDependencyGraph dependencyGraph;
+    private ParallelSystemExecutor parallelExecutor;
+    private boolean parallelMode = false; // Default: sequential (safe)
+
     public SystemRegistry() {
         // Usamos ArrayList por simplicidad
         // En producción, podríamos usar array fijo para zero-allocation
         this.gameSystems = new ArrayList<>(16);
         this.renderSystems = new ArrayList<>(8);
         this.lastExecutionTimeNs = 0;
+        this.dependencyGraph = null;
+        this.parallelExecutor = null;
     }
 
     /**
@@ -95,19 +91,24 @@ public final class SystemRegistry {
     public void executeGameSystems(WorldStateFrame state, double deltaTime) {
         long startTime = System.nanoTime();
 
-        // Ejecutar cada sistema en orden
-        for (SovereignSystem system : gameSystems) {
-            try {
-                system.update(state, deltaTime);
-            } catch (Exception e) {
-                // En producción, esto debería ser más robusto
-                System.err.println("[REGISTRY] Error in system " + system.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+        // [NEURONA_048 STEP 4] Usar executor paralelo si está habilitado
+        if (parallelMode && parallelExecutor != null) {
+            parallelExecutor.execute(state, deltaTime);
+            lastExecutionTimeNs = parallelExecutor.getLastExecutionTimeNs();
+        } else {
+            // Fallback: Ejecución secuencial (modo seguro)
+            for (SovereignSystem system : gameSystems) {
+                try {
+                    system.update(state, deltaTime);
+                } catch (Exception e) {
+                    System.err.println("[REGISTRY] Error in system " + system.getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
-        }
 
-        long endTime = System.nanoTime();
-        lastExecutionTimeNs = endTime - startTime;
+            long endTime = System.nanoTime();
+            lastExecutionTimeNs = endTime - startTime;
+        }
     }
 
     /**
@@ -163,6 +164,65 @@ public final class SystemRegistry {
      */
     public int getRenderSystemCount() {
         return renderSystems.size();
+    }
+
+    /**
+     * Construye el grafo de dependencias y habilita ejecución paralela.
+     * 
+     * DEBE LLAMARSE DESPUÉS de registrar todos los sistemas.
+     * 
+     * @throws IllegalStateException si hay dependencias circulares
+     */
+    public void buildDependencyGraph() {
+        System.out.println("[REGISTRY] Building dependency graph...");
+
+        dependencyGraph = new SystemDependencyGraph();
+
+        // Agregar todos los sistemas al grafo
+        for (SovereignSystem system : gameSystems) {
+            String[] deps = system.getDependencies();
+            dependencyGraph.addSystem(system, deps);
+        }
+
+        // Validar y construir capas de ejecución
+        try {
+            dependencyGraph.validate();
+            dependencyGraph.printGraph();
+
+            // Crear executor paralelo
+            parallelExecutor = new ParallelSystemExecutor(dependencyGraph.getExecutionLayers());
+
+            System.out.println("[REGISTRY] Dependency graph built successfully");
+            System.out.println("[REGISTRY] Parallel execution ready (" + dependencyGraph.getLayerCount() + " layers)");
+        } catch (IllegalStateException e) {
+            System.err.println("[REGISTRY] Failed to build dependency graph: " + e.getMessage());
+            System.err.println("[REGISTRY] Falling back to sequential execution");
+            dependencyGraph = null;
+            parallelExecutor = null;
+        }
+    }
+
+    /**
+     * Habilita o deshabilita la ejecución paralela.
+     * 
+     * @param enabled true para habilitar, false para deshabilitar
+     */
+    public void setParallelMode(boolean enabled) {
+        if (enabled && parallelExecutor == null) {
+            System.err.println("[REGISTRY] Cannot enable parallel mode: dependency graph not built");
+            return;
+        }
+        this.parallelMode = enabled;
+        System.out.println("[REGISTRY] Parallel mode: " + (enabled ? "ENABLED" : "DISABLED"));
+    }
+
+    /**
+     * Retorna si el modo paralelo está habilitado.
+     * 
+     * @return true si está habilitado
+     */
+    public boolean isParallelMode() {
+        return parallelMode;
     }
 }
 // Creado: 03/01/2026 23:50

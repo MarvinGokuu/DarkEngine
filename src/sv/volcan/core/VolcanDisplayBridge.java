@@ -5,14 +5,18 @@ import java.awt.image.BufferStrategy;
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Proyección visual del WorldStateFrame mediante Triple
- * Buffering.
- * GARANTÍAS: Zero-allocation en renderizado, post-procesado por hardware,
- * desacoplo de hilo.
- * PROHIBICIONES: Prohibido instanciar objetos (new) durante el frame; prohibido
- * el uso de efectos que no sean O(N).
- * DOMINIO CRÍTICO: Visualización (I/O)
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Puente de Visualización de Alto Rendimiento (Triple
+ * Buffering).
+ * DEPENDENCIAS: java.awt.Canvas, java.awt.image.BufferStrategy, WorldStateFrame
+ * MÉTRICAS: Target 60 FPS, Zero-Allocation Render
+ * 
+ * Gestiona la proyección visual del estado soberano a la pantalla.
+ * Implementa Triple Buffering y control de V-Sync para eliminar tearing.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanDisplayBridge {
 

@@ -4,13 +4,17 @@ import sv.volcan.state.VolcanStateVault;
 import sv.volcan.state.VolcanStateLayout;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Ejecución de lógica de entidades mediante comandos binarios
- * (ABI del Motor).
- * GARANTÍAS: Determinismo puro, Zero-Allocation, O(1) Dispatching.
- * PROHIBICIONES: Prohibido instanciar objetos o usar tipos String en el
- * despacho de comandos.
- * DOMINIO CRÍTICO: Lógica de Ejecución y Tiempo Real.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Despacho de Comandos Binarios (ABI).
+ * DEPENDENCIAS: VolcanStateVault
+ * MÉTRICAS: O(1) Command Dispatch
+ * 
+ * Controlador de entidades basado en ABI. Recibe identificadores de comandos
+ * numéricos y ejecuta la lógica asociada directamente sobre el Vault.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanEntityController {
 

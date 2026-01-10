@@ -26,10 +26,21 @@ public final class VolcanEventLane {
     // MÉTRICAS (Zero-Allocation Counters)
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Padding para prevenir False Sharing (L1 Cache Line = 64 bytes)
+    // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
+    private long headShield_L1_slot1, headShield_L1_slot2, headShield_L1_slot3,
+            headShield_L1_slot4, headShield_L1_slot5, headShield_L1_slot6,
+            headShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
+
     private long totalOffered = 0;
     private long totalAccepted = 0;
     private long totalDropped = 0;
-    private long totalPolled = 0;
+    private long totalPolled = 0; // 4 variables × 8 bytes = 32 bytes
+
+    // Padding para prevenir False Sharing
+    // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
+    private long tailShield_L1_slot1, tailShield_L1_slot2, tailShield_L1_slot3,
+            tailShield_L1_slot4; // 4 slots × 8 bytes = 32 bytes (total 64 bytes con métricas)
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -217,6 +228,34 @@ public final class VolcanEventLane {
         totalAccepted = 0;
         totalDropped = 0;
         totalPolled = 0;
+    }
+
+    /**
+     * Retorna el checksum de las variables de padding.
+     * 
+     * PROPÓSITO:
+     * - Validar que las variables de padding no fueron corrompidas
+     * - Prevenir que el compilador las elimine (Dead Code Elimination)
+     * - Facilitar auditoría nominal de alineación L1
+     * 
+     * @return Checksum de padding (debe ser 0 en condiciones normales)
+     */
+    public long getPaddingChecksum() {
+        long acc = 0;
+        // headShield_L1 (7 slots)
+        acc += headShield_L1_slot1;
+        acc += headShield_L1_slot2;
+        acc += headShield_L1_slot3;
+        acc += headShield_L1_slot4;
+        acc += headShield_L1_slot5;
+        acc += headShield_L1_slot6;
+        acc += headShield_L1_slot7;
+        // tailShield_L1 (4 slots)
+        acc += tailShield_L1_slot1;
+        acc += tailShield_L1_slot2;
+        acc += tailShield_L1_slot3;
+        acc += tailShield_L1_slot4;
+        return acc;
     }
 
     /**

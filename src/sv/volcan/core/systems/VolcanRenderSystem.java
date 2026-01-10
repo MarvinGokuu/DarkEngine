@@ -4,90 +4,19 @@ import java.awt.Graphics2D;
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * ═══════════════════════════════════════════════════════════════════════════
- * CONTRATO DE SISTEMA DE RENDERIZADO (Render System Contract)
- * ═══════════════════════════════════════════════════════════════════════════
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Contrato Fundamental de Sistema de Renderizado.
+ * DEPENDENCIAS: WorldStateFrame, java.awt.Graphics2D
+ * MÉTRICAS: Zero-Allocation Render Loop
  * 
- * AUTORIDAD: Volcan (Arquitectura de Visualización)
- * RESPONSABILIDAD: Definir el contrato para sistemas que proyectan el estado
- * del mundo a la pantalla.
+ * Interfaz base para sistemas de visualización. Separa estrictamente la lógica
+ * (SovereignSystem)
+ * de la presentación (VolcanRenderSystem), garantizando que el renderizado sea
+ * de solo lectura.
  * 
- * ═══════════════════════════════════════════════════════════════════════════
- * SEPARACIÓN DE RESPONSABILIDADES
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * DIFERENCIA CON SovereignSystem:
- * 
- * SovereignSystem (Lógica de Juego):
- * - Input: WorldStateFrame
- * - Output: WorldStateFrame modificado
- * - Características: Determinista, Zero-Allocation, Thread-Safe
- * - Ejemplos: MovementSystem, PlayerSystem, PhysicsSystem
- * 
- * VolcanRenderSystem (Visualización):
- * - Input: WorldStateFrame + Graphics2D
- * - Output: Píxeles en pantalla
- * - Características: No-determinista, I/O pesado, Single-threaded
- * - Ejemplos: SpriteSystem, ParticleRenderer, UIRenderer
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * CONCEPTOS DE INGENIERÍA APLICADOS
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * 1. PRINCIPIO SOLID: Interface Segregation Principle (ISP)
- * ROL EJECUTOR: Software Architect
- * APLICACIÓN: Separamos render de lógica porque tienen diferentes contratos.
- * BENEFICIO: Los sistemas de lógica no necesitan saber de Graphics2D.
- * 
- * 2. PRINCIPIO: Separation of Concerns (SoC)
- * ROL EJECUTOR: Software Engineer
- * APLICACIÓN: Lógica (transformación) vs Presentación (visualización).
- * BENEFICIO: Puedes cambiar el renderizado sin afectar la lógica.
- * 
- * 3. PATRÓN: Observer Pattern (implícito)
- * ROL EJECUTOR: Software Architect
- * APLICACIÓN: El render "observa" el estado sin modificarlo.
- * BENEFICIO: El estado es la fuente de verdad, el render solo proyecta.
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * GARANTÍAS DEL CONTRATO
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * ✅ GARANTÍA 1: Read-Only Access
- * - El render SOLO LEE el estado, nunca lo modifica
- * - Esto permite renderizar en cualquier momento sin afectar la simulación
- * 
- * ✅ GARANTÍA 2: Single-Threaded
- * - El render siempre se ejecuta en el thread de AWT/Swing
- * - No hay concurrencia en el renderizado
- * 
- * ✅ GARANTÍA 3: Frame-Based
- * - Cada render corresponde a un frame del juego
- * - El estado es consistente durante todo el render
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * PROHIBICIONES
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * ❌ PROHIBIDO 1: Modificar el estado
- * RAZÓN: Rompe la separación lógica/presentación
- * EJEMPLO INCORRECTO: state.writeDouble(...) dentro de render()
- * 
- * ❌ PROHIBIDO 2: Lógica de juego en render
- * RAZÓN: El render puede saltearse (vsync, lag), la lógica no
- * EJEMPLO INCORRECTO: Calcular física en render()
- * 
- * ❌ PROHIBIDO 3: Acceso a red o archivos
- * RAZÓN: El render debe ser rápido (< 16ms para 60 FPS)
- * EJEMPLO INCORRECTO: Cargar texturas durante render()
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * DOMINIO CRÍTICO: Visualización / Presentación
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * @author VOLCAN Engine Team
- * @version 3.0
- * @since 2026-01-03
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public interface VolcanRenderSystem {
 

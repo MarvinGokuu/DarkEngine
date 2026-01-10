@@ -3,14 +3,17 @@ package sv.volcan.core; // Sincronizado con la ruta física src/sv/volcan/core/s
 import java.lang.foreign.MemorySegment;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Representación espacial de un segmento del WorldStateFrame
- * (Sliver).
- * GARANTÍAS: Acceso por punteros nativos, cero copias de arrays (Zero-Copy),
- * alineación de datos contigua.
- * PROHIBICIONES: Prohibido usar Lists, ArrayLists o cualquier objeto de la Java
- * Collections API.
- * DOMINIO CRÍTICO: Espacial / Memoria
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Abstracción Espacial de Memoria (Sliver).
+ * DEPENDENCIAS: MemorySegment
+ * MÉTRICAS: Zero-Copy, Reference Only
+ * 
+ * Representa un sector físico del mundo mapeado a un segmento de memoria.
+ * No posee la memoria, solo la referencia (View) para operaciones espaciales.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanSector {
 

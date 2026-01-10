@@ -3,114 +3,18 @@ package sv.volcan.core.systems;
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * ═══════════════════════════════════════════════════════════════════════════
- * CONTRATO SOBERANO DE SISTEMA (Sovereign System Contract)
- * ═══════════════════════════════════════════════════════════════════════════
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Contrato Fundamental de Estrategia de Sistema.
+ * DEPENDENCIAS: WorldStateFrame
+ * MÉTRICAS: Zero-Allocation Interface
  * 
- * AUTORIDAD: Sovereign (Arquitectura de Contratos)
- * RESPONSABILIDAD: Definir el contrato que todos los sistemas del motor deben
- * cumplir.
+ * Interfaz base para todos los sistemas lógicos del motor (Física, IA, Reglas).
+ * Impone rigurosamente el patrón Strategy y el principio de Inmutabilidad
+ * durante la ejecución.
  * 
- * ═══════════════════════════════════════════════════════════════════════════
- * CONCEPTOS DE INGENIERÍA APLICADOS
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * 1. PATRÓN DE DISEÑO: Strategy Pattern
- * ROL EJECUTOR: Software Architect
- * DEFINICIÓN: Permite definir una familia de algoritmos, encapsular cada uno,
- * y hacerlos intercambiables.
- * BENEFICIO: El Kernel puede ejecutar cualquier sistema sin conocer sus
- * detalles.
- * EJEMPLO: MovementSystem, PlayerSystem, SpriteSystem son estrategias
- * intercambiables.
- * 
- * 2. PRINCIPIO SOLID: Interface Segregation Principle (ISP)
- * ROL EJECUTOR: Senior Software Engineer
- * DEFINICIÓN: Los clientes no deben depender de interfaces que no usan.
- * APLICACIÓN: Esta interfaz tiene UN SOLO método, el mínimo necesario.
- * ANTI-PATRÓN EVITADO: Interfaces "gordas" con métodos que no todos
- * implementan.
- * 
- * 3. PRINCIPIO SOLID: Open/Closed Principle (OCP)
- * ROL EJECUTOR: Software Architect
- * DEFINICIÓN: Abierto para extensión, cerrado para modificación.
- * APLICACIÓN: Puedes agregar nuevos sistemas sin modificar el Kernel.
- * EJEMPLO: Crear "GravitySystem implements SovereignSystem" sin tocar código
- * existente.
- * 
- * 4. PRINCIPIO: Single Source of Truth (SSOT)
- * ROL EJECUTOR: Data Architect
- * DEFINICIÓN: Cada dato tiene una única fuente autoritativa.
- * APLICACIÓN: WorldStateFrame es la ÚNICA fuente de datos del juego.
- * GARANTÍA: No hay inconsistencias porque solo hay una verdad.
- * 
- * 5. CONCEPTO: Immutability (Inmutabilidad)
- * ROL EJECUTOR: Concurrent Systems Engineer
- * DEFINICIÓN: Los objetos no cambian después de su creación.
- * APLICACIÓN: WorldStateFrame es inmutable durante la ejecución del sistema.
- * BENEFICIO: Thread-safety sin locks, determinismo garantizado.
- * 
- * 6. CONCEPTO: Determinism (Determinismo)
- * ROL EJECUTOR: Game Engine Architect
- * DEFINICIÓN: Mismo input produce mismo output (bit-perfect).
- * APLICACIÓN: Para el mismo state y deltaTime, el resultado es idéntico.
- * USO: Replay, netcode, debugging reproducible.
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * GARANTÍAS DEL CONTRATO
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * ✅ GARANTÍA 1: Single Source of Truth
- * - Todos los sistemas reciben el mismo WorldStateFrame
- * - No hay acceso a memoria fuera de este frame
- * - Elimina inconsistencias de datos
- * 
- * ✅ GARANTÍA 2: Determinismo Absoluto
- * - Mismo state + mismo deltaTime = mismo resultado
- * - Permite replay perfecto
- * - Facilita debugging reproducible
- * 
- * ✅ GARANTÍA 3: Thread-Safety
- * - El Kernel garantiza que no hay llamadas concurrentes al mismo sistema
- * - El WorldStateFrame es inmutable durante update()
- * - No se requieren locks en el sistema
- * 
- * ✅ GARANTÍA 4: Zero Allocation en Hot-Path
- * - No se crean objetos durante update()
- * - Toda la memoria se gestiona Off-Heap
- * - GC no interfiere con el rendimiento
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * PROHIBICIONES (Design by Contract)
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * ❌ PROHIBIDO 1: Acceder a memoria fuera de WorldStateFrame
- * RAZÓN: Rompe Single Source of Truth
- * EJEMPLO INCORRECTO: MemorySegment seg = vault.getRawSegment();
- * 
- * ❌ PROHIBIDO 2: Mantener estado mutable entre llamadas
- * RAZÓN: Rompe determinismo y thread-safety
- * EJEMPLO INCORRECTO: private double lastX; // Estado mutable
- * 
- * ❌ PROHIBIDO 3: Realizar I/O durante update()
- * RAZÓN: I/O es no-determinista y lento
- * EJEMPLO INCORRECTO: System.out.println(), File.write(), Network.send()
- * 
- * ❌ PROHIBIDO 4: Crear objetos en el Heap
- * RAZÓN: Causa GC pauses, rompe Zero-Allocation
- * EJEMPLO INCORRECTO: new Vector2D(), new ArrayList<>()
- * 
- * ❌ PROHIBIDO 5: Usar Random() sin seed del frame
- * RAZÓN: Rompe determinismo
- * EJEMPLO INCORRECTO: Math.random(), new Random()
- * 
- * ═══════════════════════════════════════════════════════════════════════════
- * DOMINIO CRÍTICO: Arquitectura / Contratos / Concurrencia
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * @author VOLCAN Engine Team
- * @version 3.0
- * @since 2026-01-03
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public interface SovereignSystem {
 
@@ -252,6 +156,38 @@ public interface SovereignSystem {
      */
     default String getName() {
         return this.getClass().getSimpleName();
+    }
+
+    /**
+     * Retorna los nombres de sistemas de los que este sistema depende.
+     * 
+     * PROPÓSITO: Construir el grafo de dependencias para ejecución paralela.
+     * 
+     * SEMÁNTICA:
+     * - Si este sistema depende de "PhysicsSystem", debe retornar {"PhysicsSystem"}
+     * - El Kernel garantiza que las dependencias se ejecutan ANTES
+     * - Sistemas sin dependencias pueden ejecutarse en paralelo
+     * 
+     * IMPLEMENTACIÓN POR DEFECTO: Sin dependencias (puede ejecutarse primero)
+     * 
+     * OVERRIDE: Solo si el sistema necesita que otros se ejecuten antes
+     * 
+     * EJEMPLO:
+     * 
+     * @Override
+     *           public String[] getDependencies() {
+     *           return new String[]{"PhysicsSystem", "InputSystem"};
+     *           }
+     * 
+     *           IMPORTANTE:
+     *           - No crear dependencias circulares (A→B→A)
+     *           - El Kernel detecta ciclos y falla rápido
+     *           - Minimizar dependencias para maximizar paralelismo
+     * 
+     * @return Array de nombres de sistemas (puede ser vacío, no null)
+     */
+    default String[] getDependencies() {
+        return new String[0]; // Sin dependencias por defecto
     }
 }
 // Creado: 03/01/2026 23:35

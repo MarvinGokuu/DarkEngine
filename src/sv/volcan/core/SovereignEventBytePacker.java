@@ -4,15 +4,19 @@ import java.lang.foreign.*;
 import java.lang.invoke.VarHandle;
 
 /**
- * AUTORIDAD: Sovereign
- * RESPONSABILIDAD: Definición binaria de la entidad en memoria y empaquetado de
- * alta velocidad.
- * GARANTÍAS: Alineación natural de 8-bytes, acceso vía VarHandle (O(1) a nivel
- * de ensamblador).
- * PROHIBICIONES: Prohibido cambiar el orden de los campos (rompe compatibilidad
- * de snapshots),
- * prohibido usar tipos de referencia, prohibido el acceso sin VarHandle.
- * DOMINIO CRÍTICO: Memoria
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Serialización/Deserialización binaria de alta velocidad
+ * (Marshalling).
+ * DEPENDENCIAS: MemorySegment, VarHandle, MemoryLayout
+ * MÉTRICAS: Zero-Copy, Single-Instruction Encodings
+ * 
+ * Utilidad de bajo nivel para empaquetar datos de entidades en segmentos de
+ * memoria.
+ * Utiliza VarHandles estáticos para acceso directo al metal (Off-Heap).
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class SovereignEventBytePacker {
 

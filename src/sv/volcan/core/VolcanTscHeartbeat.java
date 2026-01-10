@@ -1,15 +1,19 @@
 package sv.volcan.core; // Sincronizado con la ruta src/sv/volcan/core/
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Sincronización de alta precisión y control del presupuesto
- * de latencia.
- * GARANTÍAS: Precisión de nanosegundos (10^-9), cero drift por punto flotante,
- * detección de "Overrun" (exceso de tiempo).
- * PROHIBICIONES: Prohibido usar Thread.sleep(), prohibido usar tipos double
- * para el tiempo,
- * prohibido el acceso desde múltiples hilos sin sincronización de barrera.
- * DOMINIO CRÍTICO: Ejecución / Tiempo Real
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Sincronización de Alta Precisión (Nano-Time) y Tick
+ * Enforcement.
+ * DEPENDENCIAS: System.nanoTime()
+ * MÉTRICAS: Nanosecond Precision, Zero-Drift
+ * 
+ * Cronómetro de alta resolución para el loop principal. Controla el presupuesto
+ * de tiempo por frame y detecta excesos (Overruns) para mantener 60 FPS
+ * estables.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanTscHeartbeat {
 

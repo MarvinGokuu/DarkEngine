@@ -5,15 +5,19 @@ import java.awt.Graphics2D;
 import java.awt.BasicStroke;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Definición de la estética industrial y estados visuales del
- * Runtime.
- * DISEÑO: Glassmorphism / Industrial High-Tech.
- * GARANTÍAS: Cero procesamiento de Strings, paleta pre-calculada en memoria
- * estática.
- * PROHIBICIONES: Prohibido el uso de archivos .CSS o configuraciones externas
- * pesadas.
- * DOMINIO CRÍTICO: Visualización y Telemetría.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Definición Estética y Constantes Visuales (Design System).
+ * DEPENDENCIAS: java.awt.Color, java.awt.BasicStroke
+ * MÉTRICAS: Static Allocation, Zero-Runtime-Cost
+ * 
+ * Repositorio central de constantes estéticas del motor. Define la paleta de
+ * colores
+ * (Glassmorphism/Neon) y los estilos de trazado para garantizar coherencia
+ * visual.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanTheme {
 

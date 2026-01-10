@@ -5,14 +5,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Localización y validación de activos industriales (Texturas,
- * ABI, Config).
- * GARANTÍAS: Resolución multiplataforma, fallback automático, validación de
- * integridad.
- * PROHIBICIONES: Prohibido usar File (I/O antiguo), prohibido llamar a
- * resolve() en el hot-path.
- * DOMINIO CRÍTICO: Assets / Persistencia
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Gestión Soberana de Activos (Assets) y Recursos Externos.
+ * DEPENDENCIAS: java.nio.file.Path, java.nio.file.Files
+ * MÉTRICAS: Zero-Allocation (Runtime), Secure Path Resolution
+ * 
+ * Localiza y valida activos del motor con prioridad de "Bóveda Externa".
+ * Protege contra Path Traversal y garantiza acceso a recursos seguros.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanAssetManager {
 
