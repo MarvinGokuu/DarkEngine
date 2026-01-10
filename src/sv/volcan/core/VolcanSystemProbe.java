@@ -5,14 +5,18 @@ import java.lang.management.ManagementFactory;
 import sv.volcan.state.VolcanStateVault;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Inyección de métricas de hardware sin asignación de memoria
- * (Zero-GC).
- * GARANTÍAS: Zero-GC, acceso por registro binario, métricas escaladas para
- * precisión industrial.
- * PROHIBICIONES: Prohibido usar Double o Float para persistencia en Vault;
- * prohibido loggear en el sampleo.
- * DOMINIO CRÍTICO: Telemetría / Diagnóstico
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Muestreo de Métricas de Sistema Zero-GC.
+ * DEPENDENCIAS: java.lang.management.OperatingSystemMXBean, VolcanStateVault
+ * MÉTRICAS: Zero-GC Sampling, Scaled Integer Precision
+ * 
+ * Captura métricas dinámicas del sistema (CPU Load, Memoria Libre) y las
+ * inyecta en el StateVault como enteros escalados para evitar overhead de punto
+ * flotante.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanSystemProbe {
 

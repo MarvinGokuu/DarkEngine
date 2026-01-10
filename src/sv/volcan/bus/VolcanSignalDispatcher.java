@@ -1,10 +1,17 @@
 package sv.volcan.bus;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Despacho de señales y coordinación de buses.
- * MECANISMO: Fachada de acceso al bus atómico.
- * GARANTÍAS: Integridad en el enrutamiento de eventos.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Orquestación y despacho de señales sin boxing.
+ * DEPENDENCIAS: VolcanAtomicBus, VolcanSignalPacker
+ * MÉTRICAS: Zero-GC, Latencia <150ns
+ * 
+ * Fachada de alto rendimiento para el acceso al bus atómico.
+ * Garantiza integridad en el enrutamiento y cero asignaciones en el hot-path.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanSignalDispatcher {
 

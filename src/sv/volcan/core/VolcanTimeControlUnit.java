@@ -4,14 +4,18 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Gestión de persistencia temporal (Snapshots) sin alocación
- * de objetos.
- * GARANTÍAS: Zero-GC en captura/rollback, límite de memoria físico,
- * determinismo de bits.
- * PROHIBICIONES: Prohibido usar colecciones de Java (List/Deque), prohibido
- * crear objetos en el loop.
- * DOMINIO CRÍTICO: State / Tiempo
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Sistema de Control de Tiempo y Rebobinado (Time Travel).
+ * DEPENDENCIAS: MemorySegment, Arena
+ * MÉTRICAS: Zero-GC Snapshot, O(1) Rollback
+ * 
+ * Gestiona un buffer circular de snapshots de memoria nativa. Permite
+ * retroceder el estado del mundo instantáneamente para predicción de red o
+ * debug.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanTimeControlUnit {
 

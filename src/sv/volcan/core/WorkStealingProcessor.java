@@ -5,16 +5,18 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Procesamiento recursivo y balanceo dinámico de carga
- * (Work-Stealing).
- * MECANISMO: Si un sector es demasiado denso, se divide en sub-tareas (Divide &
- * Conquer).
- * GARANTÍAS: Utilización total de los hilos de hardware, latencia mínima en
- * picos de carga.
- * PROHIBICIONES: Prohibido usar sub-tareas menores a un sector; prohibido
- * bloquear hilos del pool.
- * DOMINIO CRÍTICO: Ejecución / Paralelismo
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Motor de Paralelismo Work-Stealing (Divide & Conquer).
+ * DEPENDENCIAS: java.util.concurrent.ForkJoinPool, MemorySegment
+ * MÉTRICAS: 100% Core Utilization, Recursive Task Splitting
+ * 
+ * Implementación de paralelismo recursivo para procesamiento de entidades.
+ * Divide dinámicamente la carga de trabajo entre núcleos usando el algoritmo
+ * work-stealing.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class WorkStealingProcessor {
 

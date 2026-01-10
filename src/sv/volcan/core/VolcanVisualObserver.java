@@ -6,13 +6,18 @@ import java.nio.file.*;
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Proyectar el estado binario a un archivo mapeado (mmap) para
- * inspección externa.
- * GARANTÍAS: Zero-allocation, acceso no bloqueante, latencia de nanosegundos.
- * PROHIBICIONES: Prohibido usar StringBuilder o Strings dentro del dump,
- * prohibido usar Files.write.
- * DOMINIO CRÍTICO: Observabilidad / Telemetría Externa
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Telemetría Visual Externa (Memory Mapped File).
+ * DEPENDENCIAS: java.nio.MappedByteBuffer, FileChannel
+ * MÉTRICAS: Zero-Overhead, IPC (Inter-Process Communication)
+ * 
+ * Proyecta el estado interno del frame a un archivo mapeado en memoria.
+ * Permite que herramientas externas visualicen el estado en tiempo real sin
+ * impactar el rendimiento.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanVisualObserver {
 

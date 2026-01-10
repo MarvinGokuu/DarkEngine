@@ -1,14 +1,18 @@
 package sv.volcan.core; // Sincronizado con la ruta src/sv/volcan/core/
 
 /**
- * AUTORIDAD: Sovereign
- * RESPONSABILIDAD: Mapa de offsets para el acceso atómico y lineal a datos de
- * entidad.
- * GARANTÍAS: Alineación de 64-bytes (Cache Line Alignment), acceso O(1),
- * compatibilidad SIMD.
- * PROHIBICIONES: Prohibido modificar offsets en runtime; prohibido usar tipos
- * no primitivos.
- * DOMINIO CRÍTICO: Memoria
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Mapa de offsets (Layout) para entidades en memoria Off-Heap.
+ * DEPENDENCIAS: Ninguna (Definición Estática)
+ * MÉTRICAS: Alineación 64-byte (Cache Line), Access O(1)
+ * 
+ * Define la estructura física de una Entidad en memoria nativa.
+ * Garantiza alineación perfecta para prevenir False Sharing y permitir
+ * acceso vectorizado (SIMD).
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class EntityLayout {
 
@@ -27,6 +31,9 @@ public final class EntityLayout {
     public static final long ID_OFFSET = 32L;
     public static final long STATE_FLAGS = 40L;
     public static final long GLOW_ALPHA = 48L; // Requerido por SpriteSystem
+
+    // Spatial Management (Bytes 56-64)
+    public static final long SECTOR_ID_OFFSET = 56L; // Requerido por VolcanSectorManager
 
     private EntityLayout() {
     } // Sellado: Solo constantes de direccionamiento.

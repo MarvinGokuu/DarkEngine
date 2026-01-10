@@ -4,20 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Orquestador de múltiples lanes especializados.
- * GARANTÍAS: Routing determinista, observabilidad global, zero-allocation en
- * hot-path.
- * PROHIBICIONES: Prohibido crear objetos durante dispatch/process.
- * DOMINIO CRÍTICO: Arquitectura / Coordinación
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Orquestador Central de Eventos y Despacho Multi-Lane.
+ * DEPENDENCIAS: VolcanEventLane, VolcanRingBus, BackpressureStrategy
+ * MÉTRICAS: Zero-Allocation Dispatch, Routing Determinista
  * 
- * PATRÓN: Facade Pattern + Registry Pattern
- * CONCEPTO: Multi-Channel Event Routing
- * ROL: Central Event Coordinator
+ * Fachada principal del sistema de eventos. Gestiona múltiples canales (lanes)
+ * especializados para diferentes tipos de tráfico (Network, Physics, System,
+ * etc.)
+ * con estrategias de backpressure independientes.
  * 
- * @author MarvinDev
- * @version 2.0
- * @since 2026-01-04
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanEventDispatcher {
 

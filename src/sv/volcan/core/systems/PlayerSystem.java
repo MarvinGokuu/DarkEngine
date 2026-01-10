@@ -3,18 +3,17 @@ package sv.volcan.core.systems; // Sincronizado con la ruta src/sv/volcan/core/s
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Mutación física del actor principal basada en el estado del
- * input.
- * GARANTÍAS: Movimiento atómico, cero-jitter mediante acceso directo a memoria
- * nativa.
- * PROHIBICIONES: Prohibido instanciar vectores (new Vector2D), prohibido el uso
- * de Strings para comandos de entrada.
- * DOMINIO CRÍTICO: Ejecución y Estado del Mundo.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Control de Avatar (Player Character).
+ * DEPENDENCIAS: WorldStateFrame
+ * MÉTRICAS: Zero-Jitter Input Response
  * 
- * PATRÓN: Strategy Pattern (implementa SovereignSystem)
- * PRINCIPIO SOLID: Open/Closed Principle
- * ROL: Software Engineer aplicando contrato de sistema
+ * Aplica comandos de entrada al estado del jugador.
+ * Implementa movimiento determinista basado en el input del frame actual.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class PlayerSystem implements SovereignSystem {
 

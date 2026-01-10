@@ -6,17 +6,17 @@ import sv.volcan.core.EntityLayout;
 import java.awt.Graphics2D;
 
 /**
- * AUTORIDAD: Render
- * RESPONSABILIDAD: Dibujo masivo de entidades mediante Atlas de Texturas.
- * GARANTÍAS: Minimización de Draw Calls, acceso zero-copy al estado del mundo.
- * PROHIBICIONES: Prohibido instanciar objetos Rectangle o Point dentro del loop
- * de renderizado.
- * DOMINIO CRÍTICO: Visualización (IO Render)
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Renderizado 2D Masivo (Sprite Batching).
+ * DEPENDENCIAS: EntityLayout, WorldStateFrame
+ * MÉTRICAS: Minimized Draw Calls
  * 
- * PATRÓN: Observer Pattern (observa el estado sin modificarlo)
- * PRINCIPIO: Separation of Concerns - Render separado de lógica
- * CONCEPTO: Read-Only Access - Solo lee, nunca modifica el estado
- * ROL: Graphics Engineer aplicando batching y culling
+ * Sistema de visualización principal. Lee entidades de memoria y las dibuja
+ * utilizando técnicas de batching para alto rendimiento gráfico.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class SpriteSystem implements VolcanRenderSystem {
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VOLCAN - SEQUENTIAL MODE</title>
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --neon-blue: #00d4ff;
+            --bg: #0a0a0a;
+            --success: #00ff88;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--neon-green);
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+        }
+
+        .header {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 212, 255, 0.1));
+            border-bottom: 2px solid var(--neon-green);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px var(--neon-green);
+        }
+
+        .mode-badge {
+            padding: 10px 20px;
+            background: rgba(255, 165, 0, 0.2);
+            border: 2px solid orange;
+            color: orange;
+            font-weight: 700;
+            border-radius: 4px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .metric-card {
+            background: rgba(0, 255, 65, 0.03);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            border-radius: 8px;
+            padding: 25px;
+            border-left: 4px solid var(--neon-green);
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(0, 255, 65, 0.6);
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+
+        .metric-unit {
+            font-size: 1rem;
+            color: rgba(0, 255, 65, 0.5);
+            margin-left: 8px;
+        }
+
+        .info-panel {
+            padding: 30px;
+            background: rgba(255, 165, 0, 0.05);
+            border-top: 1px solid rgba(255, 165, 0, 0.3);
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            color: orange;
+            margin-bottom: 15px;
+        }
+
+        .info-text {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="title">VOLCAN ENGINE - SEQUENTIAL</div>
+        <div class="mode-badge">MODO SECUENCIAL</div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">Frame Latency</div>
+            <div class="metric-value">10<span class="metric-unit">μs</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">CPU Core</div>
+            <div class="metric-value">Core 1<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Execution Mode</div>
+            <div class="metric-value">Sequential<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Systems</div>
+            <div class="metric-value" id="systems">0<span class="metric-unit">total</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Execution Order</div>
+            <div class="metric-value">Linear<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Parallelism</div>
+            <div class="metric-value">OFF<span class="metric-unit"></span></div>
+        </div>
+    </div>
+
+    <div class="info-panel">
+        <div class="info-title">⚠️ MODO SECUENCIAL ACTIVO</div>
+        <div class="info-text">
+            Los sistemas se ejecutan uno tras otro en orden lineal.<br>
+            No hay paralelismo. Cada sistema espera a que el anterior termine.<br>
+            Este es el modo de fallback cuando el DAG no puede construirse.
+        </div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            document.getElementById('systems').innerHTML =
+                Math.floor(Math.random() * 5) + '<span class="metric-unit">total</span>';
+        }, 2000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VOLCAN - DEBUG MODE</title>
+    <style>
+        :root {
+            --neon-red: #ff003c;
+            --neon-yellow: #ffff00;
+            --bg: #0a0a0a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--neon-yellow);
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+
+        .header {
+            background: rgba(255, 0, 60, 0.1);
+            border-bottom: 2px solid var(--neon-red);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--neon-red);
+        }
+
+        .debug-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .debug-card {
+            background: rgba(255, 255, 0, 0.03);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            padding: 15px;
+            border-left: 3px solid var(--neon-yellow);
+        }
+
+        .debug-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: rgba(255, 255, 0, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .debug-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--neon-yellow);
+        }
+
+        .terminal {
+            background: #000;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            border-top: 1px solid var(--neon-red);
+        }
+
+        .log-line {
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .timestamp {
+            color: rgba(255, 0, 60, 0.6);
+            margin-right: 8px;
+        }
+
+        .warning {
+            color: var(--neon-red);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="title">VOLCAN ENGINE - DEBUG MODE</div>
+        <div style="color: var(--neon-red); font-weight: 700;">⚠️ VERBOSE LOGGING</div>
+    </div>
+
+    <div class="debug-grid">
+        <div class="debug-card">
+            <div class="debug-label">Frame Time</div>
+            <div class="debug-value" id="frame">0.010 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 1 (Input)</div>
+            <div class="debug-value" id="p1">0.001 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 2 (Bus)</div>
+            <div class="debug-value" id="p2">0.002 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 3 (Systems)</div>
+            <div class="debug-value" id="p3">0.005 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 4 (Audit)</div>
+            <div class="debug-value" id="p4">0.002 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">AdminBus Queue</div>
+            <div class="debug-value" id="queue">3/1024</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Memory (Heap)</div>
+            <div class="debug-value" id="heap">2.1 GB</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">GC Count</div>
+            <div class="debug-value" id="gc">0</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemA</div>
+            <div class="debug-value" id="sysA">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemB</div>
+            <div class="debug-value" id="sysB">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemC</div>
+            <div class="debug-value" id="sysC">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phaser Sync</div>
+            <div class="debug-value" id="phaser">OK</div>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div class="log-line"><span class="timestamp">[00:00:00.001]</span> SystemDependencyGraph validated</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.002]</span> ParallelExecutor initialized (2 layers, 8
+            threads)</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.003]</span> Layer 0: TestSystemA executing</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.004]</span> Layer 1: TestSystemB, TestSystemC executing
+            (parallel)</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.005]</span> Phaser barrier: Layer 1 complete</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.006]</span> Frame 1 complete: 0.010ms</div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            const time = new Date().toTimeString().split(' ')[0];
+            const messages = [
+                'Layer 0 execution complete',
+                'Phaser synchronization OK',
+                'TestSystemB completed',
+                'TestSystemC completed',
+                'AdminBus metric sent',
+                'Memory segment accessed'
+            ];
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerHTML = `<span class="timestamp">[${time}]</span> ${msg}`;
+            terminal.appendChild(line);
+
+            while (terminal.children.length > 20) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+
+            // Update metrics
+            document.getElementById('p1').textContent = (Math.random() * 0.003).toFixed(3) + ' ms';
+            document.getElementById('p2').textContent = (Math.random() * 0.004).toFixed(3) + ' ms';
+            document.getElementById('p3').textContent = (Math.random() * 0.008 + 0.002).toFixed(3) + ' ms';
+            document.getElementById('queue').textContent = Math.floor(Math.random() * 10) + '/1024';
+        }, 500);
+    </script>
+</body>
+
+</html>

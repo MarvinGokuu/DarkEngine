@@ -1,12 +1,18 @@
 package sv.volcan.state;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Definición física del direccionamiento (ABI) del StateVault.
- * GARANTÍAS: Alineación para caché L1, offsets de 4-bytes (Integer slots),
- * direccionamiento O(1).
- * PROHIBICIONES: Prohibido duplicar offsets; prohibido usar índices negativos.
- * DOMINIO CRÍTICO: State / Memoria
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Definición de ABI (Binary Interface) y direccionamiento de
+ * memoria.
+ * DEPENDENCIAS: Ninguna (Constantes puras)
+ * MÉTRICAS: O(1) Access Time
+ * 
+ * Define el mapa de memoria física para el StateVault.
+ * Garantiza alineación para caché L1 y offsets optimizados.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanStateLayout {
 
@@ -15,30 +21,30 @@ public final class VolcanStateLayout {
 
     // --- [BLOQUE 0-99]: ESTADO DE ACTORES (HOT DATA - Alta Frecuencia) ---
     public static final int PLAYER_X = 0;
-    public static final int PLAYER_Y = 1;
-    public static final int PLAYER_DIR = 2;
-    public static final int PLAYER_SCORE = 3;
+    public static final int PLAYER_Y = 4;
+    public static final int PLAYER_DIR = 8;
+    public static final int PLAYER_SCORE = 12;
 
     // --- [BLOQUE 100-199]: CONTROL DE KERNEL (CRITICAL) ---
-    public static final int SYS_TICK = 100;
-    public static final int SYS_ENGINE_FLAGS = 101; // Bits: 0=Running, 1=Alert, 2=Healing
-    public static final int SYS_TARGET_FPS = 102;
-    public static final int SYS_DELTA_TIME = 103; // dt escalado a int para evitar float-drift
-    public static final int ENTITY_COUNT = 104; // Número de entidades activas en el mundo
+    public static final int SYS_TICK = 400; // Slot 100
+    public static final int SYS_ENGINE_FLAGS = 404; // Slot 101: 0=Running, 1=Alert, 2=Healing
+    public static final int SYS_TARGET_FPS = 408; // Slot 102
+    public static final int SYS_DELTA_TIME = 412; // Slot 103: dt escalado a int
+    public static final int ENTITY_COUNT = 416; // Slot 104: Entidades activas
 
     // --- [BLOQUE 200-299]: TELEMETRÍA DE HARDWARE ---
-    public static final int METRIC_CPU_LOAD = 200; // 0-10000 (0.00% - 100.00%)
-    public static final int METRIC_RAM_FREE = 201; // en MB
-    public static final int METRIC_RAM_TOTAL = 202; // en MB
+    public static final int METRIC_CPU_LOAD = 800; // Slot 200: 0-10000
+    public static final int METRIC_RAM_FREE = 804; // Slot 201: MB
+    public static final int METRIC_RAM_TOTAL = 808; // Slot 202: MB
 
     // Alias para compatibilidad con sensores previos
-    public static final int SYS_CPU_LOAD = 200;
-    public static final int SYS_MEM_FREE = 201;
+    public static final int SYS_CPU_LOAD = METRIC_CPU_LOAD;
+    public static final int SYS_MEM_FREE = METRIC_RAM_FREE;
 
     // --- [BLOQUE 300-399]: INPUT PIPELINE ---
-    public static final int INPUT_MOUSE_X = 300;
-    public static final int INPUT_MOUSE_Y = 301;
-    public static final int INPUT_LAST_SIGNAL = 302;
+    public static final int INPUT_MOUSE_X = 1200; // Slot 300
+    public static final int INPUT_MOUSE_Y = 1204; // Slot 301
+    public static final int INPUT_LAST_SIGNAL = 1208; // Slot 302
 
     // --- LÍMITES FÍSICOS ---
     /**
@@ -48,6 +54,4 @@ public final class VolcanStateLayout {
     public static final int MAX_SLOTS = 1024;
 
     // --- [BLOQUE EXTENDIDO]: ENTITY LAYOUT (BYTE OFFSETS) ---
-    // Requerido por VolcanSectorManager
-    public static final int SECTOR_ID_OFFSET = 56;
 }

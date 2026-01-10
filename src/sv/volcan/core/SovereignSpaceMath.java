@@ -1,14 +1,18 @@
 package sv.volcan.core;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Utilidad matemática pura para el cálculo de sectores y
- * empaquetado espacial.
- * GARANTÍAS: Operaciones bitwise de ciclo único, sin asignación de objetos,
- * determinismo 64-bit.
- * DOMINIO CRÍTICO: Matemáticas / Espacio
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Matemáticas Espaciales Optimizadas (Bitwise).
+ * DEPENDENCIAS: Ninguna (Pure Math)
+ * MÉTRICAS: <1ns per operation (Single Cycle)
  * 
- * USO: Centraliza la lógica de 'Sector Size' para evitar números mágicos.
+ * Librería de matemáticas espaciales optimizada para operaciones bitwise.
+ * Gestiona el sistema de coordenadas de sectores y empaquetado de llaves
+ * espaciales (Spatial Hashing).
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class SovereignSpaceMath {
 

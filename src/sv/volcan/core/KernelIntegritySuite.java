@@ -3,14 +3,18 @@ package sv.volcan.core; // Sincronizado con la ruta física real en src/sv/volca
 import sv.volcan.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Verificación atómica de la integridad del bus de datos y
- * despacho.
- * GARANTÍAS: Validación sin asignación de memoria (Zero-allocation),
- * diagnóstico silencioso.
- * PROHIBICIONES: Prohibido usar excepciones para control de flujo, prohibido
- * imprimir en consola.
- * DOMINIO CRÍTICO: Integridad del Sistema.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Auditoría y Verificación de Integridad del Kernel.
+ * DEPENDENCIAS: VolcanExecutionDispatcher, WorldStateFrame
+ * MÉTRICAS: Zero-Allocation, Diagnostic Mode Only
+ * 
+ * Suite de pruebas de integridad en tiempo de ejecución.
+ * Valida que el bus, el despacho y la memoria funcionen correctamente
+ * sin generar basura (GC) ni excepciones en el hot-path.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class KernelIntegritySuite {
 

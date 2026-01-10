@@ -1,13 +1,17 @@
 package sv.volcan.core;
 
 /**
- * AUTORIDAD: Sovereign (Autoridad Determinista)
- * RESPONSABILIDAD: Verificación de la firma criptográfica y sello de integridad
- * del runtime.
- * GARANTÍAS: Estado inmutable (final), verificación O(1), zero-allocation.
- * PROHIBICIONES: Prohibido usar System.out, instanciar, o modificar firmas
- * post-compilación.
- * DOMINIO CRÍTICO: Ejecución / Seguridad.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Sello Criptográfico de Integridad del Runtime.
+ * DEPENDENCIAS: Ninguna (Constantes puras)
+ * MÉTRICAS: O(1) Verification
+ * 
+ * Garantiza la autenticidad y versión del motor en ejecución.
+ * Protege contra modificaciones no autorizadas y corrupción de binarios.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class SovereignExecutionIntegrity {
 

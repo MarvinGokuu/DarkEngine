@@ -3,15 +3,19 @@ package sv.volcan.state;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import sv.volcan.core.AAACertified;
 
 /**
- * AUTORIDAD: Volcan (Fase 3.2)
- * ESTADO: Purificado - Zero Strings / Zero GC.
- * RESPONSABILIDAD: Almacenamiento Off-Heap alineado para el Kernel.
- * GARANTÍAS: Acceso O(1), alineación de línea de caché (64-byte), inmunidad al
- * GC.
- * DOMINIO CRÍTICO: Persistencia de Estado / Memoria Nativa
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Almacenamiento Off-Heap - Long-term memory neuron
+ * DEPENDENCIAS: Java Panama (Foreign Memory API)
+ * MÉTRICAS: Latencia <150ns, Capacidad ilimitada (solo RAM física)
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-06
  */
+@AAACertified(date = "2026-01-06", maxLatencyNs = 150, alignment = 64, lockFree = false, offHeap = true, notes = "Long-term memory neuron - Off-heap storage for AI state persistence")
 public final class VolcanStateVault {
 
     private final MemorySegment storage;

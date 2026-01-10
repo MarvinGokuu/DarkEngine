@@ -6,14 +6,17 @@ import sv.volcan.state.VolcanStateLayout;
 import sv.volcan.core.systems.VolcanTheme;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Consola de comando de baja latencia y Zero-Allocation para
- * telemetría.
- * GARANTÍAS: Renderizado por caché de recursos, sincronización por Tick-Rate
- * del motor.
- * PROHIBICIONES: Prohibido instanciar objetos Color o Font en el render;
- * prohibido el uso de Scanner.
- * DOMINIO CRÍTICO: Visualización e Interfaz de Control.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Consola de Diagnóstico Zero-Allocation.
+ * DEPENDENCIAS: java.awt.Graphics2D, VolcanStateVault
+ * MÉTRICAS: Zero-GC Render, Tick-Sync
+ * 
+ * Sistema visual de depuración en tiempo real. Renderiza métricas y
+ * feedback visual sin generar presión sobre el Garbage Collector.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanNativeConsole {
 

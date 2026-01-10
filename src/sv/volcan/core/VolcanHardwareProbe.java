@@ -4,15 +4,18 @@ import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
 
 /**
- * AUTORIDAD: Volcan
- * RESPONSABILIDAD: Introspección física del hardware para la configuración del
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Telemetría de Hardware y Detección de Capacidades.
+ * DEPENDENCIAS: java.lang.management.OperatingSystemMXBean
+ * MÉTRICAS: Zero-Latency Access (Cached)
+ * 
+ * Sonda de hardware estática. Captura las capacidades físicas del sistema
+ * (RAM, Cores, Industrial Grade) durante el arranque para evitar syscalls en
  * runtime.
- * GARANTÍAS: Idempotencia (valores cacheados al inicio), acceso zero-latency
- * post-boot.
- * PROHIBICIONES: Prohibido llamar a ManagementFactory dentro del loop de
- * ejecución (Heartbeat),
- * prohibido usar System.out fuera de la fase de diagnóstico inicial.
- * DOMINIO CRÍTICO: Ejecución / Infraestructura
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
  */
 public final class VolcanHardwareProbe {
 
