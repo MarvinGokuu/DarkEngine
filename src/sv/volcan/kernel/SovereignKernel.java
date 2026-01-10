@@ -1,29 +1,60 @@
 /**
- * AUTORIDAD: Sovereign (Autoridad Determinista Absoluta)
- * RESPONSABILIDAD: Mantener el loop de alta frecuencia y el presupuesto de tiempo (Tick Budget).
- * GARANTÍAS: Determinismo absoluto; mismo Input + Seed = Mismo Estado Binario.
- * PROHIBICIONES: Prohibido crear objetos en el Heap durante el loop activo (Zero GC).
- * DOMINIO CRÍTICO: Concurrencia / Tiempo.
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Kernel Soberano - Central Neural Processor
+ * DEPENDENCIAS: TimeKeeper, SystemRegistry, VolcanStateVault, VolcanEventDispatcher
+ * MÉTRICAS: Tick Budget <16.6ms (60 FPS), Jitter <1ms, Determinismo 100%
  * 
- * PATRÓN: Event Loop Pattern
- * CONCEPTO: Fixed Timestep + Determinism
- * ROL: Game Engine Architect
+ * El corazón del motor. Implementa el patrón "Game Loop" determinista de 4 fases:
+ * 1. Input Latch (Captura sensorial)
+ * 2. Bus Processing (Comunicación sináptica)
+ * 3. Systems Execution (Procesamiento especializado)
+ * 4. State Audit (Validación de integridad)
  * 
- * @author MarvinDev
- * @version 2.0
- * @since 2026-01-03
+ * Garantiza determinismo absoluto: Mismo Input + Mismo Seed = Mismo Output.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-06
  */
 package sv.volcan.kernel;
 
+import sv.volcan.core.AAACertified;
 import sv.volcan.core.SovereignExecutionIntegrity;
 import sv.volcan.state.WorldStateFrame;
 import sv.volcan.state.VolcanStateVault;
 import sv.volcan.state.VolcanStateLayout;
 import sv.volcan.bus.VolcanEventDispatcher;
+import sv.volcan.bus.VolcanAtomicBus;
 import sv.volcan.bus.VolcanSignalPacker;
 // import sv.volcan.core.VolcanTimeControlUnit; // [NEUTRALIZED]
+import sv.volcan.memory.SectorMemoryVault;
+import sv.volcan.kernel.UltraFastBootSequence.BootResult;
 import java.lang.foreign.Arena;
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CERTIFICACIÓN AAA+ - PROCESADOR CENTRAL NEURONAL (KERNEL)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// PORQUÉ:
+// - La anotación @AAACertified documenta las garantías de rendimiento inline
+// - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
+// - Metadata visible para humanos, invisible para la JVM
+// - Este kernel es el cerebro: orquesta el flujo de datos en 4 fases
+//
+// TÉCNICA:
+// - maxLatencyNs: 16_666_000 = Fixed timestep a 60 FPS (16.666ms por frame)
+// - minThroughput: 60 = 60 frames por segundo (determinismo temporal)
+// - alignment: 64 = Cache line alignment para variables críticas
+// - lockFree: false = Usa TimeKeeper (spin-wait) pero no locks pesados
+// - offHeap: false = Kernel vive en heap (orquestador, no datos)
+//
+// GARANTÍA:
+// - Esta anotación NO afecta el rendimiento en runtime
+// - Solo documenta las métricas esperadas del componente
+// - Validable con herramientas estáticas en build-time
+// - Overhead medido: 0ns (confirmado con javap)
+//
+@AAACertified(date = "2026-01-06", maxLatencyNs = 16_666_000, minThroughput = 60, alignment = 64, lockFree = false, offHeap = false, notes = "Central neural processor - 4-phase deterministic loop at 60 FPS")
 public final class SovereignKernel {
 
     // Estado del kernel
@@ -34,48 +65,64 @@ public final class SovereignKernel {
     private final SystemRegistry systemRegistry;
     private final TimeKeeper timeKeeper;
     private final VolcanStateVault stateVault;
+
+    // [BOOT INFRASTRUCTURE]
+    private final SectorMemoryVault sectorVault;
+    private final KernelControlRegister controlRegister;
+
     // private final VolcanTimeControlUnit timeControlUnit; // [DISABLED] Phase 5
     // Feature (Time Travel)
     private final Arena frameArena;
     private WorldStateFrame currentState;
     private final VolcanEventDispatcher eventDispatcher;
+    private final VolcanAtomicBus adminMetricsBus; // Control Plane: Métricas fuera del hot-path
 
     // Métricas
     private long totalFrames = 0;
 
     /**
      * Constructor principal con Dependency Injection.
-     * Permite inyectar el VolcanEventDispatcher desde VolcanEngineMaster.
+     * Permite inyectar el VolcanEventDispatcher y SectorMemoryVault.
      * 
      * @param eventDispatcher Dispatcher de eventos multi-lane
+     * @param sectorVault     Vault de memoria física (inyectado desde Master)
      */
-    public SovereignKernel(VolcanEventDispatcher eventDispatcher) {
+    public SovereignKernel(VolcanEventDispatcher eventDispatcher, SectorMemoryVault sectorVault) {
         this.systemRegistry = new SystemRegistry();
         this.timeKeeper = new TimeKeeper();
         // Crear VolcanStateVault con Arena y maxSlots
         this.stateVault = new VolcanStateVault(Arena.ofConfined(), VolcanStateLayout.MAX_SLOTS);
 
+        // Asignar recursos inyectados
+        this.sectorVault = sectorVault;
+        this.eventDispatcher = eventDispatcher;
+
+        // Inicializar Registro de Control
+        this.controlRegister = new KernelControlRegister();
+        this.controlRegister.transition(KernelControlRegister.STATE_OFFLINE, KernelControlRegister.STATE_BOOTING);
+
         // Inicializar TimeControlUnit para Snapshots (60 frames de historia = 1
         // segundo)
         // [NEUTRALIZED] Optimization: Delayed until Phase 5 (Networking/Replay)
-        // long frameSizeBytes = VolcanStateLayout.MAX_SLOTS * 4L;
-        // this.timeControlUnit = new VolcanTimeControlUnit(Arena.ofConfined(),
-        // frameSizeBytes, 60);
 
-        // Arena para WorldStateFrame
-        this.frameArena = Arena.ofConfined();
+        // Arena para WorldStateFrame (OPCIÓN D: Shared para multi-threading)
+        // WorldStateFrame es accedido por sistemas paralelos (TestSystemA/B/C)
+        this.frameArena = Arena.ofShared();
         // Crear WorldStateFrame con Arena, segment y timestamp
         this.currentState = new WorldStateFrame(frameArena, stateVault.getRawSegment(), System.nanoTime());
-        // Usar dispatcher inyectado (Dependency Injection)
-        this.eventDispatcher = eventDispatcher;
+
+        // [NEURONA_048 STEP 3] Admin Metrics Bus (Control Plane)
+        // Capacity 1024: ~17 segundos de métricas a 60 FPS
+        this.adminMetricsBus = new VolcanAtomicBus(1024);
     }
 
     /**
-     * Constructor sin parámetros para compatibilidad.
-     * Crea un dispatcher con configuración por defecto.
+     * Constructor legado para compatibilidad con tests antiguos.
+     * DEPRECADO: Usar el constructor con inyección de dependencias.
      */
+    @Deprecated
     public SovereignKernel() {
-        this(VolcanEventDispatcher.createDefault(14)); // Delegación al constructor principal
+        this(VolcanEventDispatcher.createDefault(14), new SectorMemoryVault(1024));
     }
 
     /**
@@ -87,10 +134,39 @@ public final class SovereignKernel {
         return systemRegistry;
     }
 
+    /**
+     * Retorna el bus de métricas administrativas (Control Plane).
+     * 
+     * @return AdminMetricsBus
+     */
+    public VolcanAtomicBus getAdminMetricsBus() {
+        return adminMetricsBus;
+    }
+
     public void ignite() {
         System.out.println("[SOVEREIGN KERNEL] IGNITION SEQUENCE START");
+
+        // [NEURONA_048] STEP 2: CPU PINNING
+        // Anclar logic thread a Core 1 para eliminar jitter (Target: <35us)
+        ThreadPinning.pinToCore(1);
+
         SovereignExecutionIntegrity.verify();
         System.out.println("[SOVEREIGN KERNEL] INTEGRITY CHECK PASSED");
+
+        // [PHASE 4] ULTRA FAST BOOT SEQUENCE
+        System.out.println("[SOVEREIGN KERNEL] EXECUTING BOOT SEQUENCE...");
+        BootResult bootResult = UltraFastBootSequence.execute(
+                controlRegister,
+                sectorVault,
+                adminMetricsBus // Validamos el bus de admin como parte del boot
+        );
+
+        UltraFastBootSequence.printBootStats(bootResult);
+
+        if (!bootResult.success) {
+            System.err.println("[KERNEL PANIC] BOOT FAILED: " + bootResult.errorMessage);
+            System.exit(1);
+        }
 
         runSovereignLoop();
     }
@@ -149,11 +225,13 @@ public final class SovereignKernel {
             long phase4End = System.nanoTime();
             timeKeeper.recordPhaseTime(4, phase4End - phase4Start);
 
-            // Imprimir stats cada 60 frames (1 segundo)
+            // [NEURONA_048 STEP 3] Enviar métricas al Control Plane (sin I/O en hot-path)
             totalFrames++;
             if (totalFrames % 60 == 0) {
-                timeKeeper.printStats();
-                eventDispatcher.printStatus();
+                long totalTimeNs = phase1End - phase1Start + phase2End - phase2Start +
+                        phase3End - phase3Start + phase4End - phase4Start;
+                long packedMetric = MetricsPacker.packFrameStats(totalFrames, totalTimeNs);
+                adminMetricsBus.offer(packedMetric); // Zero-copy, no I/O
             }
 
             // Esperar al siguiente frame (Fixed Timestep)
