@@ -37,3 +37,16 @@ temp/
 
 
 //actualizado3/1/26
+# --- DOCUMENTACIÓN INTERNA (BRAIN/) ---
+brain/
+# --- ARCHIVOS DE TRABAJO ---
+docs/ACTUALIZACIONES_PENDIENTES.md
+docs/DOCUMENTACION_PENDIENTE.md
+docs/GIT_PRIMER_COMMIT.md
+docs/PRIMER_COMMIT.txt
+docs/ANALISIS_RENDIMIENTO_DESPACHADOR.md
+DOCUMENTATION_BOOTSTRAP.md
+commits_incrementales.bat
+commits_incrementales.sh
+update.bat
+sync_report_*.txt
