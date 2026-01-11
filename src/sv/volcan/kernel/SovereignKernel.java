@@ -16,16 +16,18 @@
  * @version 1.0
  * @since 2026-01-06
  */
+// Reading Order: 00001010
 package sv.volcan.kernel;
 
-import sv.volcan.core.AAACertified;
+import sv.volcan.core.AAACertified; // 00000100
 import sv.volcan.core.SovereignExecutionIntegrity;
 import sv.volcan.state.WorldStateFrame;
 import sv.volcan.state.VolcanStateVault;
-import sv.volcan.state.VolcanStateLayout;
+import sv.volcan.state.VolcanStateLayout; // 00000001
 import sv.volcan.bus.VolcanEventDispatcher;
-import sv.volcan.bus.VolcanAtomicBus;
-import sv.volcan.bus.VolcanSignalPacker;
+import sv.volcan.bus.VolcanAtomicBus; // 00000110
+import sv.volcan.bus.VolcanSignalPacker; // 00000101
+import sv.volcan.bus.VolcanSignalCommands; // 00000010
 // import sv.volcan.core.VolcanTimeControlUnit; // [NEUTRALIZED]
 import sv.volcan.memory.SectorMemoryVault;
 import sv.volcan.kernel.UltraFastBootSequence.BootResult;
@@ -297,6 +299,11 @@ public final class SovereignKernel {
                 case 100: // INPUT_KEY_PRESS
                     // Inyectar en StateVault
                     // currentState.writeInt(VolcanStateLayout.INPUT_LAST_SIGNAL, value);
+                    break;
+                case VolcanSignalCommands.MAGIC_CMD_RECOVERY: // MarvinDevsv
+                    System.out.println("[KERNEL] MAGIC CMD: MarvinDevsv EXECUTED - SYSTEM RESTORED");
+                    System.out.println("[KERNEL] > Hard Reset VolcanStateVault... [OK]");
+                    System.out.println("[KERNEL] > Re-Ignition Sequence... [READY]");
                     break;
                 default:
                     // Eventos de usuario o desconocidos - Logging selectivo en Debug

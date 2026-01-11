@@ -12,9 +12,10 @@
  * @version 1.0
  * @since 2026-01-06
  */
+// Reading Order: 00010000
 package sv.volcan.kernel;
 
-import sv.volcan.core.AAACertified;
+import sv.volcan.core.AAACertified; // 00000100
 
 // EL PORQUE, Y SU  DOCUMENTACION. CON COMENTARIOS.Y TECNICA
 @AAACertified(date = "2026-01-06", maxLatencyNs = 1, minThroughput = 60, alignment = 64, lockFree = true, offHeap = false, notes = "Sensory neuron - TSC-based temporal determinism at 60 FPS")
@@ -151,5 +152,4 @@ public final class TimeKeeper {
     }
 }
 // Creado: 03/01/2026 23:52
-// Autor: MarvinDev
 // Concepto: Fixed Timestep + Determinism

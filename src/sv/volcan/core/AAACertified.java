@@ -21,6 +21,7 @@
  * @version 1.0
  * @since 2026-01-06
  */
+// Reading Order: 00000100
 package sv.volcan.core;
 
 import java.lang.annotation.*;

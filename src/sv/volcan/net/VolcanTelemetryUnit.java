@@ -6,7 +6,7 @@ import sv.volcan.state.VolcanStateLayout;
 import sv.volcan.core.systems.VolcanTheme;
 
 /**
- * AUTORIDAD: Volcan
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Visualización y monitoreo reactivo de signos vitales del
  * Kernel.
  * GARANTÍAS: Zero-Allocation en estado estable, sincronización total con el
@@ -14,6 +14,8 @@ import sv.volcan.core.systems.VolcanTheme;
  * PROHIBICIONES: Prohibido usar cálculos de tiempo real (System.ms) para
  * efectos visuales.
  * DOMINIO CRÍTICO: Telemetría / UX Industrial
+ *
+ * @author Marvin-Dev
  */
 public final class VolcanTelemetryUnit {
 

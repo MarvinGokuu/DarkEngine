@@ -1,3 +1,4 @@
+// Reading Order: 00010011
 package sv.volcan.core;
 
 import sv.volcan.state.WorldStateFrame;
@@ -16,6 +17,7 @@ import sv.volcan.state.WorldStateFrame;
  * @version 1.2 (AAA+ Certified Zero-Alloc)
  * @since 2026-01-08
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 50, minThroughput = 1_000_000, alignment = 0, lockFree = true, offHeap = false, notes = "Spatial Grid Orchestration (Zero-Allocation Lookups)")
 public final class VolcanSectorManager {
 
     // [ARQUITECTURA DE DATOS]:

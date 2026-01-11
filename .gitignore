@@ -50,6 +50,17 @@ commits_incrementales.bat
 commits_incrementales.sh
 update.bat
 sync_report_*.txt
-# --- SECRET PROTOCOL (NO COMMIT) ---
-src/
+
+# --- AAA+ HYGIENE & SECRETS ---
+# Noise / Artifacts
+cd
+move
+
+# Sovereign Secrets (Do Not Commit)
+src/sv/jarvis/
+src/sv/volcan/security/
+
+# Agent Brain (Explicit Ignore)
 brain/
+DOCUMENTATION_BOOTSTRAP.md
+

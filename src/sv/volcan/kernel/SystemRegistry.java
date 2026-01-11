@@ -1,5 +1,7 @@
+// Reading Order: 00001011
 package sv.volcan.kernel;
 
+import sv.volcan.core.AAACertified; // 00000100 // AAA+ Check
 import sv.volcan.core.systems.SovereignSystem;
 import sv.volcan.core.systems.VolcanRenderSystem;
 import sv.volcan.state.WorldStateFrame;
@@ -20,6 +22,13 @@ import java.util.List;
  * @version 1.0
  * @since 2026-01-05
  */
+// ═══════════════════════════════════════════════════════════════════════════════
+// CERTIFICACIÓN AAA+ - SYSTEM REGISTRY
+// ═══════════════════════════════════════════════════════════════════════════════
+// PORQUÉ: Orquesta la ejecución determinista de la lógica del juego.
+// TÉCNICA: Iteración directa sobre listas pre-asignadas (ArrayList).
+// GARANTÍA: Orden de ejecución garantizado e inmutable durante el frame.
+@AAACertified(date = "2026-01-10", maxLatencyNs = 1000, minThroughput = 60, alignment = 0, lockFree = false, offHeap = false, notes = "Deterministic execution orchestrator (Sequential/Parallel)")
 public final class SystemRegistry {
 
     // Sistemas de lógica de juego (ejecutan en el loop principal)

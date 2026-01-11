@@ -1,3 +1,4 @@
+// Reading Order: 00000010
 package sv.volcan.bus;
 
 /**
@@ -25,8 +26,30 @@ public final class VolcanSignalCommands {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // MAGIC COMMANDS (HUMAN INTERFACE) - LEYES SOBERANAS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** ENCENDIDO (MarvinDevOn) */
+    public static final int MAGIC_CMD_ON = 0x9001;
+
+    /** APAGADO (MarvinDevoff) */
+    public static final int MAGIC_CMD_OFF = 0x9002;
+
+    /** INSTALADOR (MarvinDevinstaller) */
+    public static final int MAGIC_CMD_INSTALLER = 0x9003;
+
+    /** RECUPERACIÓN (MarvinDevsv) */
+    public static final int MAGIC_CMD_RECOVERY = 0x9004;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // INPUT COMMANDS (0x1000 - 0x1FFF)
     // ═══════════════════════════════════════════════════════════════════════
+
+    /** Tecla Maestra ENCENDIDO (1) */
+    public static final int INPUT_KEY_MASTER_ON = 0x31; // ASCII '1'
+
+    /** Tecla Maestra APAGADO (0) */
+    public static final int INPUT_KEY_MASTER_OFF = 0x30; // ASCII '0'
 
     /** Tecla presionada (payload: keyCode) */
     public static final int INPUT_KEY_DOWN = 0x1001;
@@ -278,6 +301,16 @@ public final class VolcanSignalCommands {
                 return "MEMORY_PREFETCH_ENABLE";
             case MEMORY_PREFETCH_DISABLE:
                 return "MEMORY_PREFETCH_DISABLE";
+
+            // Magic Commands
+            case MAGIC_CMD_ON:
+                return "MarvinDevOn";
+            case MAGIC_CMD_OFF:
+                return "MarvinDevoff";
+            case MAGIC_CMD_INSTALLER:
+                return "MarvinDevinstaller";
+            case MAGIC_CMD_RECOVERY:
+                return "MarvinDevsv";
 
             default:
                 return "UNKNOWN_COMMAND";

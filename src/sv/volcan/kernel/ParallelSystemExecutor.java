@@ -22,6 +22,7 @@
  * @version 1.0
  * @since 2026-01-08
  */
+// Reading Order: 00001110
 package sv.volcan.kernel;
 
 import sv.volcan.core.systems.SovereignSystem;

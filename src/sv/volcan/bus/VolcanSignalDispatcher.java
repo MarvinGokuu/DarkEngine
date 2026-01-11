@@ -1,3 +1,4 @@
+// Reading Order: 00001000
 package sv.volcan.bus;
 
 /**
@@ -13,6 +14,7 @@ package sv.volcan.bus;
  * @version 1.0
  * @since 2026-01-05
  */
+@sv.volcan.core.AAACertified(date = "2026-01-05", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 0, lockFree = true, offHeap = false, notes = "High-performance facade for atomic bus access")
 public final class VolcanSignalDispatcher {
 
     // Fachada exclusiva para el Bus Atómico de alto rendimiento

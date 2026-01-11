@@ -1,8 +1,10 @@
+// Reading Order: 00010110
 package sv.volcan.net;
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
+import sv.volcan.core.AAACertified; // 00000100
 import sv.volcan.admin.SovereignAdmin;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,12 +23,12 @@ import java.net.InetSocketAddress;
  * ESTÁNDAR AAA+:
  * - Zero-Allocation (usa bytes pre-cocinados)
  * - Responsabilidad Pura (Solo Transporte)
- * - Desacoplado (No importa SovereignKernel)
  * 
  * @author Marvin-Dev
  * @version 2.0 (Refactored for AAA+ Compliance)
  * @since 2026-01-08
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 100_000, minThroughput = 1000, alignment = 0, lockFree = true, offHeap = false, notes = "Blind HTTP Gateway (Zero-Allocation)")
 public final class VolcanMetricsServer {
 
     private final HttpServer server;

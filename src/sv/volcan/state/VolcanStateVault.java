@@ -1,3 +1,4 @@
+// Reading Order: 00000011
 package sv.volcan.state;
 
 import java.lang.foreign.Arena;
@@ -66,4 +67,3 @@ public final class VolcanStateVault {
         return this.storage;
     }
 }
-// actualizado3/1/26

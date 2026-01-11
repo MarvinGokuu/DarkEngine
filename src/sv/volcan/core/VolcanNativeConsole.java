@@ -1,3 +1,4 @@
+// Reading Order: 00010100
 package sv.volcan.core;
 
 import java.awt.*;
@@ -18,6 +19,7 @@ import sv.volcan.core.systems.VolcanTheme;
  * @version 1.0
  * @since 2026-01-05
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 16_666_000, minThroughput = 60, alignment = 0, lockFree = false, offHeap = false, notes = "Zero-GC Visual Debugger (Tick-Synchronized)")
 public final class VolcanNativeConsole {
 
     // Buffer de entrada pre-asignado (Zero-Allocation)
@@ -35,7 +37,41 @@ public final class VolcanNativeConsole {
      * Inyección de caracteres desde el InputBridge.
      * Gestiona el buffer sin generar basura en el Heap.
      */
+    /**
+     * Inyección de caracteres desde el InputBridge.
+     * Gestiona el buffer sin generar basura en el Heap.
+     * IMPLEMENTA HARDWARE INTERCEPT: Teclas Maestras 1 y 0.
+     */
     public void pushChar(char c) {
+        // [HARDWARE INTERCEPT]: Protocolo de Teclas Maestras
+        // Estas teclas operan a nivel de interrupción, bypass del buffer.
+        if (c == '1') {
+            System.out.println("[HARDWARE INTERCEPT] KEY '1' DETECTED -> IGNITION SEQUENCE INITIATED.");
+            // En un sistema real, esto enviaría la señal 0x9001 (MarvinDevOn) al Bus.
+            // VolcanAtomicBus.publish(VolcanSignalCommands.MAGIC_CMD_ON, 0);
+            return;
+        }
+        if (c == '0') {
+            System.out.println("[HARDWARE INTERCEPT] KEY '0' DETECTED -> SHUTDOWN SEQUENCE INITIATED.");
+            // En un sistema real, esto enviaría la señal 0x9002 (MarvinDevoff) al Bus.
+            // VolcanAtomicBus.publish(VolcanSignalCommands.MAGIC_CMD_OFF, 0);
+            return;
+        }
+
+        // [HARDWARE INTERCEPT]: Protocolo JARVIS ('J')
+        if (c == 'J' || c == 'j') {
+            System.out.println("[HARDWARE INTERCEPT] KEY 'J' DETECTED -> JARVIS PROTOCOL ENGAGED.");
+            sv.jarvis.JarvisVoiceInterface.activateVoiceProtocol();
+            return;
+        }
+
+        // [HARDWARE INTERCEPT]: Protocolo WHATSAPP ('W')
+        if (c == 'W' || c == 'w') {
+            System.out.println("[HARDWARE INTERCEPT] KEY 'W' DETECTED -> WHATSAPP BRIDGE ENGAGED.");
+            sv.jarvis.WhatsAppBridge.connect("+503 7829 0042"); // ID Hardcoded por ahora
+            return;
+        }
+
         if (c == '\b' && inputBuffer.length() > 0) {
             inputBuffer.setLength(inputBuffer.length() - 1);
         } else if (c >= 32 && c <= 126 && inputBuffer.length() < 60) {

@@ -1,6 +1,8 @@
+// Reading Order: 00010111
 package sv.volcan.net;
 
 import java.io.*;
+import sv.volcan.core.AAACertified; // 00000100
 import java.net.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -8,7 +10,7 @@ import sv.volcan.state.VolcanStateVault;
 import sv.volcan.bus.VolcanAtomicBus;
 
 /**
- * AUTORIDAD: Volcan (Fase 4.1)
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Receptor de telemetría binaria distribuida y señales
  * remotas.
  * GARANTÍAS: Despacho asíncrono, Zero-String Parsing, latencia de red
@@ -16,8 +18,11 @@ import sv.volcan.bus.VolcanAtomicBus;
  * PROHIBICIONES: Prohibido usar HTTP/JSON; prohibido instanciar objetos por
  * cada paquete recibido.
  * DOMINIO CRÍTICO: Networking / Sincronización Externa
+ *
+ * @author Marvin-Dev
  */
 @SuppressWarnings("unused")
+@AAACertified(date = "2026-01-10", maxLatencyNs = 1_000_000, minThroughput = 100, alignment = 0, lockFree = false, offHeap = false, notes = "Binary Telemetry Receiver (Async Dispatch)")
 public final class VolcanNetworkRelay {
 
     private final int port = 9999;

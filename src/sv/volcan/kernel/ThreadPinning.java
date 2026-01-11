@@ -1,3 +1,4 @@
+// Reading Order: 00001111
 package sv.volcan.kernel;
 
 import java.lang.foreign.FunctionDescriptor;
@@ -8,10 +9,12 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 
 /**
- * AUTORIDAD: Sovereign Kernel
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Anclaje de Threads a Cores Físicos
  * TÉCNICA: JEP 454 (Foreign Function & Memory API)
  * GARANTÍA: Zero-Jitter en Logic Thread
+ *
+ * @author Marvin-Dev
  */
 public class ThreadPinning {
 

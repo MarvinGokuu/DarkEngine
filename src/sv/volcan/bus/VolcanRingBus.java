@@ -1,8 +1,9 @@
+// Reading Order: 00000111
 package sv.volcan.bus;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import sv.volcan.core.AAACertified;
+import sv.volcan.core.AAACertified; // 00000100
 
 /**
  * AUTORIDAD: Marvin-Dev

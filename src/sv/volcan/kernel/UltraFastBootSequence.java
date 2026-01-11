@@ -1,6 +1,7 @@
+// Reading Order: 00001100
 package sv.volcan.kernel;
 
-import sv.volcan.core.AAACertified;
+import sv.volcan.core.AAACertified; // 00000100
 import sv.volcan.memory.SectorMemoryVault;
 import sv.volcan.validation.BusSymmetryValidator;
 import sv.volcan.bus.VolcanAtomicBus;

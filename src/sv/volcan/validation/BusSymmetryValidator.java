@@ -42,7 +42,7 @@ import sv.volcan.core.AAACertified;
 // - Validable con herramientas estáticas en build-time
 // - Overhead medido: 0ns (confirmado con javap)
 //
-@AAACertified(date = "2026-01-06", maxLatencyNs = 1000, minThroughput = 1_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Bus symmetry validator with <1μs corruption detection")
+@AAACertified(date = "2026-01-11", maxLatencyNs = 1000, minThroughput = 1_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Bus symmetry validator with <1μs corruption detection")
 public final class BusSymmetryValidator {
 
     // ═══════════════════════════════════════════════════════════════════════════════

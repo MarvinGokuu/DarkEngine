@@ -1,10 +1,11 @@
 package sv.volcan.net;
 
 import sv.volcan.state.VolcanStateVault;
+import sv.volcan.core.AAACertified;
 import sv.volcan.state.VolcanStateLayout;
 
 /**
- * AUTORIDAD: Volcan
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Extracción de métricas de memoria física del
  * SectorMemoryVault / StateVault.
  * GARANTÍAS: Zero-allocation, lectura no bloqueante (Atomic read), aislamiento
@@ -12,7 +13,10 @@ import sv.volcan.state.VolcanStateLayout;
  * PROHIBICIONES: Prohibido usar java.awt, prohibido formatear Strings,
  * prohibido renderizar.
  * DOMINIO CRÍTICO: Telemetry
+ *
+ * @author Marvin-Dev
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 100, minThroughput = 100_000, alignment = 0, lockFree = true, offHeap = false, notes = "Memory Metrics Extractor (Zero-Allocation)")
 public final class SovereignTelemetryMemoryMonitor {
 
     // [INGENIERÍA DURA]: Almacenamiento en registros primitivos para evitar el

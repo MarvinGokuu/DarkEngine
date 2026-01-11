@@ -17,9 +17,10 @@
  * @version 1.0
  * @since 2026-01-08
  */
+// Reading Order: 00010001
 package sv.volcan.kernel;
 
-import sv.volcan.core.AAACertified;
+import sv.volcan.core.AAACertified; // 00000100
 
 @AAACertified(date = "2026-01-08", maxLatencyNs = 5, minThroughput = 1_000_000, alignment = 8, lockFree = true, offHeap = false, notes = "Metrics packing - 0 allocations, pure bit manipulation")
 public final class MetricsPacker {

@@ -1,3 +1,4 @@
+// Reading Order: 00010101
 package sv.volcan.core;
 
 import com.sun.management.OperatingSystemMXBean;
@@ -18,6 +19,7 @@ import sv.volcan.state.VolcanStateVault;
  * @version 1.0
  * @since 2026-01-05
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 100_000, minThroughput = 60, alignment = 0, lockFree = true, offHeap = false, notes = "System Metrics Sampler (Scaled Integers)")
 public final class VolcanSystemProbe {
 
     private static final OperatingSystemMXBean OS_BEAN = (OperatingSystemMXBean) ManagementFactory

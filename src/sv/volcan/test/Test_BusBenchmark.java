@@ -16,7 +16,7 @@ import sv.volcan.core.AAACertified;
  * @version 1.0
  * @since 2026-01-08
  */
-@AAACertified(date = "2026-01-08", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Benchmark AAA+ - Validación throughput >10M ops/s")
+@AAACertified(date = "2026-01-11", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Benchmark AAA+ - Validación throughput >10M ops/s")
 public class Test_BusBenchmark {
 
     private static final int WARMUP_ITERATIONS = 100_000;

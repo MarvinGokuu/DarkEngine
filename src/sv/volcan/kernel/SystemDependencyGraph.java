@@ -18,12 +18,12 @@
  * @version 1.0
  * @since 2026-01-08
  */
+// Reading Order: 00001101
 package sv.volcan.kernel;
 
 import sv.volcan.core.systems.SovereignSystem;
-import sv.volcan.core.AAACertified;
-
 import java.util.*;
+import sv.volcan.core.AAACertified;
 
 @AAACertified(date = "2026-01-08", maxLatencyNs = 1000, minThroughput = 1000, alignment = 64, lockFree = true, offHeap = false, notes = "Dependency graph builder - Topological sort for parallel execution")
 public final class SystemDependencyGraph {

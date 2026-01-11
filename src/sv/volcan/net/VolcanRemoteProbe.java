@@ -1,6 +1,7 @@
 package sv.volcan.net;
 
 import com.sun.management.OperatingSystemMXBean;
+import sv.volcan.core.AAACertified;
 import java.io.DataOutputStream;
 import java.lang.management.ManagementFactory;
 import java.net.Socket;
@@ -8,14 +9,17 @@ import sv.volcan.bus.VolcanSignalPacker;
 import sv.volcan.state.VolcanStateLayout;
 
 /**
- * AUTORIDAD: Volcan (Fase 4.1)
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Agente de telemetría remota de ultra-baja latencia.
  * GARANTÍAS: Conexión persistente, empaquetado binario de 64 bits,
  * Zero-Allocation.
  * PROHIBICIONES: Prohibido usar JSON/XML para transporte; prohibido crear
  * Strings en el loop de envío.
  * DOMINIO CRÍTICO: Telemetría Distribuidora
+ *
+ * @author Marvin-Dev
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 500_000, minThroughput = 1, alignment = 0, lockFree = false, offHeap = false, notes = "Remote Telemetry Agent (Binary Protocol)")
 public final class VolcanRemoteProbe {
 
     private static final OperatingSystemMXBean OS_BEAN = (OperatingSystemMXBean) ManagementFactory

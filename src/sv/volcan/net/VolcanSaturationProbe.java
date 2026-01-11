@@ -1,6 +1,7 @@
 package sv.volcan.net;
 
 import java.io.DataOutputStream;
+import sv.volcan.core.AAACertified;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -8,13 +9,16 @@ import sv.volcan.bus.VolcanSignalPacker;
 import sv.volcan.state.VolcanStateLayout;
 
 /**
- * AUTORIDAD: Volcan (Fase 4.2)
+ * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Validación de estrés y saturación del Atomic Bus del Kernel.
  * DISEÑO: Bombardeo binario persistente sin asignación de memoria (Zero-GC).
  * GARANTÍAS: Alta frecuencia, concurrencia masiva, validación de integridad de
  * señal.
  * DOMINIO CRÍTICO: Telemetría / QA
+ *
+ * @author Marvin-Dev
  */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 100_000, minThroughput = 1000, alignment = 0, lockFree = false, offHeap = false, notes = "Stress Test Generator (Binary Flood)")
 public final class VolcanSaturationProbe {
 
     public static void main(String[] args) {
