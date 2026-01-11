@@ -153,7 +153,15 @@ public final class SovereignKernel {
         SovereignExecutionIntegrity.verify();
         System.out.println("[SOVEREIGN KERNEL] INTEGRITY CHECK PASSED");
 
-        // [PHASE 4] ULTRA FAST BOOT SEQUENCE
+        // ═══════════════════════════════════════════════════════════════
+        // AAA++ JIT WARM-UP (Integración Estructural)
+        // ═══════════════════════════════════════════════════════════════
+        System.out.println("[SOVEREIGN KERNEL] EXECUTING JIT WARM-UP...");
+        UltraFastBootSequence.warmUpWithStructuralIntegrity();
+
+        // ═══════════════════════════════════════════════════════════════
+        // ULTRA FAST BOOT SEQUENCE
+        // ═══════════════════════════════════════════════════════════════
         System.out.println("[SOVEREIGN KERNEL] EXECUTING BOOT SEQUENCE...");
         BootResult bootResult = UltraFastBootSequence.execute(
                 controlRegister,
