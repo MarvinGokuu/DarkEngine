@@ -60,7 +60,15 @@ move
 src/sv/jarvis/
 src/sv/volcan/security/
 
+# Secret Configuration Files
+*.secrets.properties
+volcan.secrets.properties
+.env.local
+.env.production
+credentials.*
+secrets.*
+
 # Agent Brain (Explicit Ignore)
-brain/
-DOCUMENTATION_BOOTSTRAP.md
+# brain/
+# DOCUMENTATION_BOOTSTRAP.md
 
