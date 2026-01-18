@@ -58,17 +58,16 @@ public final class VolcanNativeConsole {
             return;
         }
 
-        // [HARDWARE INTERCEPT]: Protocolo JARVIS ('J')
+        // [RESERVED]: x (Future Use)
         if (c == 'J' || c == 'j') {
-            System.out.println("[HARDWARE INTERCEPT] KEY 'J' DETECTED -> JARVIS PROTOCOL ENGAGED.");
-            sv.jarvis.JarvisVoiceInterface.activateVoiceProtocol();
+            System.out.println("x 'J' DETECTED -> No action assigned.");
             return;
         }
 
-        // [HARDWARE INTERCEPT]: Protocolo WHATSAPP ('W')
+        // [HARDWARE]: Protocolo ('W')
         if (c == 'W' || c == 'w') {
-            System.out.println("[HARDWARE INTERCEPT] KEY 'W' DETECTED -> WHATSAPP BRIDGE ENGAGED.");
-            sv.jarvis.WhatsAppBridge.connect("+503 7829 0042"); // ID Hardcoded por ahora
+            System.out.println("'W' DETECTED -> ");
+            // Legacy w bridge functionality removed for security
             return;
         }
 

@@ -88,40 +88,46 @@ public final class SovereignAdmin {
         StringBuilder jsonBuilder = new StringBuilder(2048);
 
         while (true) {
-            long metric = adminBus.poll();
-            if (metric != 0) {
-                // 1. Desempaquetar datos del Hot-Path
-                long frameCount = sv.volcan.kernel.MetricsPacker.unpackFrameCount(metric);
-                long timeMicros = sv.volcan.kernel.MetricsPacker.unpackTimeMicros(metric);
-                long frameLatencyNs = timeMicros * 1000;
+            try {
+                long metric = adminBus.poll();
+                if (metric != 0) {
+                    // 1. Desempaquetar datos del Hot-Path
+                    long frameCount = sv.volcan.kernel.MetricsPacker.unpackFrameCount(metric);
+                    long timeMicros = sv.volcan.kernel.MetricsPacker.unpackTimeMicros(metric);
+                    long frameLatencyNs = timeMicros * 1000;
 
-                // 2. Obtener estado lento (Slow-Path safe here)
-                boolean isParallel = kernel.getSystemRegistry().isParallelMode();
-                int systemCount = kernel.getSystemRegistry().getGameSystemCount();
-                String executionMode = isParallel ? "Parallel" : "Sequential";
-                String executionOrder = isParallel ? "DAG" : "Linear";
+                    // 2. Obtener estado lento (Slow-Path safe here)
+                    boolean isParallel = kernel.getSystemRegistry().isParallelMode();
+                    int systemCount = kernel.getSystemRegistry().getGameSystemCount();
+                    String executionMode = isParallel ? "Parallel" : "Sequential";
+                    String executionOrder = isParallel ? "DAG" : "Linear";
 
-                // 3. Construir JSON (Builder Pattern - AAA+ Compliant)
-                jsonBuilder.setLength(0);
-                jsonBuilder.append("{")
-                        .append("\"frameLatency\":").append(frameLatencyNs).append(",")
-                        .append("\"cpuCore\":1,")
-                        .append("\"executionMode\":\"").append(executionMode).append("\",")
-                        .append("\"systems\":").append(systemCount).append(",")
-                        .append("\"executionOrder\":\"").append(executionOrder).append("\",")
-                        .append("\"parallelism\":\"").append(isParallel ? "ON (Automatic)" : "OFF").append("\",")
-                        .append("\"frameCount\":").append(frameCount)
-                        .append("}");
+                    // 3. Construir JSON (Builder Pattern - AAA+ Compliant)
+                    jsonBuilder.setLength(0);
+                    jsonBuilder.append("{")
+                            .append("\"frameLatency\":").append(frameLatencyNs).append(",")
+                            .append("\"cpuCore\":1,")
+                            .append("\"executionMode\":\"").append(executionMode).append("\",")
+                            .append("\"systems\":").append(systemCount).append(",")
+                            .append("\"executionOrder\":\"").append(executionOrder).append("\",")
+                            .append("\"parallelism\":\"").append(isParallel ? "ON (Automatic)" : "OFF").append("\",")
+                            .append("\"frameCount\":").append(frameCount)
+                            .append("}");
 
-                // 4. Publicar al Snapshot Atómico
-                updateSnapshot(jsonBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                    // 4. Publicar al Snapshot Atómico
+                    updateSnapshot(jsonBuilder.toString().getBytes(StandardCharsets.UTF_8));
 
-            } else {
-                try {
-                    Thread.sleep(16); // ~60 FPS check
-                } catch (InterruptedException e) {
-                    break;
+                } else {
+                    try {
+                        Thread.sleep(16); // ~60 FPS check
+                    } catch (InterruptedException e) {
+                        break;
+                    }
                 }
+            } catch (IllegalStateException e) {
+                // Bus cerrado durante shutdown - terminar silenciosamente
+                System.out.println("[ADMIN] Bus cerrado - AdminConsumer terminando");
+                break;
             }
         }
     }
