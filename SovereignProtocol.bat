@@ -9,14 +9,15 @@ echo [SISTEMA] Iniciando Forja del Nucleo con ZGC Ultra-Latency...
 if exist bin rd /s /q bin
 mkdir bin
 
-::  PASO 2: Compilacion Integral (Java 25 + FFM + ZGC)
+::  PASO 2: Compilacion Integral (Java 25 + FFM + ZGC + Vector SIMD)
 :: ZGC Flags (NEURONA_048 Paso 1):
 ::   -XX:+UseZGC          : GC pausas <1ms (target: 500μs)
 ::   -Xms4G -Xmx4G        : Heap fijo (evita resize pauses)
 ::   -XX:+AlwaysPreTouch  : Elimina lazy allocation overhead
 :: Ganancia esperada: -96.7% GC pause (15ms → 500μs)
 :: Project Panama: --enable-native-access solo en runtime (java), no en javac
-javac -d bin --enable-preview --source 25 -cp src ^
+:: Vector API: --add-modules jdk.incubator.vector para SIMD (VolcanDataAccelerator)
+javac -d bin --enable-preview --source 25 --add-modules jdk.incubator.vector -cp src ^
 -J-XX:+UseZGC ^
 -J-Xms4G -J-Xmx4G ^
 -J-XX:+AlwaysPreTouch ^
@@ -39,6 +40,6 @@ echo [OK] Compilacion exitosa. Nucleo estabilizado con ZGC.
 
 :: PASO 3: Ignicion del Nucleo (Runtime)
 echo [SISTEMA] Iniciando Ignición del Motor...
-java --enable-preview --enable-native-access=ALL-UNNAMED -cp bin sv.volcan.state.VolcanEngineMaster
+java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector -cp bin sv.volcan.state.VolcanEngineMaster
 
 pause

@@ -161,6 +161,10 @@ public final class VolcanEventLane {
         return type;
     }
 
+    public IEventBus getBus() {
+        return bus;
+    }
+
     public int size() {
         return bus.size();
     }

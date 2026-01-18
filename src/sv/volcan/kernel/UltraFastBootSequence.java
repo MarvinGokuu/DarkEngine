@@ -6,6 +6,7 @@ import sv.volcan.memory.SectorMemoryVault;
 import sv.volcan.validation.BusSymmetryValidator;
 import sv.volcan.bus.VolcanAtomicBus;
 import sv.volcan.bus.VolcanRingBus;
+// import sv.volcan.security.IntrinsicIntegrity;  // TEMPORAL: Comentado hasta implementar seguridad
 
 /**
  * AUTORIDAD: Marvin-Dev
@@ -243,8 +244,13 @@ public final class UltraFastBootSequence {
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // BOOT EXITOSO - CONFIANZA TOTAL (AAA++)
+            // BOOT EXITOSO - SELLAR MOTOR CON INTEGRIDAD (AAA++)
             // ═══════════════════════════════════════════════════════════════
+
+            // Sellar motor con firma de integridad
+            // sv.volcan.security.IntrinsicIntegrity.seal(); // TEMPORAL: Comentado hasta
+            // implementar seguridad
+            System.out.println("[BOOT] Security seal deferred (pre-security phase)");
 
             long elapsed = System.nanoTime() - startTime;
             return BootResult.success(elapsed);

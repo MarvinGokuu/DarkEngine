@@ -233,4 +233,56 @@ public final class VolcanEventDispatcher {
         }
         return total;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GRACEFUL SHUTDOWN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Cierre seguro del dispatcher con liberación de todos los lanes.
+     * 
+     * PROPÓSITO:
+     * - Cerrar todos los buses de prioridad
+     * - Validar que todos los eventos fueron procesados
+     * - Liberar referencias a los buses
+     * 
+     * POSTCONDICIONES:
+     * - Todos los lanes cerrados
+     * - No hay eventos pendientes
+     */
+    public void shutdown() {
+        System.out.println("[EVENT DISPATCHER] Iniciando shutdown de todos los lanes...");
+
+        // Validar que no hay eventos pendientes
+        int pendingEvents = getTotalPendingEvents();
+        if (pendingEvents > 0) {
+            System.err.printf("[EVENT DISPATCHER] WARNING: %d eventos pendientes al cerrar%n", pendingEvents);
+        }
+
+        // Cerrar todos los lanes en orden inverso de prioridad
+        String[] reverseOrder = { "Render", "Audio", "Physics", "Input", "Network", "System" };
+
+        for (String laneName : reverseOrder) {
+            VolcanEventLane lane = lanes.get(laneName);
+            if (lane != null) {
+                System.out.printf("[EVENT DISPATCHER] Cerrando lane: %s%n", laneName);
+
+                // Cerrar el bus subyacente si tiene sovereignShutdown()
+                IEventBus bus = lane.getBus();
+                if (bus instanceof VolcanAtomicBus) {
+                    ((VolcanAtomicBus) bus).sovereignShutdown();
+                } else if (bus instanceof VolcanRingBus) {
+                    ((VolcanRingBus) bus).sovereignShutdown();
+                } else {
+                    // Para otros buses, solo limpiar
+                    bus.clear();
+                }
+            }
+        }
+
+        // Limpiar referencias
+        lanes.clear();
+
+        System.out.println("[EVENT DISPATCHER] Shutdown completado");
+    }
 }
