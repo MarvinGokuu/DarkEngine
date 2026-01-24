@@ -3,6 +3,7 @@ package sv.volcan.core;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.foreign.Arena;
+import java.util.Random;
 
 /**
  * AUTORIDAD: Marvin-Dev
@@ -25,6 +26,12 @@ public final class VolcanParticleSystem {
     private static final int MAX_PARTICLES = 1000;
     private static final long STRIDE = 24L; // Layout: x(4), y(4), vx(4), vy(4), life(4), size(4) = 24 bytes
 
+    // [FIX AUDIT]: Seeded Random for deterministic particle initialization
+    // PORQUÉ: Math.random() no es determinista, rompe garantía de reproducibilidad
+    // TÉCNICA: Random con seed fijo garantiza misma secuencia siempre
+    // GARANTÍA: Mismo seed = mismas posiciones de partículas
+    private static final Random RNG = new Random(0xCAFEBABE); // Fixed seed for determinism
+
     private final MemorySegment particleData;
 
     public VolcanParticleSystem(Arena arena) {
@@ -38,9 +45,9 @@ public final class VolcanParticleSystem {
         for (int i = 0; i < MAX_PARTICLES; i++) {
             long base = i * STRIDE;
             // Inicialización determinista del flujo binario
-            particleData.set(ValueLayout.JAVA_FLOAT, base, (float) (Math.random() * 1280)); // X
-            particleData.set(ValueLayout.JAVA_FLOAT, base + 4, (float) (Math.random() * 720)); // Y
-            particleData.set(ValueLayout.JAVA_FLOAT, base + 8, (float) (Math.random() * 2)); // Speed (VY)
+            particleData.set(ValueLayout.JAVA_FLOAT, base, RNG.nextFloat() * 1280); // X
+            particleData.set(ValueLayout.JAVA_FLOAT, base + 4, RNG.nextFloat() * 720); // Y
+            particleData.set(ValueLayout.JAVA_FLOAT, base + 8, RNG.nextFloat() * 2); // Speed (VY)
         }
     }
 

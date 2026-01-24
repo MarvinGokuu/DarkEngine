@@ -32,17 +32,17 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 :: System tests
 echo.
 echo [4/7] Ultra Fast Boot...
-java -cp bin sv.volcan.test.Test_UltraFastBoot
+java -cp bin sv.volcan.test.UltraFastBootTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
 echo [5/7] Graceful Shutdown...
-java -cp bin sv.volcan.test.Test_GracefulShutdown
+java -cp bin sv.volcan.test.GracefulShutdownTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
 echo [6/7] Power Saving...
-java -cp bin sv.volcan.test.Test_PowerSaving
+java -cp bin sv.volcan.test.PowerSavingTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.

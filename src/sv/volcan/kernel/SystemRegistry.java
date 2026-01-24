@@ -2,7 +2,7 @@
 package sv.volcan.kernel;
 
 import sv.volcan.core.AAACertified; // 00000100 // AAA+ Check
-import sv.volcan.core.systems.SovereignSystem;
+import sv.volcan.core.systems.GameSystem;
 import sv.volcan.core.systems.VolcanRenderSystem;
 import sv.volcan.state.WorldStateFrame;
 import java.awt.Graphics2D;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Registro y Orquestación de Sistemas (Logic & Render).
- * DEPENDENCIAS: SovereignSystem, VolcanRenderSystem
+ * DEPENDENCIAS: GameSystem, VolcanRenderSystem
  * MÉTRICAS: O(N) Execution, Zero-GC en Runtime
  * 
  * Implementa el patrón Registry + Strategy para gestionar el ciclo de vida
@@ -32,7 +32,7 @@ import java.util.List;
 public final class SystemRegistry {
 
     // Sistemas de lógica de juego (ejecutan en el loop principal)
-    private final List<SovereignSystem> gameSystems;
+    private final List<GameSystem> gameSystems;
 
     // Sistemas de renderizado (ejecutan en thread de render)
     private final List<VolcanRenderSystem> renderSystems;
@@ -46,8 +46,14 @@ public final class SystemRegistry {
     private boolean parallelMode = false; // Default: sequential (safe)
 
     public SystemRegistry() {
-        // Usamos ArrayList por simplicidad
-        // En producción, podríamos usar array fijo para zero-allocation
+        // [FIX AUDIT]: Pre-size collections to avoid reallocation
+        // PORQUÉ: ArrayList crece dinámicamente (1.5x), causando copias y GC
+        // TÉCNICA: Initial capacity = expected max systems
+        // GARANTÍA: 0 reallocations durante startup, menos GC pressure
+        //
+        // Capacidades típicas:
+        // - gameSystems: 16 (suficiente para juegos pequeños/medianos)
+        // - renderSystems: 8 (típicamente menos sistemas de render)
         this.gameSystems = new ArrayList<>(16);
         this.renderSystems = new ArrayList<>(8);
         this.lastExecutionTimeNs = 0;
@@ -63,7 +69,7 @@ public final class SystemRegistry {
      * 
      * @param system Sistema a registrar
      */
-    public void registerGameSystem(SovereignSystem system) {
+    public void registerGameSystem(GameSystem system) {
         if (system == null) {
             throw new IllegalArgumentException("System cannot be null");
         }
@@ -106,7 +112,7 @@ public final class SystemRegistry {
             lastExecutionTimeNs = parallelExecutor.getLastExecutionTimeNs();
         } else {
             // Fallback: Ejecución secuencial (modo seguro)
-            for (SovereignSystem system : gameSystems) {
+            for (GameSystem system : gameSystems) {
                 try {
                     system.update(state, deltaTime);
                 } catch (Exception e) {
@@ -188,7 +194,7 @@ public final class SystemRegistry {
         dependencyGraph = new SystemDependencyGraph();
 
         // Agregar todos los sistemas al grafo
-        for (SovereignSystem system : gameSystems) {
+        for (GameSystem system : gameSystems) {
             String[] deps = system.getDependencies();
             dependencyGraph.addSystem(system, deps);
         }

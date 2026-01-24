@@ -1,3 +1,10 @@
+// Reading Order: 00001101
+package sv.volcan.kernel;
+
+import sv.volcan.core.systems.GameSystem;
+import java.util.*;
+import sv.volcan.core.AAACertified;
+
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Grafo de Dependencias para Ejecución Paralela Determinista
@@ -18,31 +25,32 @@
  * @version 1.0
  * @since 2026-01-08
  */
-// Reading Order: 00001101
-package sv.volcan.kernel;
-
-import sv.volcan.core.systems.SovereignSystem;
-import java.util.*;
-import sv.volcan.core.AAACertified;
 
 @AAACertified(date = "2026-01-08", maxLatencyNs = 1000, minThroughput = 1000, alignment = 64, lockFree = true, offHeap = false, notes = "Dependency graph builder - Topological sort for parallel execution")
 public final class SystemDependencyGraph {
 
     // Nodos del grafo (sistema -> nombre)
-    private final Map<String, SovereignSystem> systemsByName;
+    private final Map<String, GameSystem> systemsByName;
 
     // Aristas del grafo (sistema -> dependencias)
     private final Map<String, Set<String>> dependencies;
 
     // Capas de ejecución (resultado del ordenamiento topológico)
-    private List<List<SovereignSystem>> executionLayers;
+    private List<List<GameSystem>> executionLayers;
 
     // Estado de validación
     private boolean validated = false;
 
     public SystemDependencyGraph() {
-        this.systemsByName = new LinkedHashMap<>(); // Mantiene orden de inserción
-        this.dependencies = new HashMap<>();
+        // [FIX AUDIT]: Pre-size collections to avoid reallocation
+        // PORQUÉ: HashMap/LinkedHashMap crecen dinámicamente (2x), causando rehashing
+        // costoso
+        // TÉCNICA: Initial capacity = expected max systems / load factor (0.75)
+        // GARANTÍA: 0 rehashing durante graph construction, mejor performance
+        //
+        // Capacidad típica: 16 systems → capacity = 16/0.75 ≈ 22 (next power of 2 = 32)
+        this.systemsByName = new LinkedHashMap<>(32); // Mantiene orden de inserción
+        this.dependencies = new HashMap<>(32);
         this.executionLayers = null;
     }
 
@@ -52,7 +60,7 @@ public final class SystemDependencyGraph {
      * @param system          Sistema a agregar
      * @param dependencyNames Nombres de sistemas de los que depende
      */
-    public void addSystem(SovereignSystem system, String... dependencyNames) {
+    public void addSystem(GameSystem system, String... dependencyNames) {
         if (system == null) {
             throw new IllegalArgumentException("System cannot be null");
         }
@@ -80,7 +88,8 @@ public final class SystemDependencyGraph {
      */
     public void validate() {
         // Calcular in-degree (cuántas dependencias tiene cada sistema)
-        Map<String, Integer> inDegree = new HashMap<>();
+        // [FIX AUDIT]: Pre-size to avoid rehashing
+        Map<String, Integer> inDegree = new HashMap<>(systemsByName.size());
         for (String system : systemsByName.keySet()) {
             // in-degree = número de dependencias que TIENE este sistema
             Set<String> deps = dependencies.get(system);
@@ -97,12 +106,14 @@ public final class SystemDependencyGraph {
         }
 
         // Kahn's Algorithm: Ordenamiento topológico por capas
-        executionLayers = new ArrayList<>();
-        Set<String> processed = new HashSet<>();
+        // [FIX AUDIT]: Pre-size collections
+        executionLayers = new ArrayList<>(4); // Típicamente 2-4 layers
+        Set<String> processed = new HashSet<>(systemsByName.size());
 
         while (processed.size() < systemsByName.size()) {
             // Encontrar todos los nodos con in-degree 0 (capa actual)
-            List<SovereignSystem> currentLayer = new ArrayList<>();
+            // [FIX AUDIT]: Pre-size to avoid reallocation
+            List<GameSystem> currentLayer = new ArrayList<>(systemsByName.size());
 
             for (String systemName : systemsByName.keySet()) {
                 if (!processed.contains(systemName) && inDegree.get(systemName) == 0) {
@@ -121,7 +132,7 @@ public final class SystemDependencyGraph {
             executionLayers.add(currentLayer);
 
             // Decrementar in-degree de sistemas que dependen de la capa actual
-            for (SovereignSystem system : currentLayer) {
+            for (GameSystem system : currentLayer) {
                 String systemName = system.getName();
                 for (Map.Entry<String, Set<String>> entry : dependencies.entrySet()) {
                     if (entry.getValue().contains(systemName)) {
@@ -142,7 +153,7 @@ public final class SystemDependencyGraph {
      * @return Lista de capas, cada capa es una lista de sistemas
      * @throws IllegalStateException si el grafo no ha sido validado
      */
-    public List<List<SovereignSystem>> getExecutionLayers() {
+    public List<List<GameSystem>> getExecutionLayers() {
         if (!validated) {
             throw new IllegalStateException("Graph must be validated before getting execution layers");
         }
@@ -172,9 +183,9 @@ public final class SystemDependencyGraph {
 
         System.out.println("[GRAPH] Execution Layers: " + executionLayers.size());
         for (int i = 0; i < executionLayers.size(); i++) {
-            List<SovereignSystem> layer = executionLayers.get(i);
+            List<GameSystem> layer = executionLayers.get(i);
             System.out.print("[GRAPH] Layer " + i + ": ");
-            for (SovereignSystem system : layer) {
+            for (GameSystem system : layer) {
                 System.out.print(system.getName() + " ");
             }
             System.out.println();
