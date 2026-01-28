@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - MASTER COMMAND CENTER</title>
+    <!-- External CSS for cleaner codebase -->
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Specific Layout for Master Frame only */
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .master-header {
+            background: rgba(0, 0, 0, 0.95);
+            border-bottom: 2px solid var(--border);
+            padding: 0;
+            display: flex;
+            align-items: stretch;
+            height: 60px;
+            z-index: 100;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            background: linear-gradient(90deg, rgba(0, 255, 65, 0.1), transparent);
+            border-right: 1px solid var(--border);
+        }
+
+        .brand-logo {
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--neon-green);
+        }
+
+        .tabs-container {
+            display: flex;
+            flex: 1;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 0 25px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .tab-btn.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+        }
+
+        .tab-btn[data-target="overview"].active::after {
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .tab-btn[data-target="debug"].active::after {
+            background: var(--neon-red);
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .tab-btn[data-target="parallel"].active::after {
+            background: var(--neon-purple);
+            box-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .tab-btn[data-target="sequential"].active::after {
+            background: var(--neon-orange);
+            box-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .content-area {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        iframe.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- TOP NAVIGATION BAR -->
+    <header class="master-header">
+        <div class="brand-section">
+            <div class="brand-logo">VISUAL OBSERVER</div>
+        </div>
+        <div class="tabs-container">
+            <button class="tab-btn active" data-target="overview" onclick="switchTab('overview')">
+                Overview
+            </button>
+            <button class="tab-btn" data-target="parallel" onclick="switchTab('parallel')">
+                Parallel DAG
+            </button>
+            <button class="tab-btn" data-target="debug" onclick="switchTab('debug')">
+                Kernel Debug
+            </button>
+            <button class="tab-btn" data-target="sequential" onclick="switchTab('sequential')">
+                Legacy / Seq
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT AREA (IFRAMES) -->
+    <!-- Pre-load all iframes to maintain state/connections -->
+    <div class="content-area">
+        <iframe id="frame-overview" src="VisualObserver.html" class="active"></iframe>
+        <iframe id="frame-parallel" src="VisualObserver_Parallel.html"></iframe>
+        <iframe id="frame-debug" src="VisualObserver_Debug.html"></iframe>
+        <iframe id="frame-sequential" src="VisualObserver_Sequential.html"></iframe>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        function switchTab(tabName) {
+            // 1. Deactivate all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 2. Hide all iframes
+            document.querySelectorAll('iframe').forEach(frame => {
+                frame.classList.remove('active');
+            });
+
+            // 3. Activate selected tab
+            const selectedBtn = document.querySelector(`.tab-btn[data-target="${tabName}"]`);
+            if (selectedBtn) selectedBtn.classList.add('active');
+
+            // 4. Show selected iframe
+            const selectedFrame = document.getElementById(`frame-${tabName}`);
+            if (selectedFrame) selectedFrame.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

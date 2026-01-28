@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - PARALLEL MODE</title>
+    <link rel="stylesheet" href="VisualObserver_Parallel.css">
+</head>
+
+<body>
+    <div class="header" class="vo-header">
+        <div class="title" class="vo-title">VOLCAN ENGINE - PARALLEL DAG</div>
+        <div class="mode-badge">MODO PARALELO ACTIVO</div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">Frame Latency</div>
+            <div class="metric-value">10<span class="metric-unit">μs</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Execution Layers</div>
+            <div class="metric-value" id="layers">2<span class="metric-unit">layers</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Thread Pool</div>
+            <div class="metric-value" id="threads">8<span class="metric-unit">threads</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Systems Total</div>
+            <div class="metric-value">3<span class="metric-unit">systems</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Parallel Systems</div>
+            <div class="metric-value">2<span class="metric-unit">in Layer 1</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Speedup</div>
+            <div class="metric-value" id="speedup">1.8<span class="metric-unit">x</span></div>
+        </div>
+    </div>
+
+    <div class="dag-visual">
+        <div class="dag-title">DEPENDENCY GRAPH (DAG)</div>
+
+        <div class="layer">
+            <div class="system-box">TestSystemA</div>
+        </div>
+
+        <div class="arrow">↓</div>
+
+        <div class="layer">
+            <div class="system-box">TestSystemB</div>
+            <div class="system-box">TestSystemC</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: rgba(180,0,255,0.7);">
+            Layer 0: Sequential | Layer 1: Parallel (2 threads)
+        </div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            const speedup = (1.5).toFixed(1);
+            document.getElementById('par-speedup').textContent = `${speedup}x`; rHTML =
+                speedup + '<span class="metric-unit">x</span>';
+        }, 1500);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="MonitorDeRecursos.css">
+</head>
+
+<body class="module-body">
+    <div class="section-group expanded">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">Procesos con actividad de disco</span>
+            <div class="usage-bar-container">
+                <span class="usage-label">E/S de disco: 10 KB/s</span>
+            </div>
+        </div>
+        <div class="section-content">
+            <table class="win-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20px;"><input type="checkbox"></th>
+                        <th>Imagen</th>
+                        <th>PID</th>
+                        <th>Lectura (B/s)</th>
+                        <th>Escritura (B/s)</th>
+                        <th>Total (B/s)</th>
+                        <th>Prioridad E/S</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding: 15px; color: #666;">
+                            [En proceso de creación]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-group expanded" style="margin-top: 5px;">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">Actividad de disco</span>
+        </div>
+        <div class="section-content">
+            <!-- Disk Activity Table Placeholder -->
+            <div style="padding: 10px;">C:\Users\theca\Documents...</div>
+        </div>
+    </div>
+</body>
+
+</html>

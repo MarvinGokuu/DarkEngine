@@ -1,0 +1,292 @@
+/* WINDOWS RESOURCE MONITOR STYLES */
+
+:root {
+    --win-bg: #f0f0f0;
+    --win-white: #ffffff;
+    --win-border: #d9d9d9;
+    --win-border-dark: #8c8c8c;
+    --win-select-blue: #cce8ff;
+    --win-text: #000000;
+    --win-text-gray: #505050;
+    --win-graph-bg: #000000;
+    --win-graph-green: #00ff00;
+    --win-graph-blue: #0080ff;
+    --win-header-grad-top: #ffffff;
+    --win-header-grad-bot: #f0f0f0;
+    --win-tab-border: #d9d9d9;
+}
+
+body {
+    background-color: var(--win-bg);
+    color: var(--win-text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* MENU BAR */
+.win-menubar {
+    background: #fbfbfb;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 2px 5px;
+    display: flex;
+}
+
+.menu-item {
+    padding: 2px 8px;
+    cursor: default;
+}
+
+.menu-item:hover {
+    background-color: #e5f3ff;
+    border: 1px solid #cce8ff;
+    padding: 1px 7px;
+    /* Adjust for border */
+}
+
+/* TABS */
+.win-tabs {
+    background: #ffffff;
+    padding: 5px 10px 0 10px;
+    border-bottom: 1px solid var(--win-tab-border);
+    display: flex;
+    gap: 2px;
+}
+
+.tab {
+    padding: 4px 12px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    cursor: pointer;
+    background: #f0f0f0;
+    margin-bottom: -1px;
+}
+
+.tab:hover {
+    background: #e5f3ff;
+}
+
+.tab.active {
+    background: #ffffff;
+    border: 1px solid var(--win-tab-border);
+    border-bottom: 1px solid #ffffff;
+    font-weight: 600;
+}
+
+/* CONTAINER */
+.win-container {
+    flex: 1;
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+/* LEFT PANEL */
+.left-panel {
+    flex: 2;
+    overflow-y: auto;
+}
+
+/* IFRAME MODULES */
+.module-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.module-body {
+    background-color: #ffffff;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+.section-group {
+    border: 1px solid #a0a0a0;
+    background: #ffffff;
+}
+
+.section-header {
+    background: linear-gradient(to bottom, #f2f6fb, #d4e3f5);
+    padding: 5px 8px;
+    border-bottom: 1px solid #a0a0a0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1e395b;
+}
+
+.section-group.collapsed .section-header {
+    border-bottom: none;
+}
+
+.arrow {
+    margin-right: 5px;
+    font-size: 10px;
+    color: #1e395b;
+}
+
+.section-title {
+    margin-right: 20px;
+}
+
+.usage-bar-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #404040;
+    font-weight: normal;
+}
+
+.usage-bar {
+    width: 60px;
+    height: 12px;
+    background: #e6e6e6;
+    border: 1px solid #bcbcbc;
+    position: relative;
+}
+
+.usage-bar.small {
+    width: 40px;
+}
+
+.usage-fill {
+    height: 100%;
+    background: linear-gradient(to bottom, #75c963, #3da128);
+    /* Green */
+}
+
+.section-content {
+    padding: 0;
+    overflow-x: auto;
+}
+
+/* TABLES */
+.win-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.win-table th {
+    text-align: left;
+    padding: 4px 6px;
+    background: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    border-bottom: 1px solid #a0a0a0;
+    font-weight: normal;
+    color: #505050;
+    position: relative;
+}
+
+.win-table th:hover {
+    background: #ebf4fc;
+}
+
+.win-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+}
+
+.win-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.win-table tr:hover {
+    background-color: #e5f3ff;
+}
+
+/* RIGHT PANEL (GRAPHS) */
+.right-panel {
+    flex: 1;
+    min-width: 250px;
+    max-width: 350px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f0f0f0;
+    /* Default gray bg for right side */
+    padding-left: 5px;
+    border-left: 1px solid #e0e0e0;
+}
+
+/* GRAPH CARD */
+.graph-card {
+    background: #ffffff;
+    border: 1px solid #a0a0a0;
+}
+
+.graph-header {
+    background: linear-gradient(to bottom, #f2f6fb, #d4e3f5);
+    padding: 4px 6px;
+    border-bottom: 1px solid #a0a0a0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    color: #1e395b;
+}
+
+.graph-title-arrow {
+    margin-right: 5px;
+    font-size: 10px;
+}
+
+.graph-title {
+    flex: 1;
+}
+
+.graph-btn-views {
+    border: 1px solid #8c8c8c;
+    background: linear-gradient(to bottom, #f0f0f0, #dcdcdc);
+    padding: 0 4px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.graph-max {
+    font-weight: normal;
+    color: #505050;
+    font-size: 10px;
+}
+
+.graph-body {
+    height: 80px;
+    background: #ffffff;
+    position: relative;
+    padding: 2px;
+}
+
+.win-chart {
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    display: block;
+}
+
+/* Text Overlays inside Graphs */
+.graph-overlay-text {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    right: 4px;
+    display: flex;
+    justify-content: space-between;
+    color: #505050;
+    font-size: 10px;
+    pointer-events: none;
+}

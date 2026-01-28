@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Monitor de recursos</title>
+    <link rel="stylesheet" href="MonitorDeRecursos.css">
+</head>
+
+<body>
+    <!-- WINDOWS MENU BAR -->
+    <div class="win-menubar">
+        <div class="menu-item">Archivo</div>
+        <div class="menu-item">Monitor</div>
+        <div class="menu-item">Ayuda</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="win-tabs">
+        <div class="tab active" onclick="switchTab('Resumen', this)">Información general</div>
+        <div class="tab" onclick="switchTab('CPU', this)">CPU</div>
+        <div class="tab" onclick="switchTab('Memoria', this)">Memoria</div>
+        <div class="tab" onclick="switchTab('Disco', this)">Disco</div>
+        <div class="tab" onclick="switchTab('Red', this)">Red</div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="win-container">
+        <!-- LEFT PANEL: IFRAME CONTENT (Modules) -->
+        <div class="left-panel">
+            <iframe id="main-frame" src="Monitor_Resumen.html" class="module-frame"></iframe>
+        </div>
+
+        <!-- RIGHT PANEL: GRAPHS (Persistent) -->
+        <div class="right-panel">
+            <!-- GRAPH: CPU -->
+            <div class="graph-card">
+                <div class="graph-header">
+                    <span class="graph-title-arrow">▼</span>
+                    <span class="graph-title">CPU</span>
+                    <span class="graph-max">100%</span>
+                </div>
+                <div class="graph-body">
+                    <canvas id="chart-cpu" class="win-chart"></canvas>
+                    <div class="graph-overlay-text">
+                        <div class="overlay-left">60 segundos</div>
+                        <div class="overlay-right">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRAPH: DISK -->
+            <div class="graph-card">
+                <div class="graph-header">
+                    <span class="graph-title-arrow">▼</span>
+                    <span class="graph-title">Disco</span>
+                    <span class="graph-max" id="max-disk">1 MB/s</span>
+                </div>
+                <!-- GRAPH: DISK BODY -->
+                <div class="graph-body">
+                    <canvas id="chart-disk" class="win-chart"></canvas>
+                    <div class="graph-overlay-text">
+                        <div class="overlay-left">60 segundos</div>
+                        <div class="overlay-right">0 KB/s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRAPH: NETWORK -->
+            <div class="graph-card">
+                <div class="graph-header">
+                    <span class="graph-title-arrow">▼</span>
+                    <span class="graph-title">Red</span>
+                    <span class="graph-max" id="max-net">100 Kbps</span>
+                </div>
+                <!-- GRAPH: NETWORK BODY -->
+                <div class="graph-body">
+                    <canvas id="chart-net" class="win-chart"></canvas>
+                    <div class="graph-overlay-text">
+                        <div class="overlay-left">60 segundos</div>
+                        <div class="overlay-right">0 Kbps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRAPH: MEMORY -->
+            <div class="graph-card">
+                <div class="graph-header">
+                    <span class="graph-title-arrow">▼</span>
+                    <span class="graph-title">Memoria</span>
+                    <span class="graph-max">100 errores graves/s</span>
+                </div>
+                <!-- GRAPH: MEMORY BODY -->
+                <div class="graph-body">
+                    <canvas id="chart-mem" class="win-chart"></canvas>
+                    <div class="graph-overlay-text">
+                        <div class="overlay-left">60 segundos</div>
+                        <div class="overlay-right">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SCRIPT (Handles Graphs & Tab Switching) -->
+    <script src="MonitorDeRecursos.js"></script>
+    <script>
+        function switchTab(tabName, element) {
+            // Update Tab UI
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+
+            // Switch Iframe Source
+            const iframe = document.getElementById('main-frame');
+            iframe.src = 'Monitor_' + tabName + '.html';
+        }
+    </script>
+</body>
+
+</html>

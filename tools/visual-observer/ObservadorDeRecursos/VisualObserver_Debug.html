@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - DEBUG MODE</title>
+    <link rel="stylesheet" href="VisualObserver_Debug.css">
+</head>
+
+<body>
+    <div class="header vo-header">
+        <div class="title vo-title">VOLCAN ENGINE - DEBUG MODE</div>
+        <div class="vo-subtitle">VERBOSE LOGGING</div>
+    </div>
+
+    <div class="debug-grid">
+        <div class="debug-card">
+            <div class="debug-label">Frame Time</div>
+            <div class="debug-value" id="frame">0.010 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 1 (Input)</div>
+            <div class="debug-value" id="p1">0.001 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 2 (Bus)</div>
+            <div class="debug-value" id="p2">0.002 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 3 (Systems)</div>
+            <div class="debug-value" id="p3">0.005 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phase 4 (Audit)</div>
+            <div class="debug-value" id="p4">0.002 ms</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">AdminBus Queue</div>
+            <div class="debug-value" id="queue">3/1024</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Memory (Heap)</div>
+            <div class="debug-value" id="heap">2.1 GB</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">GC Count</div>
+            <div class="debug-value" id="gc">0</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemA</div>
+            <div class="debug-value" id="sysA">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemB</div>
+            <div class="debug-value" id="sysB">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">TestSystemC</div>
+            <div class="debug-value" id="sysC">RUNNING</div>
+        </div>
+        <div class="debug-card">
+            <div class="debug-label">Phaser Sync</div>
+            <div class="debug-value" id="phaser">OK</div>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div class="log-line"><span class="timestamp">[00:00:00.001]</span> SystemDependencyGraph validated</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.002]</span> ParallelExecutor initialized (2 layers, 8
+            threads)</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.003]</span> Layer 0: TestSystemA executing</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.004]</span> Layer 1: TestSystemB, TestSystemC executing
+            (parallel)</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.005]</span> Phaser barrier: Layer 1 complete</div>
+        <div class="log-line"><span class="timestamp">[00:00:00.006]</span> Frame 1 complete: 0.010ms</div>
+    </div>
+
+    <script>
+        // Function to add a log line to the terminal
+        function addLog(message) {
+            const terminal = document.getElementById('terminal');
+            const time = new Date().toTimeString().split(' ')[0];
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`;
+            terminal.appendChild(line);
+
+            while (terminal.children.length > 20) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function updateDebugMetrics() {
+            // Placeholder: Waiting for Real Telemetry
+            document.getElementById('p1').textContent = '0.000 ms';
+            document.getElementById('p2').textContent = '0.000 ms';
+            document.getElementById('p3').textContent = '0.000 ms';
+            document.getElementById('queue').textContent = '0/1024';
+        }
+
+        // Initialize static state
+        updateDebugMetrics();
+    </script>
+</body>
+
+</html>

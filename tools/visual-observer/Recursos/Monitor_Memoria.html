@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="MonitorDeRecursos.css">
+</head>
+
+<body class="module-body">
+    <div class="section-group expanded">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">Procesos</span>
+            <div class="usage-bar-container">
+                <span class="mem-label">Memoria física usada: 75%</span>
+                <div class="usage-bar small">
+                    <div class="usage-fill ok" style="width: 75%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="section-content">
+            <table class="win-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20px;"><input type="checkbox"></th>
+                        <th>Imagen</th>
+                        <th>PID</th>
+                        <th>Errores graves/s</th>
+                        <th>Asignada (KB)</th>
+                        <th>Conjunto de trabajo (KB)</th>
+                        <th>Compartida (KB)</th>
+                        <th>Privada (KB)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding: 15px; color: #666;">
+                            [En proceso de creación]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Memory Map Visualization -->
+    <div style="margin-top: 10px; border: 1px solid #a0a0a0; padding: 10px; background: #fff;">
+        <div style="font-weight: 600; color: #505050; margin-bottom: 5px;">Memoria física</div>
+        <div style="display: flex; height: 40px; border: 1px solid #888;">
+            <div
+                style="flex:1; background:#a0a0a0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px;">
+                Hardware<br>42 MB</div>
+            <div
+                style="flex:2; background:#69c656; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px;">
+                En uso<br>8860 MB</div>
+            <div
+                style="flex:1; background:#6bb7ea; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px;">
+                Modificada<br>65 MB</div>
+            <div
+                style="flex:3; background:#e0e0e0; display:flex; align-items:center; justify-content:center; color:#505050; font-size:10px;">
+                En espera<br>2772 MB</div>
+            <div
+                style="flex:1; background:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#505050; font-size:10px;">
+                Libre<br>529 MB</div>
+        </div>
+    </div>
+</body>
+
+</html>

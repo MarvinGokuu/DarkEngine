@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - SEQUENTIAL MODE</title>
+    <link rel="stylesheet" href="VisualObserver_Sequential.css">
+</head>
+
+<body>
+    <div class="header" class="vo-header">
+        <div class="title" class="vo-title">VOLCAN ENGINE - SEQUENTIAL</div>
+        <div class="mode-badge">MODO SECUENCIAL</div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">Frame Latency</div>
+            <div class="metric-value">10<span class="metric-unit">μs</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">CPU Core</div>
+            <div class="metric-value">Core 1<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Execution Mode</div>
+            <div class="metric-value">Sequential<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Systems</div>
+            <div class="metric-value" id="systems">0<span class="metric-unit">total</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Execution Order</div>
+            <div class="metric-value">Linear<span class="metric-unit"></span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Parallelism</div>
+            <div class="metric-value">OFF<span class="metric-unit"></span></div>
+        </div>
+    </div>
+
+    <div class="info-panel">
+        <div class="info-title">SEQUENTIAL MODE ACTIVE</div>
+        <div class="info-text">
+            Los sistemas se ejecutan uno tras otro en orden lineal.<br>
+            No hay paralelismo. Cada sistema espera a que el anterior termine.<br>
+            Este es el modo de fallback cuando el DAG no puede construirse.
+        </div>
+    </div>
+
+    <script>
+        setInterval(() => {
+            document.getElementById('seq-systems').innerHTML =
+                '1<span class="metric-unit">active</span>';
+
+            document.getElementById('seq-overhead').innerHTML =
+                '0<span class="metric-unit">total</span>';
+        }, 1000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - COMMAND CENTER</title>
+    <link rel="stylesheet" href="VisualObserver_Container.css">
+    <script>
+        function switchTab(tabId) {
+            // Update Tab Buttons
+            document.querySelectorAll('.vo-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.vo-tab[data-id="${tabId}"]`).classList.add('active');
+
+            // Update Iframes
+            document.querySelectorAll('iframe').forEach(frame => {
+                frame.classList.remove('active');
+            });
+            document.getElementById(`frame-${tabId}`).classList.add('active');
+        }
+    </script>
+</head>
+
+<body>
+    <!-- HEADER -->
+    <header class="vo-master-header">
+        <div class="vo-brand">
+            <div class="vo-brand-text">VISUAL OBSERVER</div>
+        </div>
+        <nav class="vo-nav">
+            <button class="vo-tab active" data-id="overview" onclick="switchTab('overview')">Overview</button>
+            <button class="vo-tab" data-id="parallel" onclick="switchTab('parallel')">Parallel DAG</button>
+            <button class="vo-tab" data-id="debug" onclick="switchTab('debug')">Kernel Debug</button>
+            <button class="vo-tab" data-id="sequential" onclick="switchTab('sequential')">Legacy / Seq</button>
+        </nav>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="vo-content">
+        <iframe id="frame-overview" src="VisualObserver.html" class="active"></iframe>
+        <iframe id="frame-parallel" src="VisualObserver_Parallel.html"></iframe>
+        <iframe id="frame-debug" src="VisualObserver_Debug.html"></iframe>
+        <iframe id="frame-sequential" src="VisualObserver_Sequential.html"></iframe>
+    </main>
+</body>
+
+</html>

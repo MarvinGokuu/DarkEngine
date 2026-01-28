@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="MonitorDeRecursos.css">
+    <script src="MonitorDeRecursos.js" defer></script>
+</head>
+
+<body class="module-body">
+    <!-- CPU SECTION -->
+    <div class="section-group expanded">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">CPU</span>
+            <span class="usage-bar-container">
+                <span class="usage-label">Uso de CPU: <span id="lbl-cpu-total">0%</span></span>
+                <div class="usage-bar">
+                    <div class="usage-fill ok" style="width: 0%;"></div>
+                </div>
+                <span class="freq-label">112% de frecuencia máxima</span>
+            </span>
+        </div>
+        <div class="section-content">
+            <table class="win-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20px;"><input type="checkbox"></th>
+                        <th>Imagen</th>
+                        <th>PID</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Subprocesos</th>
+                        <th>CPU</th>
+                        <th>CPU media</th>
+                    </tr>
+                </thead>
+                <tbody id="tbl-cpu">
+                    <!-- JS Injected -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- DISK SECTION -->
+    <div class="section-group collapsed">
+        <div class="section-header">
+            <span class="arrow">▶</span>
+            <span class="section-title">Disco</span>
+            <span class="usage-bar-container">
+                <span class="usage-label">E/S de disco: <span id="lbl-disk-total">0 KB/s</span></span>
+                <div class="usage-bar">
+                    <div class="usage-fill ok" style="width: 1%;"></div>
+                </div>
+            </span>
+        </div>
+    </div>
+
+    <!-- NETWORK SECTION -->
+    <div class="section-group collapsed">
+        <div class="section-header">
+            <span class="arrow">▶</span>
+            <span class="section-title">Red</span>
+            <span class="usage-bar-container">
+                <span class="usage-label">E/S de red: <span id="lbl-net-total">0 Kbps</span></span>
+                <div class="usage-bar">
+                    <div class="usage-fill ok" style="width: 0.5%;"></div>
+                </div>
+            </span>
+        </div>
+    </div>
+
+    <!-- MEMORY SECTION -->
+    <div class="section-group collapsed">
+        <div class="section-header">
+            <span class="arrow">▶</span>
+            <span class="section-title">Memoria</span>
+            <span class="usage-bar-container">
+                <span class="usage-label">Errores graves: 0/s</span>
+                <div class="usage-bar">
+                    <div class="usage-fill ok" style="width: 0%;"></div>
+                </div>
+                <span class="mem-label">75% de memoria física usada</span>
+                <div class="usage-bar small">
+                    <div class="usage-fill ok" style="width: 75%;"></div>
+                </div>
+            </span>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="MonitorDeRecursos.css">
+</head>
+
+<body class="module-body">
+    <div class="section-group expanded">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">Procesos con actividad de red</span>
+            <div class="usage-bar-container">
+                <span class="usage-label">E/S de red: 14 Kbps</span>
+            </div>
+        </div>
+        <div class="section-content">
+            <table class="win-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20px;"><input type="checkbox"></th>
+                        <th>Imagen</th>
+                        <th>PID</th>
+                        <th>Envío (B/s)</th>
+                        <th>Recepción (B/s)</th>
+                        <th>Total (B/s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding: 15px; color: #666;">
+                            [En proceso de creación]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section-group expanded" style="margin-top: 5px;">
+        <div class="section-header">
+            <span class="arrow">▼</span>
+            <span class="section-title">Conexiones TCP</span>
+        </div>
+        <div class="section-content">
+            <table class="win-table">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>PID</th>
+                        <th>Dirección local</th>
+                        <th>Puerto local</th>
+                        <th>Dirección remota</th>
+                        <th>Puerto remoto</th>
+                        <th>Pérdida de paquetes</th>
+                        <th>Latencia (ms)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>chrome.exe</td>
+                        <td>3792</td>
+                        <td>192.168.1.15</td>
+                        <td>49346</td>
+                        <td>104.1.1.1</td>
+                        <td>443</td>
+                        <td>0%</td>
+                        <td>24</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

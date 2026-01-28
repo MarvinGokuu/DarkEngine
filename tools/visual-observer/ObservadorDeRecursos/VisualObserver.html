@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VISUAL OBSERVER - OVERVIEW</title>
+    <link rel="stylesheet" href="VisualObserver_Overview.css">
+</head>
+
+<body>
+    <div class="header" class="vo-header">
+        <div class="title" class="vo-title">VOLCAN ENGINE</div>
+        <div class="status-badge">
+            <div class="badge success">AAA+ CERTIFIED</div>
+            <div class="badge active">LIVE</div>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <!-- CPU CARD -->
+        <div class="metric-card">
+            <div class="metric-label">CPU USAGE</div>
+            <div class="metric-value"><span id="val-cpu">0</span><span class="metric-unit">%</span></div>
+            <canvas id="graph-cpu" class="metric-graph"></canvas>
+            <div class="metric-status">
+                <span class="status-dot"></span>
+                <span id="txt-cpu">Core 1 Pinned</span>
+            </div>
+        </div>
+
+        <!-- MEMORY CARD -->
+        <div class="metric-card">
+            <div class="metric-label">MEMORY ALLOCATION</div>
+            <div class="metric-value"><span id="val-mem">0</span><span class="metric-unit">%</span></div>
+            <canvas id="graph-mem" class="metric-graph"></canvas>
+            <div class="metric-status">
+                <span class="status-dot"></span>
+                <span id="txt-mem">ZGC Heap: 4GB</span>
+            </div>
+        </div>
+
+        <!-- DISK CARD -->
+        <div class="metric-card">
+            <div class="metric-label">DISK I/O</div>
+            <div class="metric-value"><span id="val-disk">0</span><span class="metric-unit">MB/s</span></div>
+            <canvas id="graph-disk" class="metric-graph"></canvas>
+            <div class="metric-status">
+                <span class="status-dot"></span>
+                <span id="txt-disk">System Logging</span>
+            </div>
+        </div>
+
+        <!-- NETWORK CARD -->
+        <div class="metric-card">
+            <div class="metric-label">NETWORK TRAFFIC</div>
+            <div class="metric-value"><span id="val-net">0</span><span class="metric-unit">Kbps</span></div>
+            <canvas id="graph-net" class="metric-graph"></canvas>
+            <div class="metric-status">
+                <span class="status-dot"></span>
+                <span id="txt-net">AdminBus Heartbeat</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="optimization-status">
+        <div class="opt-title">AAA+ OPTIMIZATION STATUS</div>
+        <div class="opt-grid">
+            <div class="opt-item">
+                <span class="opt-name">Step 1: ZGC Configuration</span>
+                <span class="opt-check">COMPLETED</span>
+            </div>
+            <div class="opt-item">
+                <span class="opt-name">Step 2: CPU Pinning</span>
+                <span class="opt-check">COMPLETED</span>
+            </div>
+            <div class="opt-item">
+                <span class="opt-name">Step 3: Data/Control Plane</span>
+                <span class="opt-check">COMPLETED</span>
+            </div>
+            <div class="opt-item">
+                <span class="opt-name">Step 4: Multi-Threading (DAG)</span>
+                <span class="opt-check">COMPLETED</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div class="log-line"><span class="timestamp">[00:00:00]</span> VOLCAN ENGINE initialized</div>
+        <div class="log-line"><span class="timestamp">[00:00:01]</span> ZGC enabled: -XX:+UseZGC -Xms4G -Xmx4G</div>
+        <div class="log-line"><span class="timestamp">[00:00:02]</span> Logic Thread PINNED to Core 1</div>
+        <div class="log-line"><span class="timestamp">[00:00:03]</span> AdminMetricsBus created (capacity: 1024)
+        </div>
+        <div class="log-line"><span class="timestamp">[00:00:04]</span> SystemDependencyGraph ready</div>
+        <div class="log-line"><span class="timestamp">[00:00:05]</span> ParallelSystemExecutor initialized</div>
+        <div class="log-line"><span class="timestamp">[00:00:06]</span> Sovereign Loop started (60 FPS target)</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <!-- VISUALIZATIONS & METRICS -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <script src="VisualGraphs.js"></script>
+    <script src="VolcanMetricsClient.js"></script>
+
+</body>
+
+</html>

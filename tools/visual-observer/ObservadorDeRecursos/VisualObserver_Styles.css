@@ -1,0 +1,294 @@
+/* 
+ * ══════════════════════════════════════════════════════════════════════════════════════════════════
+ *  VISUAL OBSERVER - CORE STYLESHEET
+ * ══════════════════════════════════════════════════════════════════════════════════════════════════
+ *  COMPONENT: VisualObserver_Styles.css
+ *  PURPOSE: Centralized styling for the Volcan Engine Observability Suite.
+ *  STANDARDS: CSS3 variables, Flex/Grid layouts, High-Contrast Neon Palette.
+ * ══════════════════════════════════════════════════════════════════════════════════════════════════
+ */
+
+/* --------------------------------------------------------------------------------------------------
+ *  1. VARIABLES & THEME CONFIGURATION
+ * -------------------------------------------------------------------------------------------------- */
+:root {
+    /* Main Brand Colors */
+    --color-neon-green:  #00ff41;  /* Primary Action / Success */
+    --color-neon-blue:   #00d4ff;  /* Info / Cold Data */
+    --color-neon-purple: #b400ff;  /* Parallel / DAG Mode */
+    --color-neon-red:    #ff003c;  /* Alert / Debug / Error */
+    --color-neon-orange: #ff9900;  /* Sequential / Warning */
+    --color-neon-yellow: #ffff00;  /* Audit / Check */
+
+    /* Backgrounds & Panels */
+    --bg-dark-master:    #050505;  /* Main Background */
+    --bg-panel-light:    rgba(255, 255, 255, 0.03);
+    --bg-panel-header:   rgba(0, 0, 0, 0.95);
+    
+    /* Typography */
+    --font-stack-mono:   'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    --font-size-base:    16px; 
+    
+    /* Utility */
+    --border-dim:        rgba(255, 255, 255, 0.1);
+    --transition-speed:  0.3s;
+}
+
+/* --------------------------------------------------------------------------------------------------
+ *  2. RESET & BASE LAYOUT
+ * -------------------------------------------------------------------------------------------------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark-master);
+    color: var(--color-neon-green);
+    font-family: var(--font-stack-mono);
+    font-size: 0.9rem;
+    overflow-x: hidden;
+    line-height: 1.5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------------------------------
+ *  3. MASTER HEADER COMPONENT
+ * -------------------------------------------------------------------------------------------------- */
+.vo-header {
+    background: var(--bg-panel-header);
+    border-bottom: 2px solid var(--border-dim);
+    height: 60px;
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    z-index: 1000;
+}
+
+/* Variant: Mode Specific Header Borders */
+.vo-header[data-mode="parallel"]   { border-bottom-color: var(--color-neon-purple); }
+.vo-header[data-mode="sequential"] { border-bottom-color: var(--color-neon-orange); }
+.vo-header[data-mode="debug"]      { border-bottom-color: var(--color-neon-red); }
+.vo-header[data-mode="overview"]   { border-bottom-color: var(--color-neon-green); }
+
+.vo-brand-section {
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), transparent);
+    border-right: 1px solid var(--border-dim);
+    min-width: 250px;
+}
+
+.vo-brand-logo {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: white;
+}
+
+.vo-brand-logo span { opacity: 0.7; font-weight: 400; }
+
+/* --------------------------------------------------------------------------------------------------
+ *  4. NAVIGATION TABS
+ * -------------------------------------------------------------------------------------------------- */
+.vo-tabs-container {
+    display: flex;
+    flex: 1;
+}
+
+.vo-tab-btn {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-dim);
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0 30px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    position: relative;
+    letter-spacing: 1px;
+}
+
+.vo-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.vo-tab-btn.active {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Tab Indicators */
+.vo-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    box-shadow: 0 -2px 10px currentColor;
+}
+
+.vo-tab-btn[data-target="overview"].active::after   { background: var(--color-neon-green); color: var(--color-neon-green); }
+.vo-tab-btn[data-target="parallel"].active::after   { background: var(--color-neon-purple); color: var(--color-neon-purple); }
+.vo-tab-btn[data-target="debug"].active::after      { background: var(--color-neon-red); color: var(--color-neon-red); }
+.vo-tab-btn[data-target="sequential"].active::after { background: var(--color-neon-orange); color: var(--color-neon-orange); }
+
+/* --------------------------------------------------------------------------------------------------
+ *  5. METRICS GRID SYSTEM
+ * -------------------------------------------------------------------------------------------------- */
+.vo-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 30px;
+    overflow-y: auto;
+}
+
+.vo-card {
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-dim);
+    border-left-width: 4px;
+    border-radius: 4px;
+    padding: 25px;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Card Themes */
+.vo-card.theme-green  { border-left-color: var(--color-neon-green); }
+.vo-card.theme-blue   { border-left-color: var(--color-neon-blue); }
+.vo-card.theme-purple { border-left-color: var(--color-neon-purple); }
+.vo-card.theme-red    { border-left-color: var(--color-neon-red); }
+.vo-card.theme-orange { border-left-color: var(--color-neon-orange); }
+
+.vo-card-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.vo-card-value {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    color: white;
+}
+
+.vo-card.theme-green .vo-card-value  { color: var(--color-neon-green); }
+.vo-card.theme-purple .vo-card-value { color: var(--color-neon-purple); }
+.vo-card.theme-red .vo-card-value    { color: var(--color-neon-red); }
+
+.vo-card-unit {
+    font-size: 1rem;
+    opacity: 0.5;
+    margin-left: 6px;
+    font-weight: 400;
+}
+
+.vo-card-status {
+    font-size: 0.75rem;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.9;
+}
+
+/* --------------------------------------------------------------------------------------------------
+ *  6. VISUALIZATION COMPONENTS (DAG, TERMINAL)
+ * -------------------------------------------------------------------------------------------------- */
+.vo-dag-container {
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid var(--border-dim);
+    text-align: center;
+    margin-top: auto;
+}
+
+.vo-system-node {
+    display: inline-block;
+    padding: 12px 24px;
+    background: rgba(180, 0, 255, 0.1);
+    border: 1px solid var(--color-neon-purple);
+    color: white;
+    border-radius: 4px;
+    font-weight: 700;
+    margin: 0 10px;
+    box-shadow: 0 0 15px rgba(180, 0, 255, 0.1);
+}
+
+.vo-terminal {
+    background: black;
+    height: 250px;
+    overflow-y: auto;
+    padding: 20px;
+    border-top: 1px solid var(--border-dim);
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+}
+
+.vo-log-line {
+    margin-bottom: 5px;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+}
+
+.vo-log-line:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-left-color: var(--color-neon-green);
+}
+
+.vo-timestamp {
+    color: var(--color-neon-blue);
+    margin-right: 15px;
+    opacity: 0.7;
+}
+
+/* --------------------------------------------------------------------------------------------------
+ *  7. UTILITIES & ANIMATIONS
+ * -------------------------------------------------------------------------------------------------- */
+.u-text-success { color: var(--color-neon-green) !important; }
+.u-text-warning { color: var(--color-neon-orange) !important; }
+.u-text-error   { color: var(--color-neon-red) !important; }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.u-blink {
+    animation: blink 1.5s infinite;
+}
+
+/* Iframe Management */
+iframe.vo-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+}
+
+iframe.vo-frame.active {
+    display: block;
+}
