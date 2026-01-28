@@ -7,7 +7,7 @@ import sv.volcan.core.AAACertified; // 00000100
 
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Ring Buffer Lock-Free Observable - Neural node for AI data
+ * RESPONSABILIDAD: Ring Buffer Lock-Free Observable - Data node for AI
  * streaming
  * DEPENDENCIAS: IEventBus, VarHandles
  * MÉTRICAS: Latencia <150ns, Throughput >10M ops/s, Observabilidad integrada
@@ -16,7 +16,7 @@ import sv.volcan.core.AAACertified; // 00000100
  * @version 2.0
  * @since 2026-01-06
  */
-@AAACertified(date = "2026-01-06", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Observable Ring Buffer - Neural node for AI data streaming at <150ns")
+@AAACertified(date = "2026-01-06", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Observable Ring Buffer - Data node for AI streaming at <150ns")
 public final class VolcanRingBus implements IEventBus {
 
         // ═══════════════════════════════════════════════════════════════════════════════
@@ -100,7 +100,7 @@ public final class VolcanRingBus implements IEventBus {
         // - HEAD_H.getAcquire(this): Garantiza que todas las escrituras previas en
         // otros threads sean visibles ANTES de leer head.
         // - Previene que el CPU reordene lecturas del buffer antes de validar head.
-        // - Evita condiciones de carrera térmica en el silicio.
+        // - Evita condiciones de carrera en hardware.
         //
         // MECÁNICA DE RELEASE (Escritura):
         // - TAIL_H.setRelease(this, newTail): Garantiza que todas las escrituras en
@@ -542,7 +542,7 @@ public final class VolcanRingBus implements IEventBus {
          * - head == tail (todos los eventos consumidos o descartados)
          * - Padding checksum == 0 (integridad de memoria preservada)
          */
-        public void sovereignShutdown() {
+        public void gracefulShutdown() {
                 clear();
 
                 if (getPaddingChecksum() != 0) {

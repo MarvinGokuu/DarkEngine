@@ -50,7 +50,7 @@ public final class VolcanTimeControlUnit {
         // Creamos una vista (slice) sin alocación en el Heap
         MemorySegment targetFrame = timeSlab.asSlice(offset, frameSize);
 
-        // [MECHANICAL SYMPATHY]: Copia de bajo nivel directa al silicio.
+        // [MECHANICAL SYMPATHY]: Low-level direct copy to memory.
         targetFrame.copyFrom(activeState);
 
         // Avance del puntero circular
@@ -59,7 +59,7 @@ public final class VolcanTimeControlUnit {
 
     /**
      * Restaura el estado anterior del motor.
-     * Revierte la soberanía de datos al instante previo capturado.
+     * Revierte el control de datos al instante previo capturado.
      */
     public void rollback(MemorySegment activeState) {
         // Retroceso del índice en el búfer circular

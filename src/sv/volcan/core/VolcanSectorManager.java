@@ -6,7 +6,7 @@ import sv.volcan.state.WorldStateFrame;
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Orquestación de Dominios Espaciales (Grid Management).
- * DEPENDENCIAS: SovereignSpaceMath, VolcanSector, SovereignSectorMap
+ * DEPENDENCIAS: SpaceMath, VolcanSector, SectorMap
  * MÉTRICAS: O(1) Lookup, Zero-Allocation, Bit-Packed Keys
  * 
  * Administra la rejilla espacial y la transferencia de entidades entre
@@ -21,17 +21,17 @@ import sv.volcan.state.WorldStateFrame;
 public final class VolcanSectorManager {
 
     // [ARQUITECTURA DE DATOS]:
-    // Reemplazo de ConcurrentHashMap por SovereignSectorMap (Long2Object).
+    // Reemplazo de ConcurrentHashMap por SectorMap (Long2Object).
     // Eliminado el Boxing de Long.
     // Zero-Allocation garantizado en operaciones de actualización de ubicación.
-    private final SovereignSectorMap<VolcanSector> sectores = new SovereignSectorMap<>(1024);
+    private final SectorMap<VolcanSector> sectores = new SectorMap<>(1024);
 
     /**
      * Reubica la entidad utilizando su firma de sector actual para evitar búsquedas
      * globales.
      * 
      * [MECHANICAL SYMPATHY]: Uso de bit-shifting para mapear coordenadas a celdas
-     * de rejilla mediante SovereignSpaceMath.
+     * de rejilla mediante SpaceMath.
      * 
      * @param entityId ID único de la entidad
      * @param x        Coordenada X del mundo
@@ -39,12 +39,12 @@ public final class VolcanSectorManager {
      * @param frame    Frame de estado actual (Snapshot)
      */
     public void updateLocation(long entityId, float x, float y, WorldStateFrame frame) {
-        // [OPTIMIZACIÓN SOBERANA]: Delegada a SovereignSpaceMath
-        int sx = SovereignSpaceMath.getSectorIndex(x);
-        int sy = SovereignSpaceMath.getSectorIndex(y);
+        // [OPTIMIZATION]: Delegated to SpaceMath
+        int sx = SpaceMath.getSectorIndex(x);
+        int sy = SpaceMath.getSectorIndex(y);
 
         // Empaquetado de coordenadas 2D en una sola llave de 64 bits.
-        long newKey = SovereignSpaceMath.packKey2D(sx, sy);
+        long newKey = SpaceMath.packKey2D(sx, sy);
 
         // Obtenemos el sector donde residía la entidad desde el WorldState.
         long oldKey = frame.readLong(entityId + EntityLayout.SECTOR_ID_OFFSET);
@@ -60,7 +60,7 @@ public final class VolcanSectorManager {
      * Transfiere una entidad de un sector a otro de forma atómica.
      * 
      * OPTIMIZACIÓN AAA+:
-     * - Uso de primtivas long en SovereignSectorMap.
+     * - Uso de primtivas long en SectorMap.
      * - Sin boxing, sin lambdas, sin iterators basura.
      */
     private void transferEntity(long entityId, long fromKey, long toKey) {

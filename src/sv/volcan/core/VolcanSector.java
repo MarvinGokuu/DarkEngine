@@ -37,7 +37,7 @@ public final class VolcanSector {
     }
 
     /**
-     * En el modelo Soberano, "registrar" es simplemente incrementar el puntero
+     * En el modelo core, "registrar" es simplemente incrementar el puntero
      * de entidades activas dentro del segmento de memoria pre-asignado.
      */
     public void registerEntity() {

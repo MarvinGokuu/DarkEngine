@@ -21,7 +21,7 @@ import java.awt.BasicStroke;
  */
 public final class VolcanTheme {
 
-    // PALETA SOBERANA (Constantes de silicio - Accesibles en O(1))
+    // COLOR PALETTE (Hardware constants - O(1) access)
     public static final Color MINT_NEON = new Color(0, 255, 163);
     public static final Color BACKGROUND = new Color(10, 10, 15);
     public static final Color PANEL_GLASS = new Color(30, 30, 45, 180);

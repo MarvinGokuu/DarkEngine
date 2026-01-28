@@ -1,3 +1,8 @@
+// Reading Order: 00010001
+package sv.volcan.kernel;
+
+import sv.volcan.core.AAACertified; // 00000100
+
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Empaquetado de Métricas sin Allocations
@@ -8,7 +13,7 @@
  * zero-copy a través del AdminBus.
  * 
  * LAYOUT (64 bits):
- * - Bits 0-15:  Frame count (16 bits, máx 65535)
+ * - Bits 0-15: Frame count (16 bits, máx 65535)
  * - Bits 16-31: Total time en microsegundos (16 bits, máx 65ms)
  * - Bits 32-47: Reserved para eventos/segundo
  * - Bits 48-63: Metric type/flags
@@ -17,10 +22,6 @@
  * @version 1.0
  * @since 2026-01-08
  */
-// Reading Order: 00010001
-package sv.volcan.kernel;
-
-import sv.volcan.core.AAACertified; // 00000100
 
 @AAACertified(date = "2026-01-08", maxLatencyNs = 5, minThroughput = 1_000_000, alignment = 8, lockFree = true, offHeap = false, notes = "Metrics packing - 0 allocations, pure bit manipulation")
 public final class MetricsPacker {

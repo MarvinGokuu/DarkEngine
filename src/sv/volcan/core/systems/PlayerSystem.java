@@ -15,9 +15,9 @@ import sv.volcan.state.WorldStateFrame;
  * @version 1.0
  * @since 2026-01-05
  */
-public final class PlayerSystem implements SovereignSystem {
+public final class PlayerSystem implements GameSystem {
 
-    // Offsets fijos en el WorldStateFrame (Soberanía de direccionamiento)
+    // Offsets fijos en el WorldStateFrame (Direct addressing)
     private static final long ADDR_POS_X = 1000L;
     private static final long ADDR_POS_Y = 1008L;
     private static final long ADDR_INPUT = 1016L;
@@ -28,7 +28,7 @@ public final class PlayerSystem implements SovereignSystem {
     /**
      * Procesa el movimiento del jugador sin instanciar objetos (Zero-Allocation).
      * 
-     * IMPLEMENTACIÓN: SovereignSystem.update()
+     * IMPLEMENTACIÓN: GameSystem.update()
      * GARANTÍA: Determinista - mismo state + deltaTime = mismo resultado
      */
     @Override
@@ -51,7 +51,7 @@ public final class PlayerSystem implements SovereignSystem {
             case 4 -> currentX += moveStep; // RIGHT
         }
 
-        // Escritura atómica de vuelta al silicio (Direct Memory Access)
+        // Escritura atómica de vuelta a memoria (Direct Memory Access)
         state.writeDouble(ADDR_POS_X, currentX);
         state.writeDouble(ADDR_POS_Y, currentY);
     }

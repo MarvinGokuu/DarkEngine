@@ -19,13 +19,13 @@ import com.sun.management.OperatingSystemMXBean;
  */
 public final class VolcanHardwareProbe {
 
-    // Cache de Hardware (Inmutable tras la fase de Ignición)
+    // Cache de Hardware (Inmutable tras la fase de Startup)
     private static final long PHYSICAL_MEMORY;
     private static final int LOGICAL_CORES;
     private static final boolean IS_INDUSTRIAL_GRADE;
 
     static {
-        // Captura única de la realidad física del silicio
+        // Single capture of physical hardware reality
         OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         PHYSICAL_MEMORY = osBean.getTotalMemorySize();
         LOGICAL_CORES = Runtime.getRuntime().availableProcessors();
@@ -56,7 +56,7 @@ public final class VolcanHardwareProbe {
     }
 
     /**
-     * Diagnóstico de arranque (Solo fase de Ignición).
+     * Diagnóstico de arranque (Solo fase de Startup).
      * [NOTA TÉCNICA]: Se permite String.format únicamente en esta fase de
      * pre-arranque.
      */

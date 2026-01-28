@@ -20,7 +20,7 @@ import java.lang.foreign.ValueLayout;
  * @version 1.0
  * @since 2026-01-05
  */
-public final class MovementSystem implements SovereignSystem {
+public final class MovementSystem implements GameSystem {
 
     private static final long STRIDE = EntityLayout.STRIDE;
     private static final long X_OFF = EntityLayout.X_OFFSET;
@@ -30,7 +30,7 @@ public final class MovementSystem implements SovereignSystem {
      * Update de alta velocidad.
      * Procesa el sector de memoria como un flujo continuo de bytes.
      * 
-     * IMPLEMENTACIÓN: SovereignSystem.update()
+     * IMPLEMENTACIÓN: GameSystem.update()
      * GARANTÍA: Determinista - mismo state + deltaTime = mismo resultado
      * OPTIMIZACIÓN: Acceso secuencial (stride-based) para prefetching de CPU
      */

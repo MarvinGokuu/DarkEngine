@@ -1,3 +1,8 @@
+// Reading Order: 00000100
+package sv.volcan.core;
+
+import java.lang.annotation.*;
+
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Anotación de certificación AAA+ (Compile-Time Only)
@@ -21,10 +26,6 @@
  * @version 1.0
  * @since 2026-01-06
  */
-// Reading Order: 00000100
-package sv.volcan.core;
-
-import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.SOURCE) // ← CRÍTICO: Eliminada en bytecode (0ns overhead)
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })

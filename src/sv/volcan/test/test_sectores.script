@@ -16,6 +16,6 @@ ajustar.entidad1.x = 120;
 ajustar.entidad1.y = 120;
 sector.actualizar = entidad1;
 
-// 4. Verificación de Soberanía
+// 4. Verificación de Integridad
 // El log del motor debería mostrar la transición de la Entidad 1.
 System.out.println("PRUEBA_SECTORES_COMPLETADA");

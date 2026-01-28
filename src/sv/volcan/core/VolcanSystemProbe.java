@@ -54,7 +54,7 @@ public final class VolcanSystemProbe {
 
     /**
      * Información estática del entorno.
-     * Solo debe invocarse durante la secuencia de ignición del Kernel.
+     * Solo debe invocarse durante la secuencia de startup del Kernel.
      */
     public static void logStaticEnvironment() {
         System.out.println("[VOLCAN-BOOT] OS: " + System.getProperty("os.name"));

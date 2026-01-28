@@ -100,7 +100,7 @@ public final class VolcanAtomicBus implements IEventBus {
             tailShield_L1_slot7; // Visibilidad de paquete para Auditoría Nominal
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // AAA++ THERMAL SIGNATURE (Verificación por Diseño)
+    // AAA++ MEMORY SIGNATURE (Verificación por Diseño)
     // ═══════════════════════════════════════════════════════════════════════════════
     //
     // PARADIGMA AAA++:
@@ -124,13 +124,13 @@ public final class VolcanAtomicBus implements IEventBus {
     // - Permite JIT inlining agresivo (sin checks de seguridad)
 
     /**
-     * Firma térmica para detectar corrupción de memoria.
+     * Memory signature para detectar corrupción de memoria.
      * 
      * PATRÓN: 0x55AA55AA55AA55AA (alternancia de bits)
      * PROPÓSITO: Detectar escrituras no autorizadas en padding
      * UBICACIÓN: Slots 1 y 7 de cada shield (head, isolation, tail)
      */
-    private static final long THERMAL_SIGNATURE = 0x55AA55AA55AA55AAL;
+    private static final long MEMORY_SIGNATURE = 0x55AA55AA55AA55AAL;
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // INFRAESTRUCTURA DE CONTROL (Variables de Proceso)
@@ -189,7 +189,7 @@ public final class VolcanAtomicBus implements IEventBus {
     // - HEAD_H.getAcquire(this): Garantiza que todas las escrituras previas en
     // otros threads sean visibles ANTES de leer head.
     // - Previene que el CPU reordene lecturas del buffer antes de validar head.
-    // - Evita condiciones de carrera térmica en el silicio.
+    // - Evita condiciones de carrera en hardware.
     //
     // MECÁNICA DE RELEASE (Escritura):
     // - TAIL_H.setRelease(this, newTail): Garantiza que todas las escrituras en
@@ -248,15 +248,15 @@ public final class VolcanAtomicBus implements IEventBus {
         this.mask = capacity - 1;
 
         // ═══════════════════════════════════════════════════════════════
-        // AAA++ THERMAL SIGNATURE INITIALIZATION
+        // AAA++ MEMORY SIGNATURE INITIALIZATION
         // ═══════════════════════════════════════════════════════════════
 
-        // PASO 1: Escribir firma térmica en padding
-        writeThermalSignature();
+        // PASO 1: Escribir memory signature en padding
+        writeMemorySignature();
 
         // PASO 2: Verificar que la firma está intacta
-        if (!validateThermalSignature()) {
-            throw new Error("VolcanAtomicBus: Thermal signature corrupted - Memory layout invalid");
+        if (!validateMemorySignature()) {
+            throw new Error("VolcanAtomicBus: Memory signature corrupted - Memory layout invalid");
         }
     }
 
@@ -294,15 +294,17 @@ public final class VolcanAtomicBus implements IEventBus {
     // NOTA: Para tipos de datos adicionales, usar buses especializados
     // (ej: VolcanSpatialBus para coordenadas 3D empaquetadas).
 
-    // Métodos de negocio implementados en IEventBus:
-    // - offer(long event): Inserción no bloqueante
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // SECCIÓN 3: OPERACIONES BÁSICAS (CORE API)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // - offer(): Inserción no bloqueante
     // - poll(): Extracción destructiva
     // - peek(): Lectura no destructiva
     // - size(): Número de eventos pendientes
     // - capacity(): Capacidad total del bus
     // - clear(): Limpieza completa
 
-    /**
+    /*
      * PROCESAMIENTO MATEMÁTICO POTENTE: Reducción Aritmética Vertical
      * 
      * Este método obliga al CPU a encadenar cada suma en un registro de 64 bits,
@@ -344,11 +346,11 @@ public final class VolcanAtomicBus implements IEventBus {
      * @return Suma acumulada de todos los slots de padding (debe ser 0).
      */
     // ═══════════════════════════════════════════════════════════════════════════════
-    // AAA++ THERMAL SIGNATURE METHODS
+    // AAA++ MEMORY SIGNATURE METHODS
     // ═══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Escribe la firma térmica en los slots de padding.
+     * Escribe la memory signature en los slots de padding.
      * 
      * PROPÓSITO:
      * - Marcar slots de padding con patrón conocido
@@ -359,22 +361,22 @@ public final class VolcanAtomicBus implements IEventBus {
      * - Slots 1 y 7 de cada shield (6 slots totales)
      * - Patrón: 0x55AA55AA55AA55AA
      */
-    private void writeThermalSignature() {
+    private void writeMemorySignature() {
         // HEAD SHIELD: Slots 1 y 7
-        headShield_L1_slot1 = THERMAL_SIGNATURE;
-        headShield_L1_slot7 = THERMAL_SIGNATURE;
+        headShield_L1_slot1 = MEMORY_SIGNATURE;
+        headShield_L1_slot7 = MEMORY_SIGNATURE;
 
         // ISOLATION BRIDGE: Slots 1 y 7
-        isolationBridge_slot1 = THERMAL_SIGNATURE;
-        isolationBridge_slot7 = THERMAL_SIGNATURE;
+        isolationBridge_slot1 = MEMORY_SIGNATURE;
+        isolationBridge_slot7 = MEMORY_SIGNATURE;
 
         // TAIL SHIELD: Slots 1 y 7
-        tailShield_L1_slot1 = THERMAL_SIGNATURE;
-        tailShield_L1_slot7 = THERMAL_SIGNATURE;
+        tailShield_L1_slot1 = MEMORY_SIGNATURE;
+        tailShield_L1_slot7 = MEMORY_SIGNATURE;
     }
 
     /**
-     * Valida que la firma térmica está intacta.
+     * Valida que la memory signature está intacta.
      * 
      * PROPÓSITO:
      * - Detectar corrupción de memoria
@@ -387,13 +389,13 @@ public final class VolcanAtomicBus implements IEventBus {
      * 
      * @return true si la firma está intacta, false si corrupta
      */
-    public boolean validateThermalSignature() {
-        return headShield_L1_slot1 == THERMAL_SIGNATURE &&
-                headShield_L1_slot7 == THERMAL_SIGNATURE &&
-                isolationBridge_slot1 == THERMAL_SIGNATURE &&
-                isolationBridge_slot7 == THERMAL_SIGNATURE &&
-                tailShield_L1_slot1 == THERMAL_SIGNATURE &&
-                tailShield_L1_slot7 == THERMAL_SIGNATURE;
+    public boolean validateMemorySignature() {
+        return headShield_L1_slot1 == MEMORY_SIGNATURE &&
+                headShield_L1_slot7 == MEMORY_SIGNATURE &&
+                isolationBridge_slot1 == MEMORY_SIGNATURE &&
+                isolationBridge_slot7 == MEMORY_SIGNATURE &&
+                tailShield_L1_slot1 == MEMORY_SIGNATURE &&
+                tailShield_L1_slot7 == MEMORY_SIGNATURE;
     }
 
     /**
@@ -404,14 +406,14 @@ public final class VolcanAtomicBus implements IEventBus {
      * - Llamado en runtime (overhead constante)
      * 
      * PARADIGMA AAA++:
-     * - Thermal signature validada en boot (0ns en runtime)
+     * - Memory signature validada en boot (0ns en runtime)
      * - Este método retorna 0 (confianza total)
      * 
      * @return 0 (padding ya validado en boot)
      */
     public long getPaddingChecksum() {
         // AAA++: Confianza total después de boot
-        // La firma térmica ya fue validada en constructor
+        // La memory signature ya fue validada en constructor
         // No necesitamos sumar 21 variables en cada llamada
         return 0L;
     }
@@ -743,9 +745,9 @@ public final class VolcanAtomicBus implements IEventBus {
      * POSTCONDICIONES:
      * - closed == true (bus marcado como cerrado)
      * - head == tail (todos los eventos consumidos o descartados)
-     * - Thermal signature intacta (sin corrupción de memoria)
+     * - Memory signature intacta (sin corrupción de memoria)
      */
-    public void sovereignShutdown() {
+    public void gracefulShutdown() {
         // ═══════════════════════════════════════════════════════════════
         // PASO 1: CERRAR FLAGS (Bloquear nuevas operaciones)
         // ═══════════════════════════════════════════════════════════════
@@ -789,9 +791,9 @@ public final class VolcanAtomicBus implements IEventBus {
             throw new Error("VolcanAtomicBus: Shutdown failed - Eventos pendientes en buffer");
         }
 
-        // Validar thermal signature
-        if (!validateThermalSignature()) {
-            throw new Error("VolcanAtomicBus: Thermal signature corrupted during shutdown");
+        // Validar memory signature
+        if (!validateMemorySignature()) {
+            throw new Error("VolcanAtomicBus: Memory signature corrupted during shutdown");
         }
 
         System.out.println("[ATOMIC BUS] Shutdown completado - Integridad 100%");

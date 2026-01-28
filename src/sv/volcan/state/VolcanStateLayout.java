@@ -3,13 +3,12 @@ package sv.volcan.state;
 
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Definición de ABI (Binary Interface) y direccionamiento de
- * memoria.
- * DEPENDENCIAS: Ninguna (Constantes puras)
- * MÉTRICAS: O(1) Access Time
+ * RESPONSABILIDAD: Memory Layout Constants - Offset Map
+ * DEPENDENCIAS: None (Pure Constants)
+ * MÉTRICAS: Zero-allocation, Compile-time resolution
  * 
- * Define el mapa de memoria física para el StateVault.
- * Garantiza alineación para caché L1 y offsets optimizados.
+ * Defines memory offsets for WorldStateFrame.
+ * Guarantees L1 cache alignment and optimized offsets.
  * 
  * @author Marvin-Dev
  * @version 1.0
@@ -18,7 +17,7 @@ package sv.volcan.state;
 public final class VolcanStateLayout {
 
     private VolcanStateLayout() {
-    } // Sellado: Solo constantes de direccionamiento puro.
+    } // Sealed: Pure addressing constants only.
 
     // --- [BLOQUE 0-99]: ESTADO DE ACTORES (HOT DATA - Alta Frecuencia) ---
     public static final int PLAYER_X = 0;

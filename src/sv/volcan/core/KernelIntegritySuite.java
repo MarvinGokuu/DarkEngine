@@ -27,7 +27,7 @@ public final class KernelIntegritySuite {
      * @return true si la integridad es absoluta (bit-perfect).
      */
     public static boolean validateBusIntegrity(VolcanExecutionDispatcher dispatcher, WorldStateFrame frame) {
-        long targetOffset = 2048L; // Offset de prueba (Soberanía de direccionamiento)
+        long targetOffset = 2048L; // Offset de prueba (Direct addressing)
         int testValue = 0xCAFECAFE;
 
         // 1. Limpieza de canal (Garantía de estado inicial)

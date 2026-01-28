@@ -5,7 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import sv.volcan.core.AAACertified; // 00000100
-import sv.volcan.admin.SovereignAdmin;
+import sv.volcan.admin.AdminController;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -13,12 +13,12 @@ import java.net.InetSocketAddress;
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Periférico de Salida HTTP (Blind Gateway)
- * DEPENDENCIAS: SovereignAdmin (DTO Holder)
+ * DEPENDENCIAS: AdminController (DTO Holder)
  * MÉTRICAS: Zero-Allocation per request, <100us latency
  * 
  * Servidor HTTP "Ciego" que cumple el rol de Periférico de Salida.
  * No conoce lógica de negocio, no formatea Strings, no accede al Kernel.
- * Solo transfiere bytes del SovereignAdmin al Socket.
+ * Solo transfiere bytes del AdminController al Socket.
  * 
  * ESTÁNDAR AAA+:
  * - Zero-Allocation (usa bytes pre-cocinados)
@@ -70,7 +70,7 @@ public final class VolcanMetricsServer {
             // 2. Obtener el último "Snapshot" de métricas ya formateado por el
             // AdminConsumer
             // (Lectura atómica de referencia - Costo ~Ns)
-            byte[] response = SovereignAdmin.getLatestSnapshot();
+            byte[] response = AdminController.getLatestSnapshot();
 
             // 3. Enviar sin procesar, sin concatenar, sin pensar
             exchange.sendResponseHeaders(200, response.length);

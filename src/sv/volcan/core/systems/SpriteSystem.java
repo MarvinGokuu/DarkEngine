@@ -56,7 +56,7 @@ public final class SpriteSystem implements VolcanRenderSystem {
      * Inyección visual en el buffer de pantalla.
      */
     private void drawFromAtlas(Graphics2D g2d, double x, double y, double glow) {
-        // Implementación de dibujo atómico (Soberanía de Render)
+        // Implementación de dibujo atómico (Render Control)
         // Se asume la existencia de un Atlas pre-cargado.
     }
     // actualizado3/1/26

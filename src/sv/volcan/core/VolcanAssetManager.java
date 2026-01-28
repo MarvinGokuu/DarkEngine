@@ -28,7 +28,7 @@ public final class VolcanAssetManager {
     } // Sellado: Solo utilidad estática
 
     /**
-     * Resuelve la ubicación absoluta de un activo priorizando la Bóveda Soberana.
+     * Resuelve la ubicación absoluta de un activo priorizando el Asset Vault.
      * [NOTA TÉCNICA]: No llamar durante la simulación. El costo de syscall es
      * inaceptable.
      */
@@ -36,7 +36,7 @@ public final class VolcanAssetManager {
         Path vaultBase = (VAULT_ENV != null) ? Paths.get(VAULT_ENV) : DEFAULT_VAULT;
         Path target = vaultBase.resolve(assetName);
 
-        // 1. Prioridad: Bóveda Soberana (Ubicación externa al motor)
+        // 1. Prioridad: Asset Vault (Ubicación externa al motor)
         if (Files.exists(target)) {
             return target.toAbsolutePath();
         }

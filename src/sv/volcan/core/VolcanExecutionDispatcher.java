@@ -30,7 +30,7 @@ public final class VolcanExecutionDispatcher {
      * ejecución.
      */
     public void dispatch(long offset, int value) {
-        // En V3.0, el offset ya viene validado por el SovereignInputBuffer.
+        // En V3.0, el offset ya viene validado por el InputBuffer.
         // Se elimina cualquier check de límites para evitar stall en el pipeline.
         state.writeInt(offset, value);
     }

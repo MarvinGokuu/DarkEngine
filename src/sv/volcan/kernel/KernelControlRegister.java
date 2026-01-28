@@ -12,7 +12,7 @@ import sv.volcan.core.AAACertified; // 00000100
  * MÉTRICAS: Latencia < 5ns (Transition), Thread-Safe, Cache Aligned
  * 
  * Registro de control de ultra-baja latencia para orquestar las fases
- * de vida del motor (Boot -> ignite -> Running -> Shutdown).
+ * de vida del motor (Boot -> start -> Running -> Shutdown).
  * Usa VarHandles para evitar el overhead de AtomicInteger.
  */
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -35,7 +35,7 @@ public final class KernelControlRegister {
     // ═══════════════════════════════════════════════════════════════════════════════
     public static final int STATE_OFFLINE = 0;
     public static final int STATE_BOOTING = 1; // Cargando memoria/recursos
-    public static final int STATE_IGNITION = 2; // Calentando JIT / Estabilizando
+    public static final int STATE_STARTING = 2; // Calentando JIT / Estabilizando
     public static final int STATE_RUNNING = 3; // Loop principal activo
     public static final int STATE_PAUSED = 4;
     public static final int STATE_HALTING = 5; // Shutdown graceful
@@ -125,11 +125,11 @@ public final class KernelControlRegister {
 
     /**
      * Intenta transicionar el kernel a RUNNING (Operativo).
-     * Solo válido desde BOOTING o IGNITION.
+     * Solo válido desde BOOTING o STARTING.
      */
     public boolean transitionToRunning() {
         int current = readState();
-        if (current == STATE_BOOTING || current == STATE_IGNITION) {
+        if (current == STATE_BOOTING || current == STATE_STARTING) {
             return transition(current, STATE_RUNNING);
         }
         return false;
@@ -141,7 +141,7 @@ public final class KernelControlRegister {
 
     public boolean isOperational() {
         int s = readState();
-        return s == STATE_RUNNING || s == STATE_IGNITION || s == STATE_PAUSED;
+        return s == STATE_RUNNING || s == STATE_STARTING || s == STATE_PAUSED;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════

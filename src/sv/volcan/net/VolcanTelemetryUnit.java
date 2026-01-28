@@ -7,13 +7,11 @@ import sv.volcan.core.systems.VolcanTheme;
 
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Visualización y monitoreo reactivo de signos vitales del
- * Kernel.
- * GARANTÍAS: Zero-Allocation en estado estable, sincronización total con el
- * Tick del motor.
- * PROHIBICIONES: Prohibido usar cálculos de tiempo real (System.ms) para
- * efectos visuales.
- * DOMINIO CRÍTICO: Telemetría / UX Industrial
+ * RESPONSABILIDAD: Telemetry aggregator for metrics and alerts.
+ * GARANTÍAS: Zero-allocation, Lock-free writes, Async persistence.
+ * RESTRICTIONS: Forbidden to use real-time calculations (System.ms) for
+ * critical metrics; forbidden to block the main loop.
+ * CRITICAL DOMAIN: Telemetry / Industrial UX
  *
  * @author Marvin-Dev
  */

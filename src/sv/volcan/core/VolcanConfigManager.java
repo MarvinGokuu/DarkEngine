@@ -1,6 +1,6 @@
 package sv.volcan.core;
 
-// import sv.volcan.core.SovereignExecutionIntegrity;
+// import sv.volcan.core.ExecutionValidator;
 
 /**
  * AUTORIDAD: Marvin-Dev

@@ -32,7 +32,7 @@ public final class SectorMemoryPartitioner {
         // [INGENIERÍA DURA]: Alineación Bitwise a 64 bytes (Evita False Sharing)
         long alignedChunk = (chunkSize + CACHE_LINE - 1) & ~(CACHE_LINE - 1);
 
-        // Cálculo de cantidad usando aritmética de enteros (Soberanía Determinista)
+        // Cálculo de cantidad usando aritmética de enteros (Deterministic Calculation)
         int count = (int) ((vault.byteSize() + alignedChunk - 1) / alignedChunk);
 
         // Array plano: Los punteros están contiguos en memoria

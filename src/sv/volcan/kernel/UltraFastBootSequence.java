@@ -30,7 +30,7 @@ import sv.volcan.bus.VolcanRingBus;
 // - La anotación @AAACertified documenta las garantías de rendimiento inline
 // - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
 // - Metadata visible para humanos, invisible para la JVM
-// - Este boot es el corazón del arranque: <1ms para estar operativo
+// - Este boot es el core del arranque: <1ms para estar operativo
 //
 // TÉCNICA:
 // - maxLatencyNs: 1_000_000 = Boot completo en <1ms (1,000,000ns)
@@ -208,12 +208,12 @@ public final class UltraFastBootSequence {
             // FASE 1: VERIFICACIÓN ESTRUCTURAL (AAA++)
             // ═══════════════════════════════════════════════════════════════
 
-            // 1.1: Validar thermal signature de buses
+            // 1.1: Validar memory signature de buses
             for (int i = 0; i < buses.length; i++) {
-                if (!buses[i].validateThermalSignature()) {
+                if (!buses[i].validateMemorySignature()) {
                     long elapsed = System.nanoTime() - startTime;
                     return BootResult.failure(elapsed,
-                            "Thermal signature corrupted in bus " + i);
+                            "Memory signature corrupted in bus " + i);
                 }
             }
 

@@ -1,6 +1,18 @@
+// Reading Order: 00001110
+package sv.volcan.kernel;
+
+import sv.volcan.core.systems.GameSystem;
+import sv.volcan.core.AAACertified;
+import sv.volcan.state.WorldStateFrame;
+
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Phaser;
+
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Ejecución Paralela de Sistemas con Sincronización Determinista
+ * RESPONSABILIDAD: Ejecución Paralela de Sistemas con Sincronización
+ * Determinista
  * DEPENDENCIAS: ForkJoinPool, Phaser, SystemDependencyGraph
  * MÉTRICAS: 4x throughput, <10μs overhead por capa
  * 
@@ -22,16 +34,6 @@
  * @version 1.0
  * @since 2026-01-08
  */
-// Reading Order: 00001110
-package sv.volcan.kernel;
-
-import sv.volcan.core.systems.SovereignSystem;
-import sv.volcan.core.AAACertified;
-import sv.volcan.state.WorldStateFrame;
-
-import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Phaser;
 
 @AAACertified(date = "2026-01-08", maxLatencyNs = 10_000, minThroughput = 240, alignment = 64, lockFree = false, // Usa
                                                                                                                  // Phaser
@@ -44,7 +46,7 @@ public final class ParallelSystemExecutor {
     private final ForkJoinPool pool;
 
     // Capas de ejecución (del grafo de dependencias)
-    private final List<List<SovereignSystem>> executionLayers;
+    private final List<List<GameSystem>> executionLayers;
 
     // Métricas
     private long lastExecutionTimeNs;
@@ -54,7 +56,7 @@ public final class ParallelSystemExecutor {
      * 
      * @param executionLayers Capas de sistemas (del grafo de dependencias)
      */
-    public ParallelSystemExecutor(List<List<SovereignSystem>> executionLayers) {
+    public ParallelSystemExecutor(List<List<GameSystem>> executionLayers) {
         if (executionLayers == null || executionLayers.isEmpty()) {
             throw new IllegalArgumentException("Execution layers cannot be null or empty");
         }
@@ -90,7 +92,7 @@ public final class ParallelSystemExecutor {
         long startTime = System.nanoTime();
 
         // Ejecutar cada capa secuencialmente
-        for (List<SovereignSystem> layer : executionLayers) {
+        for (List<GameSystem> layer : executionLayers) {
             executeLayer(layer, state, deltaTime);
         }
 
@@ -105,7 +107,7 @@ public final class ParallelSystemExecutor {
      * @param state     Estado del mundo
      * @param deltaTime Tiempo transcurrido
      */
-    private void executeLayer(List<SovereignSystem> layer, WorldStateFrame state, double deltaTime) {
+    private void executeLayer(List<GameSystem> layer, WorldStateFrame state, double deltaTime) {
         int systemCount = layer.size();
 
         // Caso especial: capa con 1 solo sistema (no vale la pena paralelizar)
@@ -123,7 +125,7 @@ public final class ParallelSystemExecutor {
         Phaser phaser = new Phaser(systemCount + 1);
 
         // Lanzar tareas en paralelo
-        for (SovereignSystem system : layer) {
+        for (GameSystem system : layer) {
             pool.execute(() -> {
                 try {
                     system.update(state, deltaTime);

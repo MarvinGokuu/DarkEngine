@@ -10,7 +10,7 @@ import sv.volcan.state.WorldStateFrame;
  * MÉTRICAS: Zero-Allocation Render Loop
  * 
  * Interfaz base para sistemas de visualización. Separa estrictamente la lógica
- * (SovereignSystem)
+ * (GameSystem)
  * de la presentación (VolcanRenderSystem), garantizando que el renderizado sea
  * de solo lectura.
  * 
@@ -31,7 +31,7 @@ public interface VolcanRenderSystem {
      * 1. g2d != null y está configurado para el frame actual
      * 2. state != null y es consistente (no cambia durante render)
      * 3. Se llama desde el thread de AWT/Swing
-     * 4. El estado ya fue actualizado por todos los SovereignSystems
+     * 4. El estado ya fue actualizado por todos los GameSystems
      * 
      * POSTCONDICIONES (lo que el sistema debe garantizar):
      * 1. Solo LEE datos del state (no modifica)
@@ -100,7 +100,7 @@ public interface VolcanRenderSystem {
      * 
      * @see WorldStateFrame Para detalles de acceso a memoria
      * @see EntityLayout Para offsets de entidades
-     * @see SovereignSystem Para sistemas de lógica de juego
+     * @see GameSystem Para sistemas de lógica de juego
      */
     void render(Graphics2D g2d, WorldStateFrame state);
 

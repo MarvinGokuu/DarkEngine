@@ -38,7 +38,7 @@ public final class VolcanVisualObserver {
                 this.mappedBuffer = fc.map(FileChannel.MapMode.READ_WRITE, 0, LAYOUT_SIZE);
             }
         } catch (Exception e) {
-            // [PANIC]: Fallo crítico de observación. La soberanía del motor se mantiene,
+            // [PANIC]: Fallo crítico de observación. El control del motor se mantiene,
             // pero la visibilidad externa se desactiva para proteger la ejecución.
         }
     }
@@ -57,7 +57,7 @@ public final class VolcanVisualObserver {
         mappedBuffer.putLong(0, System.nanoTime());
 
         // 2. Proyección de Registros de Estado (Basado en el WorldStateLayout)
-        // Ejemplo: Proyectamos la posición del Actor Soberano
+        // Ejemplo: Proyectamos la posición del Actor Principal
         mappedBuffer.putInt(8, frame.readInt(400L)); // Registro 400L: PlayerX
         mappedBuffer.putInt(12, frame.readInt(404L)); // Registro 404L: PlayerY
 

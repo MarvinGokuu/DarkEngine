@@ -267,12 +267,12 @@ public final class VolcanEventDispatcher {
             if (lane != null) {
                 System.out.printf("[EVENT DISPATCHER] Cerrando lane: %s%n", laneName);
 
-                // Cerrar el bus subyacente si tiene sovereignShutdown()
+                // Cerrar el bus subyacente si tiene gracefulShutdown()
                 IEventBus bus = lane.getBus();
                 if (bus instanceof VolcanAtomicBus) {
-                    ((VolcanAtomicBus) bus).sovereignShutdown();
+                    ((VolcanAtomicBus) bus).gracefulShutdown();
                 } else if (bus instanceof VolcanRingBus) {
-                    ((VolcanRingBus) bus).sovereignShutdown();
+                    ((VolcanRingBus) bus).gracefulShutdown();
                 } else {
                     // Para otros buses, solo limpiar
                     bus.clear();

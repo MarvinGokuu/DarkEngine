@@ -27,7 +27,7 @@ public final class VolcanTscHeartbeat {
     private static long driftAccumulator;
 
     static {
-        // Ignición del cronómetro en la carga de la clase (Boot-time)
+        // Timer initialization at class load (Boot-time)
         lastTickTime = System.nanoTime();
     }
 

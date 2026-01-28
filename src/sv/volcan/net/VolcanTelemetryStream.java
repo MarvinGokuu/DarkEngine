@@ -6,33 +6,32 @@ import java.nio.ByteBuffer;
 
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Streaming binario de alertas y métricas sin bloqueo del
- * Kernel (Lock-Free).
- * GARANTÍAS: Zero-allocation, Wait-free para el productor, persistencia
- * asíncrona off-heap.
- * PROHIBICIONES: Prohibido usar Strings en el registro; prohibido usar
- * synchronized;
- * prohibido abrir archivos en el loop crítico.
- * DOMINIO CRÍTICO: Telemetry / Diagnóstico Rápido
+ * RESPONSABILIDAD: Binary streaming of alerts and metrics without blocking
+ * the Kernel (Lock-Free).
+ * GUARANTEES: Zero-allocation, Wait-free for producer, async off-heap
+ * persistence.
+ * RESTRICTIONS: Forbidden to use Strings in registry; forbidden to use
+ * synchronized; forbidden to open files in critical loop.
+ * CRITICAL DOMAIN: Telemetry / Fast Diagnostics
  *
  * @author Marvin-Dev
  */
 @AAACertified(date = "2026-01-10", maxLatencyNs = 10, minThroughput = 10_000_000, alignment = 16, lockFree = true, offHeap = true, notes = "Lock-Free RingBuffer Stream (Zero-GC)")
 public final class VolcanTelemetryStream {
 
-    // [INGENIERÍA DURA]: Buffer circular de 16KB (1024 entradas * 16 bytes)
-    // Layout por entrada: [Long: Timestamp (8b)] [Int: Offset (4b)] [Int: Value
+    // [HARD ENGINEERING]: Circular buffer 16KB (1024 entries * 16 bytes)
+    // Layout per entry: [Long: Timestamp (8b)] [Int: Offset (4b)] [Int: Value
     // (4b)]
     private static final int CAPACITY = 1024;
     private static final ByteBuffer ringBuffer = ByteBuffer.allocateDirect(CAPACITY * 16);
     private static final AtomicLong cursor = new AtomicLong(0);
 
     private VolcanTelemetryStream() {
-    } // Sellado: Solo utilidad estática
+    } // Sealed: Static utility only
 
     /**
-     * Registro Atómico Binario (Llamada Soberana).
-     * El Kernel "dispara y olvida" en nanosegundos mediante punteros atómicos.
+     * Atomic Binary Registry (Direct call).
+     * Writes directly to off-heap memory (zero-copy).
      * * @param offset Identificador del registro o alerta (StateKey).
      * 
      * @param value Valor escalar de la métrica.

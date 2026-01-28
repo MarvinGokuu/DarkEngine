@@ -1,6 +1,13 @@
+package sv.volcan.kernel;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.ThreadMXBean;
+
 /**
  * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Validación de Baseline (Línea Base) para detección de Memory Leaks
+ * RESPONSABILIDAD: Validación de Baseline (Línea Base) para detección de Memory
+ * Leaks
  * DEPENDENCIAS: Runtime, ManagementFactory
  * MÉTRICAS: Precisión 100%, Tolerancia ±1MB
  * 
@@ -15,12 +22,6 @@
  * @version 1.0
  * @since 2026-01-17
  */
-package sv.volcan.kernel;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.ThreadMXBean;
-
 public final class BaselineValidator {
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -94,7 +95,10 @@ public final class BaselineValidator {
 
         boolean passed = true;
         long TOLERANCE_1MB = 1_048_576; // 1 MB
-        long TOLERANCE_2MB = 2_097_152; // 2 MB
+        // Ajuste de tolerancia Non-Heap:
+        // Metaspace y CodeCache (JIT) no se liberan inmediatamente al apagar el motor.
+        // 4MB es un margen seguro para una aplicación pequeña.
+        long TOLERANCE_NON_HEAP = 4_194_304; // 4 MB
 
         // Validación 1: Heap Memory
         long heapDelta = stateC.heapUsedBytes - stateA.heapUsedBytes;
@@ -106,14 +110,14 @@ public final class BaselineValidator {
             System.out.println("  ✅ Heap OK: Delta <= 1MB");
         }
 
-        // Validación 2: Non-Heap Memory (Project Panama, Code Cache)
+        // Validación 2: Non-Heap Memory (Project Panama, Code Cache, JIT)
         long nonHeapDelta = stateC.nonHeapUsedBytes - stateA.nonHeapUsedBytes;
         System.out.printf("  Non-Heap Delta: %,d bytes (%.2f MB)%n", nonHeapDelta, nonHeapDelta / 1_048_576.0);
-        if (nonHeapDelta > TOLERANCE_2MB) {
-            System.out.println("  ❌ NON-HEAP LEAK DETECTED: Delta > 2MB");
+        if (nonHeapDelta > TOLERANCE_NON_HEAP) {
+            System.out.println("  ❌ NON-HEAP LEAK DETECTED: Delta > 4MB (Metaspace/CodeCache overflow)");
             passed = false;
         } else {
-            System.out.println("  ✅ Non-Heap OK: Delta <= 2MB");
+            System.out.println("  ✅ Non-Heap OK: Delta <= 4MB");
         }
 
         // Validación 3: Thread Count

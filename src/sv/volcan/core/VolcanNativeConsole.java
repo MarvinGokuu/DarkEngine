@@ -36,25 +36,21 @@ public final class VolcanNativeConsole {
     /**
      * Inyección de caracteres desde el InputBridge.
      * Gestiona el buffer sin generar basura en el Heap.
-     */
-    /**
-     * Inyección de caracteres desde el InputBridge.
-     * Gestiona el buffer sin generar basura en el Heap.
      * IMPLEMENTA HARDWARE INTERCEPT: Teclas Maestras 1 y 0.
      */
     public void pushChar(char c) {
         // [HARDWARE INTERCEPT]: Protocolo de Teclas Maestras
         // Estas teclas operan a nivel de interrupción, bypass del buffer.
         if (c == '1') {
-            System.out.println("[HARDWARE INTERCEPT] KEY '1' DETECTED -> IGNITION SEQUENCE INITIATED.");
+            System.out.println("[HARDWARE INTERCEPT] KEY '1' DETECTED -> STARTUP SEQUENCE INITIATED.");
             // En un sistema real, esto enviaría la señal 0x9001 (MarvinDevOn) al Bus.
-            // VolcanAtomicBus.publish(VolcanSignalCommands.MAGIC_CMD_ON, 0);
+            // VolcanAtomicBus.publish(VolcanSignalCommands.ADMIN_CMD_ON, 0);
             return;
         }
         if (c == '0') {
             System.out.println("[HARDWARE INTERCEPT] KEY '0' DETECTED -> SHUTDOWN SEQUENCE INITIATED.");
             // En un sistema real, esto enviaría la señal 0x9002 (MarvinDevoff) al Bus.
-            // VolcanAtomicBus.publish(VolcanSignalCommands.MAGIC_CMD_OFF, 0);
+            // VolcanAtomicBus.publish(VolcanSignalCommands.ADMIN_CMD_OFF, 0);
             return;
         }
 
@@ -104,7 +100,7 @@ public final class VolcanNativeConsole {
      * Renderizado optimizado: Proyección directa del buffer a la GPU (via G2D).
      */
     public void render(Graphics2D g2d, VolcanStateVault vault, int x, int y, int w, int h) {
-        // Acceso directo a la frecuencia del motor (Soberanía de Tiempo)
+        // Acceso directo a la frecuencia del motor (Time Control)
         int tick = vault.read(VolcanStateLayout.SYS_TICK);
 
         // 1. Fondo Glassmorphism (Industrial Look)

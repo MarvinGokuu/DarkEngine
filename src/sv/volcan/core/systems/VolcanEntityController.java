@@ -42,7 +42,7 @@ public final class VolcanEntityController {
                 int nx = (tick * 13) % 800;
                 int ny = (tick * 7) % 600;
 
-                // Escritura directa en memoria nativa (Soberanía del State)
+                // Escritura directa en memoria nativa (State Control)
                 vault.write(VolcanStateLayout.PLAYER_X, nx);
                 vault.write(VolcanStateLayout.PLAYER_Y, ny);
             }

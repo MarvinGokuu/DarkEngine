@@ -1,3 +1,4 @@
+
 package sv.volcan.state;
 
 import java.lang.foreign.Arena;
@@ -23,9 +24,8 @@ public final class WorldStateFrame {
     private final long timestamp;
 
     /**
-     * Captura soberana: El frame se adueña de una porción del tiempo.
-     * [MECHANICAL SYMPATHY]: Forzamos alineación de línea de caché para ráfagas
-     * SIMD.
+     * State capture: Frame takes ownership of a time slice.
+     * [MECHANICAL SYMPATHY]: Force cache line alignment for SIMD bursts.
      */
     public WorldStateFrame(Arena arena, MemorySegment source, long timestamp) {
         // Reserva de memoria nativa fuera del alcance del GC

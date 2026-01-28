@@ -82,7 +82,7 @@ public final class VolcanDataAccelerator {
                 segment.set(ValueLayout.JAVA_INT, i * 4, 1);
             }
 
-            System.out.println("[BENCHMARK] Igniting Accelerator...");
+            System.out.println("[BENCHMARK] Starting Accelerator...");
             long start = System.nanoTime();
 
             int result = accelerate(segment, dataSize);

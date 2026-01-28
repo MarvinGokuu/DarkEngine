@@ -11,7 +11,7 @@ import sv.volcan.state.WorldStateFrame;
  * DEPENDENCIAS: java.awt.Canvas, java.awt.image.BufferStrategy, WorldStateFrame
  * MÉTRICAS: Target 60 FPS, Zero-Allocation Render
  * 
- * Gestiona la proyección visual del estado soberano a la pantalla.
+ * Gestiona la proyección visual del engine state a la pantalla.
  * Implementa Triple Buffering y control de V-Sync para eliminar tearing.
  * 
  * @author Marvin-Dev
@@ -49,14 +49,14 @@ public final class VolcanDisplayBridge {
             try {
                 g.setRenderingHints(hints);
 
-                // 1. Limpieza de Frame (Soberanía de Color)
+                // 1. Limpieza de Frame (Color Control)
                 g.setColor(BG_COLOR);
                 g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
                 // 2. Proyección de Entidades
                 // [OBSERVACIÓN]: Aquí se integrarán las llamadas a SpriteSystem.renderBatch.
 
-                // 3. Post-procesado Soberano (Zero-allocation)
+                // 3. Post-procesado (Zero-allocation)
                 applyIndustrialFilters(g);
 
             } finally {
