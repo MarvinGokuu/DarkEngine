@@ -597,6 +597,12 @@ public final class EngineKernel {
         System.out.println("[KERNEL] GRACEFUL SHUTDOWN COMPLETED");
         System.out.println("═══════════════════════════════════════════════════════════════");
 
+        // [GARANTIA DE CIERRE]
+        // Forzamos al kernel de Windows a limpiar descriptores de memoria nativa y CPU
+        // Pinning
+        System.out.println("[KERNEL] EJECUTANDO CIERRE DE BAJO NIVEL (HALT)...");
+        Runtime.getRuntime().halt(0);
+
         // CLEANUP EXTRA: Remover shutdown hook para evitar leak de threads si fue
         // manual
         try {
