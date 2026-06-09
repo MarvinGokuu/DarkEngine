@@ -1,9 +1,9 @@
-# VOLCAN ENGINE - PROJECT HEALTH REPORT & DEVELOPMENT GUIDE
+# DARK ENGINE - PROJECT HEALTH REPORT & DEVELOPMENT GUIDE
 ## Estado de Salud del Proyecto y Guía de Desarrollo
 
-**Fecha:** 2026-01-24 (Updated)  
-**Versión:** 2.0  
-**Estado:** ✅ Saludable - Production Ready
+**Fecha:** 2026-06-08 (Updated)  
+**Versión:** 2.2.0  
+**Estado:** ✅ Saludable con Capa Visual - Production Ready
 
 ---
 
@@ -15,9 +15,9 @@
 - ✅ **APIs:** Modernas y de alto rendimiento
 - ✅ **Arquitectura:** Limpia y bien estructurada
 - ✅ **Documentación:** Completa y actualizada
-- ✅ **Tests:** 7/7 passing (100% coverage)
-- ✅ **Performance:** Peak (0.167ms boot, 185M ops/s)
-- ✅ **Bugs:** 0 (vault fix + audit fixes completados)
+- ✅ **Tests:** 10/10 passing (100% coverage)
+- ✅ **Performance:** Peak (0.069ms boot, 185M ops/s)
+- ✅ **Bugs:** 0 (CPU busy-spin + socket leaks resolved)
 
 ---
 
@@ -52,7 +52,7 @@ import java.lang.foreign.SymbolLookup;    // 1 archivo (ThreadPinning)
 
 ### **2. Vector API (SIMD)**
 
-**Archivos que lo usan:** 1 archivo (`VolcanDataAccelerator.java`)
+**Archivos que lo usan:** 1 archivo (`DarkDataAccelerator.java`)
 
 **APIs Utilizadas:**
 ```java
@@ -214,13 +214,13 @@ import java.nio.file.*;
 ### **Estructura Verificada:**
 
 ```
-src/sv/volcan/
-├── state/           ✅ 4 archivos (WorldStateFrame, VolcanStateVault, etc.)
+src/sv/dark/
+├── state/           ✅ 4 archivos (WorldStateFrame, DarkStateVault, etc.)
 ├── kernel/          ✅ 11 archivos (EngineKernel, ParallelSystemExecutor, etc.)
-├── core/            ✅ 15 archivos (VolcanDataAccelerator, systems/, etc.)
+├── core/            ✅ 15 archivos (DarkDataAccelerator, systems/, etc.)
 │   ├── systems/     ✅ 7 archivos (MovementSystem, RenderSystem, etc.)
 │   └── memory/      ✅ 1 archivo (SectorMemoryPartitioner)
-├── bus/             ✅ 12 archivos (VolcanAtomicBus, VolcanRingBus, etc.)
+├── bus/             ✅ 12 archivos (DarkAtomicBus, DarkRingBus, etc.)
 ├── net/             ✅ 3 archivos (Telemetry, Saturation, etc.)
 ├── memory/          ✅ 1 archivo (SectorMemoryVault)
 ├── admin/           ✅ 1 archivo (SovereignAdmin)
@@ -244,15 +244,15 @@ javac -d bin \
   -J-XX:+UseZGC \                 # ZGC para compilador
   -J-Xms4G -J-Xmx4G \             # Heap fijo
   -J-XX:+AlwaysPreTouch \         # Pre-touch memory
-  src\sv\volcan\state\VolcanEngineMaster.java \
-  src\sv\volcan\kernel\*.java \
-  src\sv\volcan\core\*.java \
-  src\sv\volcan\core\memory\*.java \
-  src\sv\volcan\core\systems\*.java \
-  src\sv\volcan\state\*.java \
-  src\sv\volcan\bus\*.java \
-  src\sv\volcan\net\*.java \
-  src\sv\volcan\test\*.java
+  src\sv\dark\state\DarkEngineMaster.java \
+  src\sv\dark\kernel\*.java \
+  src\sv\dark\core\*.java \
+  src\sv\dark\core\memory\*.java \
+  src\sv\dark\core\systems\*.java \
+  src\sv\dark\state\*.java \
+  src\sv\dark\bus\*.java \
+  src\sv\dark\net\*.java \
+  src\sv\dark\test\*.java
 ```
 
 **Estado:** ✅ **CORRECTO**
@@ -267,7 +267,7 @@ java \
   --enable-native-access=ALL-UNNAMED \  # Native access
   --add-modules jdk.incubator.vector \  # Vector API
   -cp bin \
-  sv.volcan.state.VolcanEngineMaster
+  sv.dark.state.DarkEngineMaster
 ```
 
 **Estado:** ✅ **CORRECTO**
@@ -280,18 +280,19 @@ java \
 
 | Test | Ubicación | Propósito |
 |------|-----------|-----------|
-| **BusBenchmarkTest** | `sv.volcan.bus` | Throughput >10M ops/s |
-| **BusCoordinationTest** | `sv.volcan.bus` | Multi-lane coordination |
-| **BusHardwareTest** | `sv.volcan.bus` | Padding validation |
-| **UltraFastBootTest** | `sv.volcan.test` | Boot time <1ms |
-| **GracefulShutdownTest** | `sv.volcan.test` | Clean shutdown |
-| **PowerSavingTest** | `sv.volcan.test` | Tiered idle system |
-| **BusBenchmarkTest** | `sv.volcan.test` | (Duplicado) |
+| **BusBenchmarkTest** | `sv.dark.bus` | Throughput >10M ops/s |
+| **BusCoordinationTest** | `sv.dark.bus` | Multi-lane coordination |
+| **BusHardwareTest** | `sv.dark.bus` | Padding validation |
+| **UltraFastBootTest** | `sv.dark.test` | Boot time <1ms |
+| **GracefulShutdownTest** | `sv.dark.test` | Clean shutdown |
+| **PowerSavingTest** | `sv.dark.test` | Tiered idle system |
+| **ParticleSystemDeterminismTest** | `sv.dark.test` | RNG seed determinism test |
+| **SystemRegistryCapacityTest** | `sv.dark.test` | Collection capacity pre-sizing test |
+| **DependencyGraphPerformanceTest**| `sv.dark.test` | Dependency map pre-sizing test |
 
 **Ejecutar:**
 ```batch
-java -cp bin sv.volcan.bus.BusBenchmarkTest
-java -cp bin sv.volcan.test.UltraFastBootTest
+.\test.bat
 ```
 
 ---
@@ -375,8 +376,8 @@ Java(TM) SE Runtime Environment (build 25+XX)
 
 #### **1.2. Clonar el Proyecto**
 ```batch
-git clone https://github.com/MarvinGokuu/VolcanEngine.git
-cd VolcanEngine
+git clone https://github.com/MarvinGokuu/DarkEngine.git
+cd DarkEngine
 ```
 
 ---
@@ -410,12 +411,12 @@ build.bat
 
 **Orden sugerido:**
 
-1. **`VolcanEngineMaster.java`** - Punto de entrada
+1. **`DarkEngineMaster.java`** - Punto de entrada
 2. **`EngineKernel.java`** - Loop principal
-3. **`VolcanAtomicBus.java`** - Comunicación lock-free
+3. **`DarkAtomicBus.java`** - Comunicación lock-free
 4. **`WorldStateFrame.java`** - Estado del juego
 5. **`ParallelSystemExecutor.java`** - Ejecución paralela
-6. **`VolcanDataAccelerator.java`** - SIMD
+6. **`DarkDataAccelerator.java`** - SIMD
 
 ---
 
@@ -423,12 +424,12 @@ build.bat
 
 #### **3.1. Test de Bus**
 ```batch
-java -cp bin sv.volcan.bus.BusBenchmarkTest
+java -cp bin sv.dark.bus.BusBenchmarkTest
 ```
 
 **Esperado:**
 ```
-[TEST] VolcanAtomicBus Benchmark
+[TEST] DarkAtomicBus Benchmark
 [RESULT] Throughput: >10M ops/s
 [RESULT] Latency: <150ns
 ```
@@ -437,7 +438,7 @@ java -cp bin sv.volcan.bus.BusBenchmarkTest
 
 #### **3.2. Test de Boot**
 ```batch
-java -cp bin sv.volcan.test.UltraFastBootTest
+java -cp bin sv.dark.test.UltraFastBootTest
 ```
 
 **Esperado:**
@@ -455,10 +456,10 @@ java -cp bin sv.volcan.test.UltraFastBootTest
 **Ejemplo:** Sistema de colisiones
 
 ```java
-// src/sv/volcan/core/systems/CollisionSystem.java
-package sv.volcan.core.systems;
+// src/sv/dark/core/systems/CollisionSystem.java
+package sv.dark.core.systems;
 
-import sv.volcan.state.WorldStateFrame;
+import sv.dark.state.WorldStateFrame;
 
 public class CollisionSystem implements GameSystem {
     @Override
@@ -479,7 +480,7 @@ public class CollisionSystem implements GameSystem {
 #### **4.2. Registrar el Sistema**
 
 ```java
-// En EngineKernel.java o VolcanEngineMaster.java
+// En EngineKernel.java o DarkEngineMaster.java
 systemRegistry.registerSystem(new CollisionSystem());
 ```
 
@@ -502,7 +503,7 @@ El motor imprime logs detallados:
 [KERNEL] Logic Thread PINNED to Core 1
 [KERNEL] EXECUTING JIT WARM-UP...
 [KERNEL] EXECUTING BOOT SEQUENCE...
-[KERNEL] Boot Time: 0.290ms
+[KERNEL] Boot Time: 0.069ms
 ```
 
 ---
@@ -525,7 +526,7 @@ type gc_production.log
 
 Para ver compilación JIT:
 ```batch
-java -XX:+PrintCompilation -cp bin sv.volcan.state.VolcanEngineMaster
+java -XX:+PrintCompilation -cp bin sv.dark.state.DarkEngineMaster
 ```
 
 ---
@@ -536,7 +537,7 @@ java -XX:+PrintCompilation -cp bin sv.volcan.state.VolcanEngineMaster
 
 Usar JDK Flight Recorder:
 ```batch
-java -XX:StartFlightRecording=filename=recording.jfr -cp bin sv.volcan.state.VolcanEngineMaster
+java -XX:StartFlightRecording=filename=recording.jfr -cp bin sv.dark.state.DarkEngineMaster
 ```
 
 **Analizar:**
@@ -564,10 +565,10 @@ Usar VisualVM o JProfiler para analizar:
 - [ ] Entender el loop principal (`EngineKernel`)
 
 ### **Semana 2: Arquitectura**
-- [ ] Estudiar `VolcanAtomicBus` (lock-free)
+- [ ] Estudiar `DarkAtomicBus` (lock-free)
 - [ ] Estudiar `WorldStateFrame` (off-heap)
 - [ ] Estudiar `ParallelSystemExecutor` (ForkJoinPool)
-- [ ] Estudiar `VolcanDataAccelerator` (SIMD)
+- [ ] Estudiar `DarkDataAccelerator` (SIMD)
 
 ### **Semana 3: Práctica**
 - [ ] Crear un sistema simple
@@ -657,13 +658,13 @@ Usar VisualVM o JProfiler para analizar:
 4. Crear un sistema simple
 
 ### **Para Desarrolladores Avanzados:**
-1. Estudiar `VolcanAtomicBus` (lock-free)
-2. Estudiar `VolcanDataAccelerator` (SIMD)
+1. Estudiar `DarkAtomicBus` (lock-free)
+2. Estudiar `DarkDataAccelerator` (SIMD)
 3. Profiling de rendimiento
 4. Contribuir optimizaciones
 
 ### **Para Arquitectos:**
-1. Revisar `VOLCAN_OS_MASTER_PLAN.md`
+1. Revisar `DARK_OS_MASTER_PLAN.md`
 2. Revisar `FASE_1_GAME_LAUNCHER.md`
 3. Proponer mejoras arquitectónicas
 4. Diseñar nuevos componentes
@@ -691,6 +692,6 @@ Usar VisualVM o JProfiler para analizar:
 
 ---
 
-**Última Actualización:** 2026-01-19  
+**Última Actualización:** 2026-06-08  
 **Autor:** System Architect  
 **Estado:** ✅ Verificado y Completo

@@ -1,0 +1,64 @@
+// Reading Order: 00010101
+package sv.dark.core;
+
+import com.sun.management.OperatingSystemMXBean;
+import java.lang.management.ManagementFactory;
+import sv.dark.state.DarkStateVault;
+
+/**
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Muestreo de Métricas de Sistema Zero-GC.
+ * DEPENDENCIAS: java.lang.management.OperatingSystemMXBean, DarkStateVault
+ * MÉTRICAS: Zero-GC Sampling, Scaled Integer Precision
+ * 
+ * Captura métricas dinámicas del sistema (CPU Load, Memoria Libre) y las
+ * inyecta en el StateVault como enteros escalados para evitar overhead de punto
+ * flotante.
+ * 
+ * @author Marvin-Dev
+ * @version 1.0
+ * @since 2026-01-05
+ */
+@AAACertified(date = "2026-01-10", maxLatencyNs = 100_000, minThroughput = 60, alignment = 0, lockFree = true, offHeap = false, notes = "System Metrics Sampler (Scaled Integers)")
+public final class DarkSystemProbe {
+
+    private static final OperatingSystemMXBean OS_BEAN = (OperatingSystemMXBean) ManagementFactory
+            .getOperatingSystemMXBean();
+
+    // Direccionamiento de Registros en el Vault (Mapeo síncrono)
+    public static final int REG_CPU_LOAD = 500;
+    public static final int REG_MEM_FREE = 501;
+    public static final int REG_MEM_TOTAL = 502;
+
+    private DarkSystemProbe() {
+    } // Sellado: Solo utilidad de muestreo.
+
+    /**
+     * Inyecta datos como enteros escalados para evitar el overhead de punto
+     * flotante.
+     * [MECHANICAL SYMPATHY]: Representación de 0-100% como 0-10000 para mantener 2
+     * decimales de precisión.
+     */
+    public static void sample(DarkStateVault vault) {
+        // CPU Load: (0.00% a 100.00%) -> Entero escalado
+        int cpuScaled = (int) (OS_BEAN.getCpuLoad() * 10000);
+        vault.write(REG_CPU_LOAD, cpuScaled);
+
+        // Memoria: Normalizada a MB para evitar desbordamientos de Integer
+        int freeMB = (int) (OS_BEAN.getFreeMemorySize() / 1048576);
+        int totalMB = (int) (OS_BEAN.getTotalMemorySize() / 1048576);
+
+        vault.write(REG_MEM_FREE, freeMB);
+        vault.write(REG_MEM_TOTAL, totalMB);
+    }
+
+    /**
+     * Información estática del entorno.
+     * Solo debe invocarse durante la secuencia de startup del Kernel.
+     */
+    public static void logStaticEnvironment() {
+        System.out.println("[DARK-BOOT] OS: " + System.getProperty("os.name"));
+        System.out.println("[DARK-BOOT] JVM: " + System.getProperty("java.version"));
+    }
+}
+// actualizado3/1/26

@@ -17,7 +17,7 @@
 ## 1. Patrón de Documentación (Template)
 
 ```java
-import sv.volcan.core.AAACertified;
+import sv.dark.core.AAACertified;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CERTIFICACION AAA+ - [COMPONENT_ID]
@@ -29,7 +29,7 @@ import sv.volcan.core.AAACertified;
 // - Validable mediante análisis estático.
 //
 // ESPECIFICACION TECNICA:
-// - maxLatencyNs: [valor] = [Justificación de hardware/silicio]
+// - maxLatencyNs: [valor] = [Justificación de hardware]
 // - minThroughput: [valor] = [Justificación de ancho de banda]
 // - alignment: [valor] = [Justificación de padding de memoria]
 // - lockFree: [true/false] = [Mecanismo de concurrencia]
@@ -166,7 +166,7 @@ javap -c bin/sv/runtime/[path]/ComponentName.class | grep "AAACertified"
 
 ## 6. Certified Components (Production)
 
-### VolcanAtomicBus (2026-01-12)
+### DarkAtomicBus (2026-01-12)
 
 **Certification Status**: ✅ AAA+ CERTIFIED
 

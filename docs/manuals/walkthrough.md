@@ -2,7 +2,7 @@
 
 ## Objetivo Cumplido
 
-Upgrade completo del sistema de comunicación del motor Volcan con soporte para datos especializados, edge computing, y operaciones aritméticas en hot-path.
+Upgrade completo del sistema de comunicación del motor Dark con soporte para datos especializados, edge computing, y operaciones aritméticas en hot-path.
 
 ---
 
@@ -10,29 +10,29 @@ Upgrade completo del sistema de comunicación del motor Volcan con soporte para 
 
 | Componente | Estado Inicial | Estado Final |
 |------------|----------------|--------------|
-| VolcanSignalDispatcher | 40% | 100% |
-| VolcanSignalPacker | 60% | 100% |
-| VolcanSignalCommands | 70% | 100% |
+| DarkSignalDispatcher | 40% | 100% |
+| DarkSignalPacker | 60% | 100% |
+| DarkSignalCommands | 70% | 100% |
 | SignalProcessor (nuevo) | 0% | 100% |
 
 ---
 
 ## Cambios Implementados
 
-### 1. VolcanSignalDispatcher - Correcciones y Mejoras
+### 1. DarkSignalDispatcher - Correcciones y Mejoras
 
-**Ubicación**: [VolcanSignalDispatcher.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalDispatcher.java)
+**Ubicación**: [DarkSignalDispatcher.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalDispatcher.java)
 
 #### Correcciones Críticas
 
-**Bug corregido**: Método [dispatch()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalDispatcher.java#23-37) llamaba a `bus.push()` inexistente
+**Bug corregido**: Método [dispatch()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalDispatcher.java#23-37) llamaba a `bus.push()` inexistente
 - **Antes**: `return bus.push(event);`
 - **Después**: `return bus.offer(event);`
 - **Impacto**: Error de compilación eliminado
 
-**Optimización**: [processAllEvents()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalDispatcher.java#49-74) sin boxing
+**Optimización**: [processAllEvents()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalDispatcher.java#49-74) sin boxing
 - **Antes**: Usaba `java.util.function.LongConsumer` (boxing)
-- **Después**: Usa [SignalProcessor](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/SignalProcessor.java#23-41) (sin boxing)
+- **Después**: Usa [SignalProcessor](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/SignalProcessor.java#23-41) (sin boxing)
 - **Ganancia**: Eliminación de allocations en hot-path
 
 #### Métodos Batch Agregados
@@ -63,7 +63,7 @@ Upgrade completo del sistema de comunicación del motor Volcan con soporte para 
 
 ### 2. SignalProcessor - Interfaz Sin Boxing
 
-**Ubicación**: [SignalProcessor.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/SignalProcessor.java)
+**Ubicación**: [SignalProcessor.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/SignalProcessor.java)
 
 **Propósito**: Reemplazo de `LongConsumer` sin boxing
 
@@ -76,9 +76,9 @@ Upgrade completo del sistema de comunicación del motor Volcan con soporte para 
 
 ---
 
-### 3. VolcanSignalPacker - Formatos Especializados
+### 3. DarkSignalPacker - Formatos Especializados
 
-**Ubicación**: [VolcanSignalPacker.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java)
+**Ubicación**: [DarkSignalPacker.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java)
 
 #### Vectores 2D (Floats Empaquetados)
 
@@ -88,14 +88,14 @@ Upgrade completo del sistema de comunicación del motor Volcan con soporte para 
 - Sin pérdida de precisión (IEEE 754)
 
 **Desempaquetado**:
-- [unpackX(long)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java#93-102): Extrae coordenada X
-- [unpackY(long)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java#103-112): Extrae coordenada Y
+- [unpackX(long)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java#93-102): Extrae coordenada X
+- [unpackY(long)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java#103-112): Extrae coordenada Y
 
 **Uso**:
 ```java
-long vector = VolcanSignalPacker.packFloats(10.5f, 20.3f);
-float x = VolcanSignalPacker.unpackX(vector); // 10.5f
-float y = VolcanSignalPacker.unpackY(vector); // 20.3f
+long vector = DarkSignalPacker.packFloats(10.5f, 20.3f);
+float x = DarkSignalPacker.unpackX(vector); // 10.5f
+float y = DarkSignalPacker.unpackY(vector); // 20.3f
 ```
 
 #### Coordenadas 3D Comprimidas
@@ -106,7 +106,7 @@ float y = VolcanSignalPacker.unpackY(vector); // 20.3f
 - Optimización de ancho de banda
 
 **Desempaquetado**:
-- [unpack3DX()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java#137-146), [unpack3DY()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java#147-156), [unpack3DZ()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java#157-166)
+- [unpack3DX()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java#137-146), [unpack3DY()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java#147-156), [unpack3DZ()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java#157-166)
 
 #### GUIDs y Punteros Off-Heap
 
@@ -122,9 +122,9 @@ float y = VolcanSignalPacker.unpackY(vector); // 20.3f
 **Ejemplo**:
 ```java
 long signals = 0L;
-signals = VolcanSignalPacker.setSignalBit(signals, 0, true); // Satélite conectado
-signals = VolcanSignalPacker.setSignalBit(signals, 1, true); // Datos válidos
-boolean connected = VolcanSignalPacker.getSignalBit(signals, 0); // true
+signals = DarkSignalPacker.setSignalBit(signals, 0, true); // Satélite conectado
+signals = DarkSignalPacker.setSignalBit(signals, 1, true); // Datos válidos
+boolean connected = DarkSignalPacker.getSignalBit(signals, 0); // true
 ```
 
 #### Operaciones Aritméticas en Hot-Path
@@ -146,9 +146,9 @@ boolean connected = VolcanSignalPacker.getSignalBit(signals, 0); // true
 
 ---
 
-### 4. VolcanSignalCommands - Comandos Espaciales
+### 4. DarkSignalCommands - Comandos Espaciales
 
-**Ubicación**: [VolcanSignalCommands.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalCommands.java)
+**Ubicación**: [DarkSignalCommands.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalCommands.java)
 
 #### Categoría SPATIAL (0x7000-0x7FFF)
 
@@ -194,7 +194,7 @@ packFloats(x, y) → long (64 bits)
     ↓
 dispatchVector2D(x, y)
     ↓
-VolcanAtomicBus.offer(packed)
+DarkAtomicBus.offer(packed)
     ↓
 Consumidor: poll()
     ↓
@@ -258,10 +258,10 @@ Sin allocations
 
 ## Archivos Modificados
 
-1. [VolcanSignalDispatcher.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalDispatcher.java) - 237 líneas
-2. [VolcanSignalPacker.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalPacker.java) - 343 líneas
-3. [VolcanSignalCommands.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanSignalCommands.java) - 233 líneas
-4. [SignalProcessor.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/SignalProcessor.java) - Nuevo (40 líneas)
+1. [DarkSignalDispatcher.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalDispatcher.java) - 237 líneas
+2. [DarkSignalPacker.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalPacker.java) - 343 líneas
+3. [DarkSignalCommands.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkSignalCommands.java) - 233 líneas
+4. [SignalProcessor.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/SignalProcessor.java) - Nuevo (40 líneas)
 
 ---
 
@@ -283,7 +283,7 @@ Sin allocations
 
 ## Objetivo Cumplido
 
-Elevación exitosa de [VolcanAtomicBus](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#12-562) y [VolcanRingBus](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#20-550) desde 65% al 100% de estándares AAA+ con capacidades de comunicación espacial, procesamiento masivo, y optimizaciones de hardware de nivel kernel.
+Elevación exitosa de [DarkAtomicBus](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#12-562) y [DarkRingBus](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#20-550) desde 65% al 100% de estándares AAA+ con capacidades de comunicación espacial, procesamiento masivo, y optimizaciones de hardware de nivel kernel.
 
 ---
 
@@ -301,9 +301,9 @@ Elevación exitosa de [VolcanAtomicBus](file:///c:/Users/theca/Documents/GitHub/
 
 ## Cambios Implementados
 
-### 1. VolcanAtomicBus.java - Upgrade Completo
+### 1. DarkAtomicBus.java - Upgrade Completo
 
-**Ubicación**: [VolcanAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java)
+**Ubicación**: [DarkAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java)
 
 #### Documentación Técnica AAA+
 
@@ -327,27 +327,27 @@ Elevación exitosa de [VolcanAtomicBus](file:///c:/Users/theca/Documents/GitHub/
 #### Métodos Implementados
 
 **IEventBus básicos** (líneas 290-398):
-- [offer(long)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#295-322): Inserción no bloqueante (<150ns)
-- [poll()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#323-349): Extracción destructiva (<150ns)
-- [peek()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#338-354): Lectura no destructiva
-- [size()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#367-378): Eventos pendientes
-- [capacity()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/IEventBus.java#53-59): Capacidad total
-- [clear()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#377-388): Limpieza completa
+- [offer(long)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#295-322): Inserción no bloqueante (<150ns)
+- [poll()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#323-349): Extracción destructiva (<150ns)
+- [peek()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#338-354): Lectura no destructiva
+- [size()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#367-378): Eventos pendientes
+- [capacity()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/IEventBus.java#53-59): Capacidad total
+- [clear()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#377-388): Limpieza completa
 
 **Métodos avanzados AAA+** (líneas 400-562):
-- [batchOffer(long[], int, int)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#405-434): Escritura masiva (>10M eventos/s)
-- [batchPoll(long[], int)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#435-461): Lectura masiva
-- [peekWithSequence(long)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#462-485): Retransmisión espacial
-- [isContiguous(int)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#486-511): Validación para System.arraycopy
-- [casHead(long, long)](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#512-527): Multi-consumidor CAS
-- [spatialMemoryBarrier()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#516-529): Barrera de memoria completa
-- [gracefulShutdown()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#542-561): Cierre seguro con validación
+- [batchOffer(long[], int, int)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#405-434): Escritura masiva (>10M eventos/s)
+- [batchPoll(long[], int)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#435-461): Lectura masiva
+- [peekWithSequence(long)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#462-485): Retransmisión espacial
+- [isContiguous(int)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#486-511): Validación para System.arraycopy
+- [casHead(long, long)](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#512-527): Multi-consumidor CAS
+- [spatialMemoryBarrier()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#516-529): Barrera de memoria completa
+- [gracefulShutdown()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#542-561): Cierre seguro con validación
 
 ---
 
-### 2. VolcanRingBus.java - Paridad Completa
+### 2. DarkRingBus.java - Paridad Completa
 
-**Ubicación**: [VolcanRingBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java)
+**Ubicación**: [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java)
 
 #### Reconstrucción Completa
 
@@ -357,13 +357,13 @@ Elevación exitosa de [VolcanAtomicBus](file:///c:/Users/theca/Documents/GitHub/
 - Documentación AAA+ idéntica a AtomicBus
 - Todos los métodos implementados
 
-**Resultado**: Paridad 100% con VolcanAtomicBus
+**Resultado**: Paridad 100% con DarkAtomicBus
 
 ---
 
 ### 3. AAA_CODING_STANDARDS.md - Estándar Canónico
 
-**Ubicación**: [AAA_CODING_STANDARDS.md](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/docs/standards/AAA_CODING_STANDARDS.md)
+**Ubicación**: [AAA_CODING_STANDARDS.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/standards/AAA_CODING_STANDARDS.md)
 
 #### Contenido
 
@@ -579,9 +579,9 @@ build.bat
 
 ## Archivos Modificados
 
-1. [VolcanAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java) - 562 líneas
-2. [VolcanRingBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java) - 562 líneas
-3. [AAA_CODING_STANDARDS.md](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/docs/standards/AAA_CODING_STANDARDS.md) - Nuevo
+1. [DarkAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java) - 562 líneas
+2. [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java) - 562 líneas
+3. [AAA_CODING_STANDARDS.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/standards/AAA_CODING_STANDARDS.md) - Nuevo
 
 ---
 
@@ -595,7 +595,7 @@ build.bat
 ### Fase 5: Verificación
 
 1. Compilar: `build.bat`
-2. Ejecutar: [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/BusHardwareTest.java)
+2. Ejecutar: [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/BusHardwareTest.java)
 3. Benchmarking: Medir latencias y throughput
 4. Memory profiling: Validar alineación de 64 bytes
 
@@ -609,15 +609,15 @@ build.bat
 
 ## Objetivo Cumplido
 
-Se implementó exitosamente el patrón de **Reducción Aritmética Explícita** en ambos buses del motor Volcan para proteger las variables de padding contra las optimizaciones agresivas del JIT Compiler.
+Se implementó exitosamente el patrón de **Reducción Aritmética Explícita** en ambos buses del motor Dark para proteger las variables de padding contra las optimizaciones agresivas del JIT Compiler.
 
 ---
 
 ## Cambios Realizados
 
-### 1. [VolcanAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java) - Método [getPaddingChecksum()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#205-278)
+### 1. [DarkAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java) - Método [getPaddingChecksum()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#205-278)
 
-**Ubicación**: [VolcanAtomicBus.java:140-172](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#L140-L172)
+**Ubicación**: [DarkAtomicBus.java:140-172](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#L140-L172)
 
 #### Antes (Suma Horizontal)
 ```java
@@ -661,21 +661,21 @@ public long getPaddingChecksum() {
 
 ---
 
-### 2. [VolcanRingBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java) - Reconstrucción Completa
+### 2. [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java) - Reconstrucción Completa
 
-**Ubicación**: [VolcanRingBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java)
+**Ubicación**: [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java)
 
 #### Problemas Encontrados
 - ❌ Archivo incompleto (solo 49 líneas)
 - ❌ Variables de padding duplicadas
-- ❌ Falta implementación de [IEventBus](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/IEventBus.java#19-93)
-- ❌ No tenía métodos [offer()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#295-322), [poll()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#323-349), [peek()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#338-354), etc.
+- ❌ Falta implementación de [IEventBus](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/IEventBus.java#19-93)
+- ❌ No tenía métodos [offer()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#295-322), [poll()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#323-349), [peek()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#338-354), etc.
 
 #### Solución Implementada
 Se reconstruyó completamente el archivo con:
-- ✅ Estructura de padding idéntica a [VolcanAtomicBus](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#12-562)
-- ✅ Implementación completa de [IEventBus](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/IEventBus.java#19-93)
-- ✅ Método [getPaddingChecksum()](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#205-278) con reducción vertical
+- ✅ Estructura de padding idéntica a [DarkAtomicBus](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#12-562)
+- ✅ Implementación completa de [IEventBus](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/IEventBus.java#19-93)
+- ✅ Método [getPaddingChecksum()](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#205-278) con reducción vertical
 - ✅ Operaciones lock-free con VarHandles
 - ✅ Documentación AAA-grade
 
@@ -686,8 +686,8 @@ Se reconstruyó completamente el archivo con:
 Se agregó un bloque de documentación crítico en ambos buses explicando por qué las variables `buffer`, `mask`, `HEAD_H`, y `TAIL_H` aparecen como "no usadas" en el IDE:
 
 **Ubicación**: 
-- [VolcanAtomicBus.java:71-93](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java#L71-L93)
-- [VolcanRingBus.java:59-81](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java#L59-L81)
+- [DarkAtomicBus.java:71-93](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java#L71-L93)
+- [DarkRingBus.java:59-81](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java#L59-L81)
 
 ```java
 // NOTA PARA INGENIEROS AAA:
@@ -739,11 +739,11 @@ Esta estructura se repite para:
 ### Tests Existentes
 Los siguientes tests validan la integridad del padding:
 
-1. **[BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/BusHardwareTest.java)**
+1. **[BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/BusHardwareTest.java)**
    - Verifica que la suma de todos los slots sea 0
    - Valida señales de datos (0xCAFEBABECAFED00DL)
 
-2. **[BusCoordinationTest.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/BusCoordinationTest.java)**
+2. **[BusCoordinationTest.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/BusCoordinationTest.java)**
    - Prueba coordinación entre buses
    - Verifica alineación de memoria
 
@@ -786,8 +786,8 @@ return acc;
 Los siguientes warnings son **NORMALES** y **ESPERADOS**:
 
 ```
-⚠️ The value of the field VolcanRingBus.HEAD_H is not used
-⚠️ The value of the field VolcanRingBus.TAIL_H is not used
+⚠️ The value of the field DarkRingBus.HEAD_H is not used
+⚠️ The value of the field DarkRingBus.TAIL_H is not used
 ```
 
 **Razón**: Estos VarHandles se usan para manipulación atómica de memoria, no como métodos tradicionales. El análisis estático no puede detectar su uso.
@@ -800,18 +800,18 @@ Los siguientes warnings son **NORMALES** y **ESPERADOS**:
 
 | Componente | Estado | Cambios |
 |------------|--------|---------|
-| [VolcanAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanAtomicBus.java) | ✅ Completo | Reducción vertical + documentación |
-| [VolcanRingBus.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/VolcanRingBus.java) | ✅ Reconstruido | Implementación completa desde cero |
+| [DarkAtomicBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkAtomicBus.java) | ✅ Completo | Reducción vertical + documentación |
+| [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java) | ✅ Reconstruido | Implementación completa desde cero |
 | Padding Verification | ✅ Funcional | 21 variables protegidas (7+7+7) |
 | Documentación | ✅ AAA-Grade | Explicación de VarHandles y buffer |
-| Tests | ✅ Existentes | [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/BusHardwareTest.java) validado |
+| Tests | ✅ Existentes | [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/BusHardwareTest.java) validado |
 
 ---
 
 ## Próximos Pasos Recomendados
 
 1. **Compilar el proyecto**: Ejecutar `build.bat`
-2. **Ejecutar tests**: Verificar [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/VolcanEngine/src/sv/volcan/bus/BusHardwareTest.java)
+2. **Ejecutar tests**: Verificar [BusHardwareTest.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/BusHardwareTest.java)
 3. **Benchmarking**: Medir latencias (~150ns esperados)
 4. **Memory Dump**: Validar alineación de 64 bytes con herramientas de profiling
 

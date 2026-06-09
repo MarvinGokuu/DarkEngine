@@ -47,7 +47,7 @@ Tiempo estimado: < 5 segundos.
 Tiempo estimado: < 10 minutos.
 
 1.  **Standards**: `docs/standards/HPC_CODING_STANDARD.md` (Must Read).
-2.  **Architecture**: `docs/architecture/ARQUITECTURA_VOLCAN_ENGINE.md` (Topology).
+2.  **Architecture**: `docs/architecture/ARQUITECTURA_DARK_ENGINE.md` (Topology).
 3.  **Terminology**: `docs/glossary/TECHNICAL_GLOSSARY.md` (Hardware Defs).
 
 ### 2.3. Decision Analysis (Historical Context)
@@ -62,7 +62,7 @@ Tiempo estimado: < 5 minutos.
 
 | Subsistema | Componente Documental | Latencia de Acceso |
 | :--- | :--- | :--- |
-| **Core / Kernel** | `ARQUITECTURA_VOLCAN_ENGINE.md` | 30s |
+| **Core / Kernel** | `ARQUITECTURA_DARK_ENGINE.md` | 30s |
 | **Bus / Signaling** | `DOCUMENTACION_BUS.md` | 20s |
 | **Bus / Dispatch** | `SIGNAL_DISPATCH_SPECIFICATION.md` | 15s |
 | **Performance** | `BINARY_DISPATCH_PERFORMANCE_ANALYSIS.md` | 10s |

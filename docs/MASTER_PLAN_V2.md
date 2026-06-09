@@ -9,7 +9,7 @@
 
 ## 1. Manifiesto de Arquitectura del Sistema
 
-El objetivo es implementar un Runtime de Alto Rendimiento, escindido del sistema operativo anfitrión (Host-Agnostic), que optimice la ejecución sobre el silicio disponible.
+El objetivo es implementar un Runtime de Alto Rendimiento, escindido del sistema operativo anfitrión (Host-Agnostic), que optimice la ejecución sobre el hardware disponible.
 
 ### 1.1. Principios de Diseño
 1.  **Determinismo**: `Input` + `floatToRawIntBits` $\rightarrow$ `Output` constante.
@@ -44,7 +44,7 @@ $$ \Phi(t) = \vec{A}_{t-1} + \vec{E}_{t} + \vec{P}_{t+1} $$
 ### Phase 2: Visual Telemetry (In Progress)
 *   **Objetivo**: Visualización de métricas en tiempo real.
 *   **Implementación**:
-    *   Integración `VisualObserver.html` $\leftrightarrow$ `VolcanMetricsServer`.
+    *   Integración `VisualObserver.html` $\leftrightarrow$ `DarkMetricsServer`.
     *   **Restricción**: Simetría de tipos (Java `long` $\leftrightarrow$ JS `BigInt`).
     *   **Protocolo**: HTTP/REST binario o JSON plano sin overhead de serialización.
 
@@ -68,7 +68,7 @@ $$ \Phi(t) = \vec{A}_{t-1} + \vec{E}_{t} + \vec{P}_{t+1} $$
 ### 4.1. Telemetry Subsystem
 **Dependencia**: `AdminController` $\rightarrow$ `VisualObserver`
 
-*   `VolcanMetricsClient.js`: Cliente HTTP determinista. Uso de `TypedArrays` para evitar GC en el render loop.
+*   `DarkMetricsClient.js`: Cliente HTTP determinista. Uso de `TypedArrays` para evitar GC en el render loop.
 *   `VisualObserver.html`: Dashboard de instrumentación técnica.
 
 ### 4.2. Supervisor Subsystem

@@ -1,18 +1,41 @@
 # Changelog
 
-All notable changes to VolcanEngine will be documented in this file.
+All notable changes to DarkEngine will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [2.2.0] - 2026-06-08
 
-### Planned
-- Unit tests for individual fixes (ParticleSystemDeterminismTest, SystemRegistryCapacityTest)
-- GitHub Actions CI/CD pipeline
-- Documentation index improvements
+### Added
+- **Visual Layer (GUI)**:
+  - Custom J2D visual layer in [DarkEngineWindow.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/DarkEngineWindow.java) recreating the high-fidelity dark-engine style mockup.
+  - Interactive OS window decorations (minimize, maximize, close buttons) with centered mode (900x520 pixels).
+  - High-performance AWT graphics buffer and thread-safe off-screen rendering pipeline.
+- **Asynchronous Metrics Communication**:
+  - [EngineStateChannel.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/EngineStateChannel.java) implementing a thread-safe ring-buffered metrics channel from the kernel to the GUI.
+  - [AsyncLogWriter.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/AsyncLogWriter.java) executing off-thread file writing to keep the rendering/logic loops free of disk I/O latency.
+
+### Fixed
+- **100% CPU Busy-Spin Loop**:
+  - Corrected the empty queue check in [AdminController.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/admin/AdminController.java) from `metric != 0` to `metric != -1L`, eliminating busy-spinning when no metrics are sent.
+- **Metrics HTTP Server Port & Memory Leak**:
+  - Bound `DarkMetricsServer` to a static reference in [AdminController.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/admin/AdminController.java) and added `stopControlPlane()` to properly close the server, free port 8080, and teardown background threads.
+  - Linked `AdminController.stopControlPlane()` to the kernel shutdown hooks in [EngineKernel.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/EngineKernel.java).
+- **Event Dispatcher Deadlock Risks**:
+  - In [DarkEventLane.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkEventLane.java), added interruption checks to `BLOCK` backpressure spin loops to prevent thread lock-ups during shutdown.
+  - In [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java), implemented a volatile `closed` lifecycle flag that immediately rejects updates with an `IllegalStateException` on shutdown.
+- **Simulated Particle Determinism**:
+  - Moved the random number generator `RNG` in [DarkParticleSystem.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/core/DarkParticleSystem.java) from a static class field to a non-static instance field, ensuring multi-instance test runs are 100% deterministic and isolated.
+- **Drift Accumulator (TimeKeeper Stutter)**:
+  - Added a drift reset logic in [TimeKeeper.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/TimeKeeper.java) when accumulators slip past 2 frames (>33.3ms), avoiding sudden post-lag catch-up acceleration.
+- **Stopwatch Latency Contamination**:
+  - Moved the stopwatch capture logic in [UltraFastBootSequence.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/UltraFastBootSequence.java) to stop the timer *before* invoking synchronous print statements, reducing measured boot jitter and achieving true microsecond benchmarks.
+
+### Changed
+- Configured build/run scripts ([build.bat](file:///c:/Users/theca/Documents/GitHub/DarkEngine/build.bat), [run.bat](file:///c:/Users/theca/Documents/GitHub/DarkEngine/run.bat), [exe.bat](file:///c:/Users/theca/Documents/GitHub/DarkEngine/exe.bat)) to launch via `javaw` to hide the command prompt window and present only the clean visual layer GUI.
 
 ---
 
@@ -38,10 +61,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance Optimizations glossary section in technical documentation
 
 ### Fixed
-- **CRITICAL**: Byte offset calculation bug in `VolcanStateVault.readLong()`
+- **CRITICAL**: Byte offset calculation bug in `DarkStateVault.readLong()`
   - Incorrect: `slotIndex / 2` (arbitrary division)
   - Correct: `slotIndex * ValueLayout.JAVA_INT.byteSize()` (proper offset)
-- Non-deterministic random number generation in `VolcanParticleSystem`
+- Non-deterministic random number generation in `DarkParticleSystem`
   - Now uses seeded RNG: `new Random(0xCAFEBABE)` for reproducibility
 - Test class naming in `test.bat`
   - Fixed incorrect pattern: `Test_*` → `*Test`
@@ -65,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TestSystemA`, `TestSystemB`, `TestSystemC`
 - 6 obsolete batch scripts and manifests
   - `CLEANUP_PROTOCOL.bat`, `SovereignProtocol.bat`, `ignite.bat`
-  - `Sovereign_Protocol_Manifest.txt`, `VolcanMetricsClient.js`
+  - `Sovereign_Protocol_Manifest.txt`, `DarkMetricsClient.js`
   - `sync_report_20260501.txt`
 
 ### Performance
@@ -144,9 +167,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 - Core engine architecture
-  - `VolcanAtomicBus` (lock-free ring buffer)
-  - `VolcanRingBus` (SPSC queue)
-  - `VolcanEventDispatcher` (multi-lane architecture)
+  - `DarkAtomicBus` (lock-free ring buffer)
+  - `DarkRingBus` (SPSC queue)
+  - `DarkEventDispatcher` (multi-lane architecture)
 - Off-heap memory management via Panama FFI
 - SIMD acceleration via Vector API
 - Deterministic 4-phase loop (60Hz fixed timestep)

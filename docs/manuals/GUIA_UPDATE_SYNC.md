@@ -1,4 +1,4 @@
-# Script de Sincronización - Volcan Engine
+# Script de Sincronización - Dark Engine
 
 ## Autoridad
 
@@ -22,7 +22,7 @@ El script `update.bat` es una herramienta de sincronización que verifica la con
 ### Ejecución Básica
 
 ```batch
-cd c:\Users\theca\Documents\GitHub\VolcanEngine
+cd c:\Users\theca\Documents\GitHub\DarkEngine
 update.bat
 ```
 
@@ -30,7 +30,7 @@ update.bat
 
 ```
 ═══════════════════════════════════════════════════════════
-  VOLCAN ENGINE - DOCUMENTATION SYNC TOOL
+  DARK ENGINE - DOCUMENTATION SYNC TOOL
 ═══════════════════════════════════════════════════════════
 
 [1/5] Verificando estructura de directorios...
@@ -48,10 +48,10 @@ update.bat
 [OK] LISTA_PENDIENTES.md
 
 [4/5] Verificando archivos de codigo criticos...
-[OK] src\sv\volcan\bus\VolcanAtomicBus.java
-[OK] src\sv\volcan\bus\VolcanRingBus.java
-[OK] src\sv\volcan\bus\BusHardwareTest.java
-[OK] src\sv\volcan\kernel\EngineKernel.java
+[OK] src\sv\dark\bus\DarkAtomicBus.java
+[OK] src\sv\dark\bus\DarkRingBus.java
+[OK] src\sv\dark\bus\BusHardwareTest.java
+[OK] src\sv\dark\kernel\EngineKernel.java
 
 [5/5] Generando reporte de sincronizacion...
 [OK] Reporte generado: sync_report_20260105.txt
@@ -79,10 +79,10 @@ Reporte generado: sync_report_20260105.txt
 
 ### Código Crítico
 
-1. `src\sv\volcan\bus\VolcanAtomicBus.java` - Bus atómico lock-free
-2. `src\sv\volcan\bus\VolcanRingBus.java` - Ring buffer
-3. `src\sv\volcan\bus\BusHardwareTest.java` - Test de padding
-4. `src\sv\volcan\kernel\EngineKernel.java` - Kernel principal
+1. `src\sv\dark\bus\DarkAtomicBus.java` - Bus atómico lock-free
+2. `src\sv\dark\bus\DarkRingBus.java` - Ring buffer
+3. `src\sv\dark\bus\BusHardwareTest.java` - Test de padding
+4. `src\sv\dark\kernel\EngineKernel.java` - Kernel principal
 
 ---
 
@@ -98,14 +98,14 @@ El script genera un archivo `sync_report_YYYYMMDD.txt` con:
 ### Ejemplo de Reporte
 
 ```
-VOLCAN ENGINE - SYNC REPORT
+DARK ENGINE - SYNC REPORT
 Fecha: 05/01/2026 21:15:00
 ═══════════════════════════════════════════════════════════
 
 DOCUMENTACION:
 AAA_CERTIFICATION.md
 AAA_CODING_STANDARDS.md
-ARQUITECTURA_VOLCAN_ENGINE.md
+ARQUITECTURA_DARK_ENGINE.md
 DOCUMENTACION_BUS.md
 ESTANDAR_DOCUMENTACION.md
 ACTUALIZACIONES_PENDIENTES.md
@@ -118,10 +118,10 @@ TASK_LEGACY.md
 WALKTHROUGH_LEGACY.md
 
 CODIGO CRITICO:
-[OK] src\sv\volcan\bus\VolcanAtomicBus.java
-[OK] src\sv\volcan\bus\VolcanRingBus.java
-[OK] src\sv\volcan\bus\BusHardwareTest.java
-[OK] src\sv\volcan\kernel\EngineKernel.java
+[OK] src\sv\dark\bus\DarkAtomicBus.java
+[OK] src\sv\dark\bus\DarkRingBus.java
+[OK] src\sv\dark\bus\BusHardwareTest.java
+[OK] src\sv\dark\kernel\EngineKernel.java
 ```
 
 ---
@@ -169,7 +169,7 @@ type sync_report_20260105.txt
 **Solución**:
 ```batch
 # Verificar que estás en el directorio raíz del proyecto
-cd c:\Users\theca\Documents\GitHub\VolcanEngine
+cd c:\Users\theca\Documents\GitHub\DarkEngine
 update.bat
 ```
 
@@ -193,7 +193,7 @@ update.bat
 
 **Síntoma**:
 ```
-[FALTA] src\sv\volcan\bus\BusBenchmarkTest.java
+[FALTA] src\sv\dark\bus\BusBenchmarkTest.java
 ```
 
 **Acción**:
@@ -210,7 +210,7 @@ update.bat
 Editar `update.bat` línea 60:
 
 ```batch
-set CRITICAL_CODE=src\sv\volcan\bus\VolcanAtomicBus.java src\sv\volcan\bus\VolcanRingBus.java src\sv\volcan\bus\BusHardwareTest.java src\sv\volcan\bus\BusBenchmarkTest.java src\sv\volcan\kernel\EngineKernel.java
+set CRITICAL_CODE=src\sv\dark\bus\DarkAtomicBus.java src\sv\dark\bus\DarkRingBus.java src\sv\dark\bus\BusHardwareTest.java src\sv\dark\bus\BusBenchmarkTest.java src\sv\dark\kernel\EngineKernel.java
 ```
 
 ### Agregar Nuevos Documentos Críticos

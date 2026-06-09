@@ -1,4 +1,4 @@
-# [VOLCAN ENGINE - GIT OBLIVION PROTOCOL]
+# [DARK ENGINE - GIT OBLIVION PROTOCOL]
 
 # --- BINARIOS Y COMPILACIÓN ---
 bin/
@@ -58,11 +58,11 @@ move
 
 # Sovereign Secrets (Do Not Commit)
 src/sv/jarvis/
-src/sv/volcan/security/
+src/sv/dark/security/
 
 # Secret Configuration Files
 *.secrets.properties
-volcan.secrets.properties
+darkengine.secrets.properties
 .env.local
 .env.production
 credentials.*

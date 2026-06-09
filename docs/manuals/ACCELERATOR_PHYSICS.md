@@ -9,7 +9,7 @@
 
 ## 1. Principios de Procesamiento Vectorial
 
-El Acelerador de Datos (`DataAccelerator`) implementa un modelo de ejecución SIMD (Single Instruction, Multiple Data) para maximizar el throughput aritmético del silicio.
+El Acelerador de Datos (`DataAccelerator`) implementa un modelo de ejecución SIMD (Single Instruction, Multiple Data) para maximizar el throughput aritmético del hardware.
 
 ### Ecuación de Rendimiento
 $$ Throughput = \frac{Bandwidth \times VectorWidth}{Latency} $$
@@ -38,7 +38,7 @@ La arquitectura mapea conceptos lógicos directamente a capacidades físicas del
 
 Análisis de eficiencia entre procesamiento escalar (SISD) y vectorial (SIMD).
 
-| Métrica | Procesamiento Escalar | Procesamiento Vectorial (Volcan) | Delta |
+| Métrica | Procesamiento Escalar | Procesamiento Vectorial (Dark) | Delta |
 | :--- | :--- | :--- | :--- |
 | **Datos por Ciclo** | 1 | 8 (AVX-256) / 16 (AVX-512) | +700% / +1500% |
 | **Ancho de Registros** | 64-bit (GPR) | 256-bit (YMM) | 4x |

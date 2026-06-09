@@ -1,5 +1,5 @@
 ================================================================================
-                    VOLCAN ENGINE - BUILD PROTOCOL v4.3
+                    DARK ENGINE - BUILD PROTOCOL v4.3
 ================================================================================
 
 High-performance rendering infrastructure and temporal control system for
@@ -9,15 +9,15 @@ mission-critical applications.
 ---------------
 Memory model: Off-heap state management with atomic event dispatch.
 - State: WorldStateFrame (native memory)
-- Events: 64-bit signals via VolcanAtomicBus
+- Events: 64-bit signals via DarkAtomicBus
 - Logic: Pure systems operating on native memory (SovereignSystem)
 
 2. CORE COMPONENTS
 ------------------
 - SovereignKernel: 4-phase loop orchestrator (60 FPS)
-- VolcanAtomicBus: Lock-free ring buffer for event transport
-- VolcanSectorManager: Spatial management with bit-packing
-- VolcanEventDispatcher: Multi-lane event distribution
+- DarkAtomicBus: Lock-free ring buffer for event transport
+- DarkSectorManager: Spatial management with bit-packing
+- DarkEventDispatcher: Multi-lane event distribution
 
 3. OPTIMIZATION RULES
 ---------------------

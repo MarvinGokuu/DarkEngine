@@ -1,4 +1,4 @@
-# VOLCAN ENGINE - FASE 1: GAME LAUNCHER
+# DARK ENGINE - FASE 1: GAME LAUNCHER
 ## Objetivo: Correr videojuegos mejor que cualquier otro motor
 
 **Fecha:** 2026-01-19  
@@ -20,7 +20,7 @@
 - ❌ RAM y CPU mal gestionados
 - ❌ Hardware potente no aprovechado (cores idle, AVX-512 sin usar)
 
-### **Solución VolcanEngine:**
+### **Solución DarkEngine:**
 - ✅ **Un botón** → Alinea memoria, elimina ruido, optimiza CPU
 - ✅ **Doble click** → Juego se abre normalmente pero corre mejor
 - ✅ **Invisible** → Usuario solo ve: más FPS, menos lag, menos temperatura
@@ -38,7 +38,7 @@ this.pool = ForkJoinPool.commonPool();
 - **PC con 32 cores:** 32 threads paralelos
 - **Mejora:** +20% en PC baja → +150% en PC extrema
 
-#### **2. VolcanDataAccelerator (SIMD)**
+#### **2. DarkDataAccelerator (SIMD)**
 ```java
 // Usa Vector API - Detecta AVX-512 automáticamente
 private static final VectorSpecies<Integer> SPECIES = IntVector.SPECIES_PREFERRED;
@@ -62,7 +62,7 @@ private static final VectorSpecies<Integer> SPECIES = IntVector.SPECIES_PREFERRE
 - Target: Gamers con PCs de gama media
 
 ### **Fase 2: Game Developers**
-- SDK para integrar VolcanEngine en sus juegos
+- SDK para integrar DarkEngine en sus juegos
 - Marketing: "Tu juego correrá mejor en cualquier PC"
 - Target: Indie developers, AA studios
 
@@ -77,7 +77,7 @@ private static final VectorSpecies<Integer> SPECIES = IntVector.SPECIES_PREFERRE
 - Target: Empresas de IA, científicos
 
 ### **Fase 5: Dominación Global**
-- VolcanOS completo
+- DarkOS completo
 - Marketing: "El futuro del gaming"
 - Target: Toda la industria
 
@@ -88,7 +88,7 @@ private static final VectorSpecies<Integer> SPECIES = IntVector.SPECIES_PREFERRE
 
 ### **Rendimiento por Nivel de Hardware:**
 
-Basado en análisis del código real (`ParallelSystemExecutor.java`, `VolcanDataAccelerator.java`):
+Basado en análisis del código real (`ParallelSystemExecutor.java`, `DarkDataAccelerator.java`):
 
 | Hardware | Specs | Mejora Estimada | Componente Clave |
 |----------|-------|-----------------|------------------|
@@ -124,7 +124,7 @@ Basado en análisis del código real (`ParallelSystemExecutor.java`, `VolcanData
 **Mensajes por segmento:**
 - **Gama Baja:** "Revive tu PC vieja - +30% FPS gratis"
 - **Gama Media:** "Desbloquea el potencial de tu hardware - +50% FPS"
-- **Gama Alta:** "Tu i7 + RTX 4070 pueden dar +80% más con VolcanEngine"
+- **Gama Alta:** "Tu i7 + RTX 4070 pueden dar +80% más con DarkEngine"
 - **Enthusiasts:** "i9 + AVX-512 = DUPLICA tu rendimiento"
 
 ---
@@ -147,7 +147,7 @@ Basado en análisis del código real (`ParallelSystemExecutor.java`, `VolcanData
 **Objetivo:** API de alto nivel para desarrollo de juegos
 
 **Componentes:**
-- [ ] `VolcanEngine.java` - API simple
+- [ ] `DarkEngine.java` - API simple
 - [ ] `Entity.java` - Abstracción de entidades
 - [ ] `Sprite.java` - Manejo de sprites
 - [ ] `Input.java` - Input simplificado
@@ -155,7 +155,7 @@ Basado en análisis del código real (`ParallelSystemExecutor.java`, `VolcanData
 
 **Ejemplo de API:**
 ```java
-VolcanEngine engine = new VolcanEngine(800, 600);
+DarkEngine engine = new DarkEngine(800, 600);
 Entity player = engine.createEntity("player");
 player.setPosition(100, 200);
 player.setSprite("player.png");
@@ -205,7 +205,7 @@ engine.run();
   - Verificar power state = default
   - Reportar estado residual si existe
 
-- [ ] Integrar en `VolcanEngineMaster.java`
+- [ ] Integrar en `DarkEngineMaster.java`
   - Capturar estado ANTES de ignite()
   - Restaurar estado DESPUÉS de shutdown()
   - Try-finally para garantizar cleanup
@@ -222,7 +222,7 @@ engine.run();
 
 #### [ ] 2.1 Interfaz Gráfica Simple
 - [ ] Crear ventana principal
-  - Logo de VolcanEngine
+  - Logo de DarkEngine
   - Toggle ON/OFF (como tu diseño)
   - Indicador de estado (motor activo/inactivo)
   - Año/versión
@@ -257,7 +257,7 @@ engine.run();
 - [ ] Lista de juegos detectados
   - Mostrar icono del juego
   - Mostrar nombre del juego
-  - Botón "Lanzar con VolcanEngine"
+  - Botón "Lanzar con DarkEngine"
   - Indicador de compatibilidad
 
 - [ ] Launcher de juegos
@@ -269,7 +269,7 @@ engine.run();
 **Criterio de Éxito:**
 - ✅ Usuario ve sus juegos en la lista
 - ✅ Doble click → Juego se abre normalmente
-- ✅ Juego corre con optimizaciones VolcanEngine
+- ✅ Juego corre con optimizaciones DarkEngine
 - ✅ Usuario ve mejora (más FPS, menos lag)
 
 ---
@@ -360,13 +360,13 @@ engine.run();
 
 #### [ ] 4.1 Testing con Minecraft
 - [ ] Instalar Minecraft
-- [ ] Benchmark sin VolcanEngine
+- [ ] Benchmark sin DarkEngine
   - FPS promedio
   - Frame time
   - Temperatura CPU/GPU
   - Uso de RAM
 
-- [ ] Benchmark con VolcanEngine
+- [ ] Benchmark con DarkEngine
   - FPS promedio
   - Frame time
   - Temperatura CPU/GPU
@@ -389,8 +389,8 @@ engine.run();
 #### [ ] 4.2 Testing con Juegos AAA
 - [ ] Seleccionar 3 juegos AAA populares
   - Ejemplo: Cyberpunk 2077, Elden Ring, Starfield
-  - Benchmark sin VolcanEngine
-  - Benchmark con VolcanEngine
+  - Benchmark sin DarkEngine
+  - Benchmark con DarkEngine
   - Comparativa de resultados
 
 - [ ] Documentar mejoras
@@ -584,7 +584,7 @@ engine.run();
 
 **Esto es tu arma para conquistar el mercado.**
 
-Una vez que gamers vean que sus juegos corren mejor con VolcanEngine:
+Una vez que gamers vean que sus juegos corren mejor con DarkEngine:
 - ✅ Developers querrán integrarlo
 - ✅ Studios querrán licenciarlo
 - ✅ Mercado cambia a tu favor

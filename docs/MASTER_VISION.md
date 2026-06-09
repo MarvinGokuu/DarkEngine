@@ -1,4 +1,4 @@
-# MASTER VISION - VOLCAN ENGINE
+# MASTER VISION - DARK ENGINE
 ## El Plan para Democratizar el Gaming y Formar un Imperio
 
 **Fecha:** 2026-01-19  
@@ -20,7 +20,7 @@
 ### **La Solución:**
 > "Un simple mortal les vino a bajar la industria"
 
-**VolcanEngine:** La autopista de alto rendimiento donde CUALQUIER juego corre mejor.
+**DarkEngine:** La autopista de alto rendimiento donde CUALQUIER juego corre mejor.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Qué hace:**
 - Tomas tu PC actual (no importa si es "mala")
-- Instalas VolcanEngine
+- Instalas DarkEngine
 - Abres Minecraft, Fortnite, Star Citizen, GTA VI
 - **Corren 30-150% mejor** (según tu hardware)
 
@@ -51,14 +51,14 @@
 **Objetivo:** Abrir desarrollo de videojuegos
 
 **Qué hace:**
-- Desarrolladores pueden crear juegos con VolcanEngine
+- Desarrolladores pueden crear juegos con DarkEngine
 - API simple pero potente
 - Documentación completa
 - Ejemplos y tutoriales
 
 **Resultado:**
 - ✅ Ecosistema de desarrolladores
-- ✅ Juegos nativos para VolcanEngine
+- ✅ Juegos nativos para DarkEngine
 - ✅ Comunidad activa
 
 **Inversión:** $0 (open source)  
@@ -88,7 +88,7 @@
 
 ### **FASE 4: Sistema Operativo (2-3 años)**
 
-**Objetivo:** VolcanOS - El OS del futuro
+**Objetivo:** DarkOS - El OS del futuro
 
 **Qué hace:**
 - OS especializado en gaming
@@ -112,7 +112,7 @@
 
 **Modelo de Negocio:**
 ```
-VolcanEngine: $1/mes
+DarkEngine: $1/mes
 ├─ Gamers: 10M usuarios × $1 = $10M/mes
 ├─ Developers: SDK gratis (adopción)
 ├─ Enterprise: $1000-10000/mes (simulaciones, IA)
@@ -144,7 +144,7 @@ VolcanEngine: $1/mes
 **Comparación:**
 - Netflix: $15/mes
 - Xbox Game Pass: $10/mes
-- **VolcanEngine: $1/mes** ← Irresistible
+- **DarkEngine: $1/mes** ← Irresistible
 
 ---
 
@@ -276,17 +276,17 @@ Profit: $600M
 
 ### **vs. Hardware Upgrades:**
 - GPU nueva: $800-1500 (una vez)
-- VolcanEngine: $1/mes = $12/año
+- DarkEngine: $1/mes = $12/año
 - **Ahorro: $788-1488 en año 1**
 
 ### **vs. Razer Cortex / Game Booster:**
 - Razer: Gratis pero mejora 5-10%
-- VolcanEngine: $1/mes pero mejora 30-150%
+- DarkEngine: $1/mes pero mejora 30-150%
 - **ROI: 3-15x mejor**
 
 ### **vs. Cloud Gaming (GeForce NOW, Stadia):**
 - Cloud: $10-20/mes + latencia de red
-- VolcanEngine: $1/mes + cero latencia
+- DarkEngine: $1/mes + cero latencia
 - **Ahorro: $9-19/mes**
 
 ---
@@ -301,7 +301,7 @@ Profit: $600M
 - Industria elitista
 
 **Después:**
-- Gaming de calidad = PC normal + VolcanEngine ($1/mes)
+- Gaming de calidad = PC normal + DarkEngine ($1/mes)
 - Accesible para todos
 - Industria democratizada
 
@@ -333,7 +333,7 @@ Profit: $600M
 - Marketing masivo
 
 ### **Fase 5 (Año 5): Dominación**
-- VolcanOS en todas partes
+- DarkOS en todas partes
 - Estándar de la industria
 - Imperio consolidado
 
@@ -348,7 +348,7 @@ Profit: $600M
 1. Demostrar que funciona (Fase 1)
 2. Abrir a desarrolladores (Fase 2)
 3. Expandir a IA/simulaciones (Fase 3)
-4. Crear VolcanOS (Fase 4)
+4. Crear DarkOS (Fase 4)
 5. Dominar el mercado (Fase 5)
 
 **Ventaja:**

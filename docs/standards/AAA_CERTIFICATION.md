@@ -20,7 +20,7 @@ Un componente del Runtime es considerado **AAA+ Certified** si cumple determiní
 | **Alineación L1** | 64 bytes (Padding verificado) | **64 bytes** | `DOCUMENTACION_BUS.md` |
 | **Alineación de Página** | 4KB (TLB Optimization) | **4KB** | `TECHNICAL_GLOSSARY.md` |
 | **Resiliencia de Arranque** | 100% (Fail-Fast) | **100%** | `UltraFastBootSequence.java` |
-| **Concurrencia (Lock-Free)** | VarHandles (Memory Barriers) | **Verificado** | `VolcanAtomicBus.java` |
+| **Concurrencia (Lock-Free)** | VarHandles (Memory Barriers) | **Verificado** | `DarkAtomicBus.java` |
 
 **Estado de Certificación**: **COMPLETADO** (6/6 métricas validadas).
 

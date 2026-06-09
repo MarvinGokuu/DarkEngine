@@ -29,14 +29,14 @@
 
 ### 2.1. Critical Packages (Priority 1)
 
-#### `sv.volcan.net` (Telemetry & Net)
+#### `sv.dark.net` (Telemetry & Net)
 The network subsystem lacks inline technical specification.
 *   **Affected Files**: 6
 *   **Impact**: Indeterminacy in remote serialization protocols.
 
-#### `sv.volcan.test` (Verification)
+#### `sv.dark.test` (Verification)
 Test suites require documentation of validation scenarios.
-*   **Affected Files**: 2 (`VolcanEventSystemTest`, `VolcanProtocolTest`)
+*   **Affected Files**: 2 (`DarkEventSystemTest`, `DarkProtocolTest`)
 
 ### 2.2. Minor Gaps (Priority 2)
 *   **Bus**: 1 pending file (Possibly `Test_BusCoordination`).
@@ -47,7 +47,7 @@ Test suites require documentation of validation scenarios.
 ## 3. Mitigation Plan
 
 ### Phase 1: Network Certification (Net)
-Document `VolcanNetworkRelay` and `SovereignTelemetryMemoryMonitor` protocols following the `@AAACertified` standard.
+Document `DarkNetworkRelay` and `SovereignTelemetryMemoryMonitor` protocols following the `@AAACertified` standard.
 
 ### Phase 2: Test Standardization
 Document assertion logic in test suites to ensure benchmark reproducibility.

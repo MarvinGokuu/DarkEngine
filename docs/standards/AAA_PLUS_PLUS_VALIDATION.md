@@ -14,7 +14,7 @@
 [WARM-UP] Latencia VarHandle: 200ns
 [SOVEREIGN KERNEL] EXECUTING BOOT SEQUENCE...
 ═══════════════════════════════════════════════════════
-  VOLCAN ENGINE - BOOT SEQUENCE
+  DARK ENGINE - BOOT SEQUENCE
 ═══════════════════════════════════════════════════════
   Status: SUCCESS ✓
   Time:   0.100 ms
@@ -33,7 +33,7 @@
 
 ## Componentes Implementados
 
-1. **Thermal Signature Validation** (VolcanAtomicBus.java)
+1. **Thermal Signature Validation** (DarkAtomicBus.java)
    - Patrón: 0x55AA55AA55AA55AA
    - Slots validados: 6 (1 y 7 de cada shield)
    - Detección: 100% de corrupción estructural
@@ -52,7 +52,7 @@
 
 ✅ **PARADIGMA AAA++ VALIDADO**
 
-El Volcan Engine cumple con el paradigma de "Verificación por Diseño", alcanzando:
+El Dark Engine cumple con el paradigma de "Verificación por Diseño", alcanzando:
 - Boot time: **0.100ms** (198x mejora)
 - Runtime overhead: **0ns**
 - Thermal signatures: **Funcionando**

@@ -1,4 +1,4 @@
-# VOLCAN ENGINE - DOCUMENTATION INDEX
+# DARK ENGINE - DOCUMENTATION INDEX
 ## Complete Reference Guide
 
 **Fecha:** 2026-01-19  
@@ -45,12 +45,12 @@
 
 ### **Para Arquitectos/Diseñadores:**
 
-1. **`docs/architecture/ARQUITECTURA_VOLCAN_ENGINE.md`**
+1. **`docs/architecture/ARQUITECTURA_DARK_ENGINE.md`**
    - Arquitectura completa del motor
    - Componentes principales
    - Diagramas de sistema
 
-2. **`docs/architecture/VOLCAN_OS_MASTER_PLAN.md`**
+2. **`docs/architecture/DARK_OS_MASTER_PLAN.md`**
    - Plan a largo plazo (OS completo)
    - 8 fases de desarrollo
    - Roadmap Q1-Q4 2026
@@ -84,6 +84,13 @@
    - Mensajes atómicos
    - Git workflow
 
+5. **[boot_latency_comparison.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/boot_latency_comparison.md)**
+   - Comparación y telemetría de latencia de arranque (AAA+).
+   - Análisis del impacto de I/O bloqueante en micro-benchmarking.
+
+6. **[kernel_shutdown_verification_guide.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/kernel_shutdown_verification_guide.md)**
+   - Protocolo estructurado de auditoría de apagado y liberación limpia de puertos/recursos.
+
 ---
 
 ## 🔧 COMPILACIÓN Y EJECUCIÓN
@@ -102,19 +109,19 @@ build.bat
    - ZGC enabled
    - Vector API (SIMD)
    - Heap fijo 4GB
-3. Ejecuta `VolcanEngineMaster`
+3. Ejecuta `DarkEngineMaster`
 
 **Orden de compilación interno:**
 ```
-1. sv.volcan.state.VolcanEngineMaster.java
-2. sv.volcan.kernel.*.java
-3. sv.volcan.core.*.java
-4. sv.volcan.core.memory.*.java
-5. sv.volcan.core.systems.*.java
-6. sv.volcan.state.*.java
-7. sv.volcan.bus.*.java
-8. sv.volcan.net.*.java
-9. sv.volcan.test.*.java
+1. sv.dark.state.DarkEngineMaster.java
+2. sv.dark.kernel.*.java
+3. sv.dark.core.*.java
+4. sv.dark.core.memory.*.java
+5. sv.dark.core.systems.*.java
+6. sv.dark.state.*.java
+7. sv.dark.bus.*.java
+8. sv.dark.net.*.java
+9. sv.dark.test.*.java
 ```
 
 ---
@@ -145,17 +152,19 @@ ignite.bat
 
 | Test | Ubicación | Propósito |
 |------|-----------|-----------|
-| **BusBenchmarkTest** | `sv.volcan.bus` | Benchmark del bus atómico (>10M ops/s) |
-| **BusCoordinationTest** | `sv.volcan.bus` | Coordinación multi-lane |
-| **BusHardwareTest** | `sv.volcan.bus` | Validación de hardware |
-| **UltraFastBootTest** | `sv.volcan.test` | Boot time <1ms |
-| **GracefulShutdownTest** | `sv.volcan.test` | Shutdown limpio |
-| **PowerSavingTest** | `sv.volcan.test` | Tiered idle system |
+| **BusBenchmarkTest** | `sv.dark.bus` | Benchmark del bus atómico (>10M ops/s) |
+| **BusCoordinationTest** | `sv.dark.bus` | Coordinación multi-lane |
+| **BusHardwareTest** | `sv.dark.bus` | Validación de hardware |
+| **UltraFastBootTest** | `sv.dark.test` | Boot time <1ms |
+| **GracefulShutdownTest** | `sv.dark.test` | Shutdown limpio |
+| **PowerSavingTest** | `sv.dark.test` | Tiered idle system |
+| **ParticleSystemDeterminismTest** | `sv.dark.test` | Validación de RNG determinista |
+| **SystemRegistryCapacityTest** | `sv.dark.test` | Validación de pre-dimensionado de colecciones |
+| **DependencyGraphPerformanceTest**| `sv.dark.test` | Validación de pre-dimensionado de grafos de dependencia |
 
 **Ejecutar tests:**
 ```batch
-java -cp bin sv.volcan.bus.BusBenchmarkTest
-java -cp bin sv.volcan.test.UltraFastBootTest
+.\test.bat
 ```
 
 ---
@@ -167,10 +176,13 @@ docs/
 ├── README_DOCS.md                    ← ÍNDICE PRINCIPAL
 ├── BINARY_SIGNAL_INDEX.md            (Público)
 ├── TROUBLESHOOTING_GUIDE.md          (Público)
+├── boot_latency_comparison.md        (Público)
+├── kernel_shutdown_verification_guide.md (// Desarrollo únicamente)
+├── walkthrough_visual_and_kernel.md  (// Desarrollo únicamente)
 │
 ├── architecture/
-│   ├── ARQUITECTURA_VOLCAN_ENGINE.md (Público)
-│   └── VOLCAN_OS_MASTER_PLAN.md      (// Desarrollo - Plan a largo plazo)
+│   ├── ARQUITECTURA_DARK_ENGINE.md (Público)
+│   └── DARK_OS_MASTER_PLAN.md      (// Desarrollo - Plan a largo plazo)
 │
 ├── certification/
 │   └── PEAK_PERFORMANCE_REPORT.md    (Público - Marketing)
@@ -208,7 +220,7 @@ docs/
 > Los siguientes documentos son **SOLO PARA DESARROLLO INTERNO**. No deben incluirse en releases públicos.
 
 ### **Planeación y Estrategia:**
-- `docs/architecture/VOLCAN_OS_MASTER_PLAN.md`
+- `docs/architecture/DARK_OS_MASTER_PLAN.md`
 - `docs/roadmap/FASE_1_GAME_LAUNCHER.md`
 - `docs/MASTER_PLAN_V2.md`
 - `docs/PENDING_UPDATES_LOG.md`
@@ -219,6 +231,7 @@ docs/
 - `docs/manuals/GUIA_UPDATE_SYNC.md`
 - `docs/manuals/ESTRATEGIA_COMMITS.md`
 - `docs/manuals/walkthrough.md`
+- `docs/walkthrough_visual_and_kernel.md`
 
 ### **Estándares Internos:**
 - `docs/standards/AAA_CODING_STANDARDS.md`
@@ -236,6 +249,7 @@ docs/
 - `docs/INITIAL_DEPLOYMENT_PROTOCOL.md`
 - `docs/DOCUMENTATION_BOOTSTRAP_PROTOCOL.md`
 - `docs/SECURITY_ARCHITECTURE.md`
+- `docs/kernel_shutdown_verification_guide.md`
 
 ---
 
@@ -268,6 +282,11 @@ docs/
 - Herramientas internas
 - **NO** incluir en Git
 
+### **Directorio `Dark-Engine/`:**
+- Ejecutable nativo autocontenido de producción (`Dark-Engine.exe`)
+- Generado por `exe.bat` usando `jpackage`
+- **NO** incluir en Git (generado localmente)
+
 ---
 
 ## 🎯 DOCUMENTACIÓN PÚBLICA (Para Release)
@@ -281,11 +300,12 @@ docs/
 5. **docs/glossary/TECHNICAL_GLOSSARY.md**
 6. **docs/BINARY_SIGNAL_INDEX.md**
 7. **docs/TROUBLESHOOTING_GUIDE.md**
-8. **docs/architecture/ARQUITECTURA_VOLCAN_ENGINE.md**
-9. **docs/manuals/ACCELERATOR_PHYSICS.md**
-10. **docs/manuals/DOCUMENTACION_BUS.md**
-11. **docs/standards/AAA_CERTIFICATION.md**
-12. **docs/standards/aaa_certification_results.md**
+8. **docs/boot_latency_comparison.md**
+9. **docs/architecture/ARQUITECTURA_DARK_ENGINE.md**
+10. **docs/manuals/ACCELERATOR_PHYSICS.md**
+11. **docs/manuals/DOCUMENTACION_BUS.md**
+12. **docs/standards/AAA_CERTIFICATION.md**
+13. **docs/standards/aaa_certification_results.md**
 
 ### **Excluir de Release:**
 - Todo lo marcado como `(// Desarrollo únicamente)`

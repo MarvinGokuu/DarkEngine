@@ -66,7 +66,7 @@ La validación del rendimiento requiere tablas comparativas con deltas explícit
 **Nuevo Estándar**: Uso mandatorio de la anotación `@AAACertified` para componentes críticos.
 
 ```java
-import sv.volcan.core.AAACertified;
+import sv.dark.core.AAACertified;
 
 /**
  * TECHNICAL SPECIFICATION

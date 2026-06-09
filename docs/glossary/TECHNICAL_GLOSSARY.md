@@ -2,7 +2,7 @@
 
 **Subsistema**: Documentation / Reference  
 **Tecnología**: Engineering Definitons  
-**Estado**: V2.0 Standard  
+**Estado**: V2.2 Standard  
 
 ---
 
@@ -60,7 +60,7 @@ Algoritmo que garantiza que al menos un hilo del sistema hace progreso en un tie
 
 ### 4.1. Atomic Bus
 Canal de comunicación de baja latencia basado en Ring Buffer.
-*   **Clase**: `VolcanAtomicBus` (Referencia de implementación).
+*   **Clase**: `DarkAtomicBus` (Referencia de implementación).
 *   **Capacidad**: Throughput > 10M msg/s.
 
 ### 4.2. Kernel Loop
@@ -92,12 +92,24 @@ Cálculo correcto de offsets para acceso a memoria con Panama FFI.
 
 ### 5.4. Conditional Validation
 Validación activada solo en perfil de desarrollo (0ns overhead en producción).
-*   **Implementación**: `if (VolcanEngineConfig.VALIDATION_ENABLED) { validate(); }`.
+*   **Implementación**: `if (DarkEngineConfig.VALIDATION_ENABLED) { validate(); }`.
 *   **Ventaja**: Fail-fast en desarrollo, zero-cost en producción.
 *   **Uso**: Bounds checking, alignment validation, integrity checks.
 
 ### 5.5. Boot Time Optimization
 Conjunto de técnicas para minimizar tiempo de arranque del motor.
+
+### 5.6. Off-Thread Async Logging
+Técnica que delega la escritura de logs en disco a un hilo de segundo plano ([AsyncLogWriter.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/AsyncLogWriter.java)).
+*   **Ventaja**: Evita las pausas de E/S bloqueantes en el hilo principal de simulación y renderizado.
+
+### 5.7. TimeKeeper Slip Reset
+Algoritmo de compensación de deriva temporal en [TimeKeeper.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/TimeKeeper.java) que detecta acumulaciones de retraso excesivas (>2 frames / >33.3ms) y restablece la línea base de tiempo.
+*   **Ventaja**: Evita tirones y aceleraciones bruscas (*post-lag catch-up*) después de una pausa de E/S o lag del sistema.
+
+### 5.8. Engine State Channel
+Canal de comunicación unidireccional no bloqueante basado en buffers circulares en [EngineStateChannel.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/EngineStateChannel.java) para transferir métricas del motor a la interfaz gráfica.
+*   **Mecánica**: El núcleo escribe a través del canal, el cual desacopla el hilo de renderizado Swing/AWT del bucle principal de ejecución a 60Hz.
 
 ---
 
@@ -105,8 +117,8 @@ Conjunto de técnicas para minimizar tiempo de arranque del motor.
 
 ### 6.1. Boot Sequence Performance
 **Test**: UltraFastBootTest, GracefulShutdownTest, PowerSavingTest
-*   **Typical Range**: 0.221-0.427 ms (AAA+ compliant, <1.0ms target)
-*   **Best Case**: 0.167 ms (Historical record, optimal conditions)
+*   **Typical Range**: 0.070-0.150 ms (AAA+ compliant, <1.0ms target)
+*   **Best Case**: 0.069 ms (Historical record, optimal conditions)
 *   **Warm-up Time**: 22-26 ms (JIT C2 optimization)
 *   **VarHandle Latency**: 100 ns (JIT optimized)
 
@@ -132,16 +144,16 @@ Conjunto de técnicas para minimizar tiempo de arranque del motor.
 
 ### 6.5. Test Coverage
 **Suite**: test.bat (7 tests)
-*   **Pass Rate**: 100% (7/7 tests passing)
-*   **Tests**: BusBenchmark, BusCoordination, BusHardware, UltraFastBoot, GracefulShutdown, PowerSaving, Governor
-*   **Verification Date**: 2026-01-27
+*   **Pass Rate**: 100% (10/10 tests passing)
+*   **Tests**: BusBenchmark, BusCoordination, BusHardware, UltraFastBoot, GracefulShutdown, PowerSaving, ParticleSystemDeterminism, SystemRegistryCapacity, DependencyGraphPerformance
+*   **Verification Date**: 2026-06-08
 *   **Certification**: AAA+ maintained
 
 *   **Pre-Sizing**: Evita allocations durante startup.
 *   **JIT Warm-Up**: Fuerza compilación C2 de hot paths.
-*   **Result**: 0.167ms boot time (best ever, -42% from baseline).
+*   **Result**: 0.069ms boot time (best ever, -93% from baseline).
 
 ---
 
 **Autoridad**: System Architect  
-**Versión**: 2.1 (Updated 2026-01-24)
+**Versión**: 2.2 (Updated 2026-06-08)

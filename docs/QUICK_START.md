@@ -1,14 +1,14 @@
-# VOLCAN ENGINE - QUICK START GUIDE
+# DARK ENGINE - QUICK START GUIDE
 ## De 0 a Running en 5 Minutos ⚡
 
 **Objetivo:** Tener el motor corriendo y entender lo básico en menos de 5 minutos.
 
 ---
 
-## 🎯 ¿Qué es VolcanEngine?
+## 🎯 ¿Qué es DarkEngine?
 
 Un **motor de juegos de ultra-alto rendimiento** escrito en Java 25 que:
-- ✅ Boot time: **0.290ms** (más rápido que parpadear)
+- ✅ Boot time: **0.069ms** (69μs en CPU caliente / AAA+)
 - ✅ Latencia: **<150ns** (operaciones atómicas)
 - ✅ GC pauses: **<0.028ms** (99.98% reducción)
 - ✅ Escalabilidad: **+30% a +150%** según tu hardware
@@ -38,8 +38,8 @@ java version "25" 2025-XX-XX
 ### **Paso 2: Clonar el Proyecto (30 segundos)**
 
 ```batch
-git clone https://github.com/MarvinGokuu/VolcanEngine.git
-cd VolcanEngine
+git clone https://github.com/MarvinGokuu/DarkEngine.git
+cd DarkEngine
 ```
 
 ---
@@ -52,7 +52,7 @@ build.bat
 
 **Esperado:**
 ```
-VolcanEngine Build System
+DarkEngine Build System
 ========================
 
 Compiling...
@@ -71,7 +71,7 @@ run.bat
 
 **Esperado:**
 ```
-[KERNEL] Boot Time: 0.290ms ✅
+[KERNEL] Boot Time: 0.069ms ✅
 [KERNEL] Loop started ✅
 ```
 
@@ -108,7 +108,7 @@ Para información detallada sobre todos los scripts de compilación y sus casos 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   VolcanEngineMaster                        │
+│                   DarkEngineMaster                        │
 │                   (Punto de Entrada)                        │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -136,7 +136,7 @@ Para información detallada sobre todos los scripts de compilación y sus casos 
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              VolcanAtomicBus (Lock-Free)                    │
+│              DarkAtomicBus (Lock-Free)                    │
 │              (Comunicación entre threads <150ns)            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -158,10 +158,10 @@ Input → Bus → Systems → State → Render
 ### **Crear un Sistema Simple:**
 
 ```java
-// src/sv/volcan/core/systems/HelloSystem.java
-package sv.volcan.core.systems;
+// src/sv/dark/core/systems/HelloSystem.java
+package sv.dark.core.systems;
 
-import sv.volcan.state.WorldStateFrame;
+import sv.dark.state.WorldStateFrame;
 
 public class HelloSystem implements GameSystem {
     
@@ -188,8 +188,8 @@ public class HelloSystem implements GameSystem {
 ### **Registrar el Sistema:**
 
 ```java
-// En EngineKernel.java o VolcanEngineMaster.java
-import sv.volcan.core.systems.HelloSystem;
+// En EngineKernel.java o DarkEngineMaster.java
+import sv.dark.core.systems.HelloSystem;
 
 // En el método de inicialización:
 systemRegistry.registerSystem(new HelloSystem());
@@ -214,18 +214,18 @@ build.bat
 
 ```batch
 # Test de Bus (Benchmark)
-java -cp bin sv.volcan.bus.BusBenchmarkTest
+java -cp bin sv.dark.bus.BusBenchmarkTest
 
 # Test de Boot Time
-java -cp bin sv.volcan.test.UltraFastBootTest
+java -cp bin sv.dark.test.UltraFastBootTest
 
 # Test de Shutdown
-java -cp bin sv.volcan.test.GracefulShutdownTest
+java -cp bin sv.dark.test.GracefulShutdownTest
 ```
 
 **Esperado (BusBenchmarkTest):**
 ```
-[TEST] VolcanAtomicBus Benchmark
+[TEST] DarkAtomicBus Benchmark
 [RESULT] Throughput: >10M ops/s ✅
 [RESULT] Latency: <150ns ✅
 ```
@@ -238,7 +238,7 @@ java -cp bin sv.volcan.test.GracefulShutdownTest
 
 | Métrica | Target | Actual | Estado |
 |---------|--------|--------|--------|
-| **Boot Time** | <1ms | 0.290ms | ✅ 71% mejor |
+| **Boot Time** | <1ms | 0.069ms | ✅ 93% mejor |
 | **VarHandle Latency** | <150ns | 100ns | ✅ 33% mejor |
 | **GC Pause Max** | <1ms | 0.028ms | ✅ 97.2% mejor |
 | **Throughput** | >10M ops/s | >12M ops/s | ✅ 20% mejor |
@@ -249,7 +249,7 @@ java -cp bin sv.volcan.test.GracefulShutdownTest
 
 ### **Nivel 1: Fundamentos (1-2 horas)**
 1. 📖 Leer [README_DOCS.md](README_DOCS.md) - Resumen ejecutivo
-2. 🏗️ Leer [ARQUITECTURA_VOLCAN_ENGINE.md](architecture/ARQUITECTURA_VOLCAN_ENGINE.md)
+2. 🏗️ Leer [ARQUITECTURA_DARK_ENGINE.md](architecture/ARQUITECTURA_DARK_ENGINE.md)
 3. 📚 Leer [TECHNICAL_GLOSSARY.md](glossary/TECHNICAL_GLOSSARY.md)
 
 ### **Nivel 2: Desarrollo (1 semana)**
@@ -275,7 +275,7 @@ docs/
 ├── PROJECT_HEALTH_REPORT.md          ← Estado del proyecto
 │
 ├── architecture/
-│   └── ARQUITECTURA_VOLCAN_ENGINE.md ← Arquitectura completa
+│   └── ARQUITECTURA_DARK_ENGINE.md ← Arquitectura completa
 │
 ├── certification/
 │   └── PEAK_PERFORMANCE_REPORT.md    ← Certificación AAA+
@@ -291,7 +291,7 @@ docs/
 
 ## 🎨 COMPONENTES CLAVE
 
-### **1. VolcanAtomicBus (Lock-Free Communication)**
+### **1. DarkAtomicBus (Lock-Free Communication)**
 ```
 ┌──────────────────────────────────────┐
 │ headShield (56 bytes) | head (8)    │ ← Cache Line 1
@@ -316,7 +316,7 @@ Escala con cores:
 - 32 cores: +150% rendimiento
 ```
 
-### **3. VolcanDataAccelerator (SIMD)**
+### **3. DarkDataAccelerator (SIMD)**
 ```
 Vector API (AVX-512)
 ├─ SSE4.2: 4 ints/ciclo
@@ -388,8 +388,8 @@ SovereignProtocol.bat
 - [Vector API (JEP 338)](https://openjdk.org/jeps/338)
 
 ### **Comunidad:**
-- GitHub Issues: [Reportar bugs](https://github.com/MarvinGokuu/VolcanEngine/issues)
-- Discussions: [Preguntas y respuestas](https://github.com/MarvinGokuu/VolcanEngine/discussions)
+- GitHub Issues: [Reportar bugs](https://github.com/MarvinGokuu/DarkEngine/issues)
+- Discussions: [Preguntas y respuestas](https://github.com/MarvinGokuu/DarkEngine/discussions)
 
 ---
 
@@ -419,11 +419,11 @@ SovereignProtocol.bat
 
 ---
 
-**¡Bienvenido al VolcanEngine!** 🌋🚀
+**¡Bienvenido al DarkEngine!** 🌋🚀
 
 ---
 
-**Última Actualización:** 2026-01-19  
+**Última Actualización:** 2026-06-08  
 **Autor:** System Architect  
 **Tiempo de Lectura:** 5 minutos  
 **Nivel:** Principiante

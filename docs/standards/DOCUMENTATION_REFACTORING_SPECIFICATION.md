@@ -20,7 +20,7 @@ Se establece una política de sustitución obligatoria para garantizar el rigor 
 | **Almacén / Vault** | `MemorySegment` / `Off-heap` | Acceso directo a memoria nativa (Foreign Memory API). |
 | **Acelerador** | `Vector API` / `SIMD` | Ejecución paralela en registros AVX-256/512. |
 | **Velocidad / Fuerza** | `Throughput` (GB/s) / `Latencia` (ns) | Métricas cuantificables de rendimiento y tiempo. |
-| **Soberanía / Volcan** | `Kernel` / `Runtime` | Definición de privilegios y contexto de ejecución. |
+| **Soberanía / Dark** | `Kernel` / `Runtime` | Definición de privilegios y contexto de ejecución. |
 
 ---
 
@@ -32,7 +32,7 @@ Se establece una política de sustitución obligatoria para garantizar el rigor 
 *   **Cambios**: Eliminación de adjetivos. Refactorización de tablas de métricas bajo el estándar 2.0. Enfoque en la topología de datos y el flujo de ejecución.
 
 ### 2.2. Estandarización del Plan Maestro
-*   **Archivo**: `MASTER_PLAN_V2.md` (Anteriormente `MASTER_PLAN_VOLCAN_2_0.md`)
+*   **Archivo**: `MASTER_PLAN_V2.md` (Anteriormente `MASTER_PLAN_DARK_2_0.md`)
 *   **Cambios**: Sustitución de metáforas biológicas ("Empire", "Muscle", "Brain") por términos de ingeniería de sistemas. Renombramiento de componentes de control a `Kernel` o `System`.
 
 ### 2.3. Especificación del Bus de Datos
