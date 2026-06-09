@@ -34,13 +34,19 @@ public final class DarkEventLane {
 
     private long totalOffered = 0;
     private long totalAccepted = 0;
-    private long totalDropped = 0;
-    private long totalPolled = 0; // 4 variables × 8 bytes = 32 bytes
+    private long totalDropped = 0; // 3 metrics × 8 bytes = 24 bytes
 
-    // Padding para prevenir False Sharing
-    // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
+    // Padding inter-thread para aislar métricas del productor de métricas del consumidor (64 bytes)
+    private long midShield_L1_slot1, midShield_L1_slot2, midShield_L1_slot3,
+            midShield_L1_slot4, midShield_L1_slot5, midShield_L1_slot6,
+            midShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
+
+    private long totalPolled = 0; // 1 metric × 8 bytes = 8 bytes
+
+    // Padding de cola para prevenir false sharing en fin de objeto
     private long tailShield_L1_slot1, tailShield_L1_slot2, tailShield_L1_slot3,
-            tailShield_L1_slot4; // 4 slots × 8 bytes = 32 bytes (total 64 bytes con métricas)
+            tailShield_L1_slot4, tailShield_L1_slot5, tailShield_L1_slot6,
+            tailShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -258,11 +264,22 @@ public final class DarkEventLane {
         acc += headShield_L1_slot5;
         acc += headShield_L1_slot6;
         acc += headShield_L1_slot7;
-        // tailShield_L1 (4 slots)
+        // midShield_L1 (7 slots)
+        acc += midShield_L1_slot1;
+        acc += midShield_L1_slot2;
+        acc += midShield_L1_slot3;
+        acc += midShield_L1_slot4;
+        acc += midShield_L1_slot5;
+        acc += midShield_L1_slot6;
+        acc += midShield_L1_slot7;
+        // tailShield_L1 (7 slots)
         acc += tailShield_L1_slot1;
         acc += tailShield_L1_slot2;
         acc += tailShield_L1_slot3;
         acc += tailShield_L1_slot4;
+        acc += tailShield_L1_slot5;
+        acc += tailShield_L1_slot6;
+        acc += tailShield_L1_slot7;
         return acc;
     }
 
