@@ -57,7 +57,7 @@ Internal bus commands for power and state management:
 ### [INCIDENT-006] SuppressWarnings Warnings Ignored (IDE Configuration)
 *   **Severity**: Low / Info (IDE Compliance)
 *   **Cause**: IDE warning logs reporting that `@SuppressWarnings("unused")` or `@SuppressWarnings("serial")` categories are ignored by the compiler options.
-*   **Resolution**: Informational notice. Resolved by adjusting the IDE/Compiler project preferences to enable the corresponding lints (e.g., `-Xlint:unused` or `-Xlint:serial`) so the IDE analyzer can parse and apply the suppressions correctly.
+*   **Resolution**: Commented out the `@SuppressWarnings("unused")` and `@SuppressWarnings("serial")` annotations in the target source files (`WorkStealingProcessor.java`, `EngineKernel.java`, and `AsyncLogWriter.java`) as `//@SuppressWarnings(...)` to directly eliminate the warnings from IDE terminal/console outputs.
 
 ---
 
