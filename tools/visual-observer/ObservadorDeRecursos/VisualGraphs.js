@@ -88,7 +88,7 @@ window.addEventListener('DOMContentLoaded', () => {
     graphs.net = new MetricGraph('graph-net', '#ff9900');
 
     // Simulate / Connect data
-    // Ideally VolcanMetricsClient would call this. 
+    // Ideally DarkMetricsClient would call this. 
     // For now we hook into the global update if possible, or poll.
 });
 
