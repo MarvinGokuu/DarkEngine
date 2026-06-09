@@ -2,7 +2,7 @@
 setlocal
 
 echo.
-echo VolcanEngine Test Suite
+echo DarkEngine Test Suite
 echo ========================
 echo.
 
@@ -15,39 +15,54 @@ echo Running tests...
 echo.
 
 :: Bus tests
-echo [1/7] Bus Benchmark...
-java -cp bin sv.volcan.bus.BusBenchmarkTest
+echo [1/10] Bus Benchmark...
+java -cp bin sv.dark.bus.BusBenchmarkTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [2/7] Bus Coordination...
-java -cp bin sv.volcan.bus.BusCoordinationTest
+echo [2/10] Bus Coordination...
+java -cp bin sv.dark.bus.BusCoordinationTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [3/7] Bus Hardware...
-java -cp bin sv.volcan.bus.BusHardwareTest
+echo [3/10] Bus Hardware...
+java -cp bin sv.dark.bus.BusHardwareTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 :: System tests
 echo.
-echo [4/7] Ultra Fast Boot...
-java -cp bin sv.volcan.test.UltraFastBootTest
+echo [4/10] Ultra Fast Boot...
+java -cp bin sv.dark.test.UltraFastBootTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [5/7] Graceful Shutdown...
-java -cp bin sv.volcan.test.GracefulShutdownTest
+echo [5/10] Graceful Shutdown...
+java -cp bin sv.dark.test.GracefulShutdownTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [6/7] Power Saving...
-java -cp bin sv.volcan.test.PowerSavingTest
+echo [6/10] Power Saving...
+java -cp bin sv.dark.test.PowerSavingTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [7/7] Bus Benchmark (final)...
-java -cp bin sv.volcan.bus.BusBenchmarkTest
+echo [7/10] Particle System Determinism (Audit Fix)...
+java -cp bin sv.dark.test.ParticleSystemDeterminismTest
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+echo.
+echo [8/10] System Registry Capacity (Audit Fix)...
+java --add-opens java.base/java.util=ALL-UNNAMED -cp bin sv.dark.test.SystemRegistryCapacityTest
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+echo.
+echo [9/10] Dependency Graph Performance (Audit Fix)...
+java --add-opens java.base/java.util=ALL-UNNAMED -cp bin sv.dark.test.DependencyGraphPerformanceTest
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+echo.
+echo [10/10] Bus Benchmark (final)...
+java -cp bin sv.dark.bus.BusBenchmarkTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
