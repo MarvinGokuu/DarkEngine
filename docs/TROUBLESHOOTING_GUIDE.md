@@ -49,12 +49,22 @@ Internal bus commands for power and state management:
 *   **Cause**: `final` constant comparison optimized away by compiler.
 *   **Resolution**: Implemented dynamic Runtime Checks to prevent dead code elimination.
 
+### [INCIDENT-005] Unused System Imports (Telemetry)
+*   **Severity**: Low (Clean Code)
+*   **Cause**: Explicit system imports in `EngineKernel` became unused because return types from `ParallelSystemExecutor` were resolved implicitly by the compiler.
+*   **Resolution**: Removed redundant imports to eliminate compiler warnings.
+
+### [INCIDENT-006] SuppressWarnings Warnings Ignored (IDE Configuration)
+*   **Severity**: Low / Info (IDE Compliance)
+*   **Cause**: IDE warning logs reporting that `@SuppressWarnings("unused")` or `@SuppressWarnings("serial")` categories are ignored by the compiler options.
+*   **Resolution**: Informational notice. Resolved by adjusting the IDE/Compiler project preferences to enable the corresponding lints (e.g., `-Xlint:unused` or `-Xlint:serial`) so the IDE analyzer can parse and apply the suppressions correctly.
+
 ---
 
 ## 3. Maintenance Statistics
 
-*   **Issues Detected**: 15
-*   **Issues Resolved**: 15
+*   **Issues Detected**: 17
+*   **Issues Resolved**: 17
 *   **Codebase Status**: 100% Clean (Post-Fix)
 
 ---
