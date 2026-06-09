@@ -15,7 +15,7 @@
 **Correcciones:**
 - ✅ `docs/certification/PEAK_PERFORMANCE_REPORT.md` → `certification/PEAK_PERFORMANCE_REPORT.md`
 - ✅ `docs/roadmap/FASE_1_GAME_LAUNCHER.md` → `roadmap/FASE_1_GAME_LAUNCHER.md`
-- ✅ `docs/architecture/VOLCAN_OS_MASTER_PLAN.md` → `architecture/VOLCAN_OS_MASTER_PLAN.md`
+- ✅ `docs/architecture/DARK_OS_MASTER_PLAN.md` → `architecture/DARK_OS_MASTER_PLAN.md`
 - ✅ Agregado link a `DOCUMENTATION_INDEX.md`
 
 **Razón:** Los paths relativos no deben incluir `docs/` cuando el archivo ya está en el directorio `docs/`
@@ -42,7 +42,7 @@
 | **DOCUMENTATION_INDEX.md** | Todos los paths relativos correctos | ✅ |
 | **PEAK_PERFORMANCE_REPORT.md** | Links externos (wiki.openjdk.org, etc.) | ✅ |
 | **FASE_1_GAME_LAUNCHER.md** | Sin links internos | ✅ |
-| **VOLCAN_OS_MASTER_PLAN.md** | Sin links internos | ✅ |
+| **DARK_OS_MASTER_PLAN.md** | Sin links internos | ✅ |
 
 ### **Links Externos (Funcionando):**
 
@@ -60,7 +60,7 @@ Desde `docs/README_DOCS.md`:
 ```
 certification/PEAK_PERFORMANCE_REPORT.md          ✅
 roadmap/FASE_1_GAME_LAUNCHER.md                   ✅
-architecture/VOLCAN_OS_MASTER_PLAN.md             ✅
+architecture/DARK_OS_MASTER_PLAN.md             ✅
 DOCUMENTATION_INDEX.md                            ✅
 ```
 
@@ -80,7 +80,7 @@ file:///c:/Users/theca/.../standards/AAA_CODING_STANDARDS.md  ✅
 |---------|------|--------|
 | **PEAK_PERFORMANCE_REPORT.md** | `docs/certification/` | ✅ |
 | **FASE_1_GAME_LAUNCHER.md** | `docs/roadmap/` | ✅ |
-| **VOLCAN_OS_MASTER_PLAN.md** | `docs/architecture/` | ✅ |
+| **DARK_OS_MASTER_PLAN.md** | `docs/architecture/` | ✅ |
 | **DOCUMENTATION_INDEX.md** | `docs/` | ✅ |
 | **README_DOCS.md** | `docs/` | ✅ |
 | **TECHNICAL_GLOSSARY.md** | `docs/glossary/` | ✅ |
@@ -104,12 +104,12 @@ file:///c:/Users/theca/.../standards/AAA_CODING_STANDARDS.md  ✅
 
 | Test | Path | Existe |
 |------|------|--------|
-| **BusBenchmarkTest.java** | `src/sv/volcan/bus/` | ✅ |
-| **BusCoordinationTest.java** | `src/sv/volcan/bus/` | ✅ |
-| **BusHardwareTest.java** | `src/sv/volcan/bus/` | ✅ |
-| **UltraFastBootTest.java** | `src/sv/volcan/test/` | ✅ |
-| **GracefulShutdownTest.java** | `src/sv/volcan/test/` | ✅ |
-| **PowerSavingTest.java** | `src/sv/volcan/test/` | ✅ |
+| **BusBenchmarkTest.java** | `src/sv/dark/bus/` | ✅ |
+| **BusCoordinationTest.java** | `src/sv/dark/bus/` | ✅ |
+| **BusHardwareTest.java** | `src/sv/dark/bus/` | ✅ |
+| **UltraFastBootTest.java** | `src/sv/dark/test/` | ✅ |
+| **GracefulShutdownTest.java** | `src/sv/dark/test/` | ✅ |
+| **PowerSavingTest.java** | `src/sv/dark/test/` | ✅ |
 
 ---
 
@@ -131,15 +131,15 @@ file:///c:/Users/theca/.../standards/AAA_CODING_STANDARDS.md  ✅
 ### **Verificado en SovereignProtocol.bat:**
 
 ```batch
-1. sv.volcan.state.VolcanEngineMaster.java
-2. sv.volcan.kernel.*.java
-3. sv.volcan.core.*.java
-4. sv.volcan.core.memory.*.java
-5. sv.volcan.core.systems.*.java
-6. sv.volcan.state.*.java
-7. sv.volcan.bus.*.java
-8. sv.volcan.net.*.java
-9. sv.volcan.test.*.java
+1. sv.dark.state.DarkEngineMaster.java
+2. sv.dark.kernel.*.java
+3. sv.dark.core.*.java
+4. sv.dark.core.memory.*.java
+5. sv.dark.core.systems.*.java
+6. sv.dark.state.*.java
+7. sv.dark.bus.*.java
+8. sv.dark.net.*.java
+9. sv.dark.test.*.java
 ```
 
 **Estado:** ✅ Orden correcto y funcional
@@ -150,7 +150,7 @@ file:///c:/Users/theca/.../standards/AAA_CODING_STANDARDS.md  ✅
 
 ### **Marcados como // Desarrollo únicamente:**
 
-- `docs/architecture/VOLCAN_OS_MASTER_PLAN.md`
+- `docs/architecture/DARK_OS_MASTER_PLAN.md`
 - `docs/roadmap/FASE_1_GAME_LAUNCHER.md`
 - `docs/manuals/FLUJO_TRABAJO.md`
 - `docs/manuals/GUIA_COMMITS.md`

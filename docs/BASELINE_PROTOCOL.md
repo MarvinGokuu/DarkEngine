@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-El **Baseline Validation Protocol** permite medir con precisión el impacto de cada optimización en el VolcanEngine y validar que no existen memory leaks.
+El **Baseline Validation Protocol** permite medir con precisión el impacto de cada optimización en el DarkEngine y validar que no existen memory leaks.
 
 ## Concepto
 
@@ -123,7 +123,7 @@ El motor implementa un **Shutdown Hook** que se ejecuta automáticamente en:
 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
     System.out.println(">>> INICIANDO SECUENCIA DE APAGADO SEGURO...");
     gracefulShutdown();
-    System.out.println(">>> MOTOR VOLCAN FUERA DE SISTEMA. GRÁFICOS LIBRES.");
+    System.out.println(">>> MOTOR DARK FUERA DE SISTEMA. GRÁFICOS LIBRES.");
 }));
 ```
 
@@ -202,11 +202,11 @@ Delta:    Heap=+25MB, NonHeap=+10MB, Threads=+2
 
 ```bash
 # Compilar el proyecto
-cd c:\Users\theca\Documents\GitHub\VolcanEngine
+cd c:\Users\theca\Documents\GitHub\DarkEngine
 SovereignProtocol.bat
 
 # Ejecutar test de Graceful Shutdown
-java -cp bin sv.volcan.test.GracefulShutdownTest
+java -cp bin sv.dark.test.GracefulShutdownTest
 ```
 
 ## Integración con VisualObserver

@@ -9,7 +9,7 @@
 
 ## 🎯 INTRODUCCIÓN
 
-Esta guía explica **cada variable, cada decisión de diseño, y cada técnica** usada en el VolcanEngine para lograr alineación perfecta de memoria y operaciones atómicas sin locks.
+Esta guía explica **cada variable, cada decisión de diseño, y cada técnica** usada en el DarkEngine para lograr alineación perfecta de memoria y operaciones atómicas sin locks.
 
 ---
 
@@ -255,8 +255,8 @@ private static final VarHandle TAIL_H;
 static {
     try {
         var lookup = MethodHandles.lookup();
-        HEAD_H = lookup.findVarHandle(VolcanAtomicBus.class, "head", long.class);
-        TAIL_H = lookup.findVarHandle(VolcanAtomicBus.class, "tail", long.class);
+        HEAD_H = lookup.findVarHandle(DarkAtomicBus.class, "head", long.class);
+        TAIL_H = lookup.findVarHandle(DarkAtomicBus.class, "tail", long.class);
     } catch (ReflectiveOperationException e) {
         throw new Error("Fallo crítico: No se pudo mapear VarHandles.");
     }
@@ -273,8 +273,8 @@ static {
 - Crea un "buscador" de métodos y variables
 - `lookup` es como un "mapa" de la clase
 
-**Línea 4:** `HEAD_H = lookup.findVarHandle(VolcanAtomicBus.class, "head", long.class);`
-- `VolcanAtomicBus.class` → En qué clase buscar
+**Línea 4:** `HEAD_H = lookup.findVarHandle(DarkAtomicBus.class, "head", long.class);`
+- `DarkAtomicBus.class` → En qué clase buscar
 - `"head"` → Nombre de la variable
 - `long.class` → Tipo de la variable
 - **Resultado:** `HEAD_H` ahora es un "puntero" a la variable `head`
@@ -517,7 +517,7 @@ if (headShield_L1_slot1 != THERMAL_SIGNATURE) {
 ```java
 private final int mask;
 
-public VolcanAtomicBus(int powerOfTwo) {
+public DarkAtomicBus(int powerOfTwo) {
     int capacity = 1 << powerOfTwo;  // 2^powerOfTwo
     this.mask = capacity - 1;
 }
@@ -547,7 +547,7 @@ index = 16500
 
 **Problema:**
 - El GC puede mover objetos en memoria (compaction)
-- Si mueve `VolcanAtomicBus`, pierde alineación de 64 bytes
+- Si mueve `DarkAtomicBus`, pierde alineación de 64 bytes
 
 **Solución:**
 ```java
@@ -601,7 +601,7 @@ public long getPaddingChecksum() {
 - [ ] Puedo calcular el padding necesario para una variable
 - [ ] Puedo usar `getAcquire` y `setRelease` correctamente
 - [ ] Puedo crear un `MemorySegment` alineado
-- [ ] Puedo explicar cada variable de `VolcanAtomicBus`
+- [ ] Puedo explicar cada variable de `DarkAtomicBus`
 
 ### **Nivel 3: Maestría**
 - [ ] Puedo diseñar una estructura con cache line padding

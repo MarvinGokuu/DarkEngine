@@ -50,7 +50,7 @@ El Bus Atómico es un mecanismo de transferencia de mensajería de 64 bits dise�
 ```java
 // ALIGNMENT: 64-Byte Cache Line
 // PADDING: 56 Bytes per cursor to prevent False Sharing
-public final class VolcanAtomicBus {
+public final class DarkAtomicBus {
     long headShield_L1_slot0, headShield_L1_slot1, ...; // Padding
     volatile long head;
     long tailShield_L1_slot0, tailShield_L1_slot1, ...; // Padding
@@ -74,7 +74,7 @@ public final class VolcanAtomicBus {
 
 ## 4. Estrategias de Congestión (Backpressure)
 
-| Estrategia | Opcode | Comportamiento del Silicio |
+| Estrategia | Opcode | Comportamiento del Hardware |
 | :--- | :--- | :--- |
 | **DROP** | `0x01` | Descarta instrucción si buffer completo (No-Op). |
 | **BLOCK** | `0x02` | `Thread.onSpinWait()` hasta liberación de slot. |

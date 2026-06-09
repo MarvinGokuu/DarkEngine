@@ -38,7 +38,7 @@ The signaling system enforces strictly aligned 64-bit data structures to ensure 
 
 ## 2. Command Set Architecture (CSA)
 
-Reference mapping for `VolcanSignalCommands`.
+Reference mapping for `DarkSignalCommands`.
 
 ### 2.1. INPUT (0x1000 - 0x1FFF)
 | OpCode | Mnemonic | Payload | Technical Description |

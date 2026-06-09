@@ -22,7 +22,7 @@ Este índice define el **Espacio de Direccionamiento Documental**, asignando off
 | :--- | :--- | :--- | :--- |
 | `0x0000` | `README.md` | Entry Point & Project Manifest | 1s |
 | `0x0001` | `brain/IA.md` | Cognitive Structure Definition | 3s |
-| `0x0002` | `docs/architecture/ARQUITECTURA_VOLCAN_ENGINE.md` | System Architecture Overview | 30s |
+| `0x0002` | `docs/architecture/ARQUITECTURA_DARK_ENGINE.md` | System Architecture Overview | 30s |
 | `0x0003` | `docs/standards/HPC_CODING_STANDARD.md` | Low-Latency Coding Rules | 15s |
 | `0x0004` | `docs/standards/CERTIFICATION_PROTOCOL.md` | AAA+ Compliance Metrics | 10s |
 | `0x0005` | `docs/glossary/TECHNICAL_GLOSSARY.md` | O(1) Terminology Lookup | 5s |
@@ -57,7 +57,7 @@ Este índice define el **Espacio de Direccionamiento Documental**, asignando off
 **Objetivo**: Comprensión del sistema en < 5 minutos.
 
 1.  **System Entry**: `README.md` (Contexto Global).
-2.  **Architecture Load**: `ARQUITECTURA_VOLCAN_ENGINE.md` (Topología).
+2.  **Architecture Load**: `ARQUITECTURA_DARK_ENGINE.md` (Topología).
 3.  **Instruction Set**: `HPC_CODING_STANDARD.md` (Reglas de Implementación).
 
 ### 3.2. Secuencia de Implementación (Write)

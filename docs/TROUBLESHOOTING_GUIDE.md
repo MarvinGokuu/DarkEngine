@@ -41,7 +41,7 @@ Internal bus commands for power and state management:
 
 ### [INCIDENT-002] Missing Annotation (Metrics)
 *   **Severity**: Medium (Compliance)
-*   **Cause**: `VolcanMetricsServer` lacked `@AAACertified` annotation.
+*   **Cause**: `DarkMetricsServer` lacked `@AAACertified` annotation.
 *   **Resolution**: Annotation implemented and validated.
 
 ### [INCIDENT-004] Dead Code Warning (Security)

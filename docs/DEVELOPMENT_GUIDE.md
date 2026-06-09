@@ -1,4 +1,4 @@
-# GUÍA DE DESARROLLO COMPLETA - VOLCAN ENGINE
+# GUÍA DE DESARROLLO COMPLETA - DARK ENGINE
 ## Todo lo que Necesitas para Desarrollar en el Motor
 
 **Fecha:** 2026-01-19  
@@ -9,7 +9,7 @@
 
 ## 🎯 INTRODUCCIÓN
 
-Esta guía cubre **todo lo que falta** en la documentación existente para que puedas desarrollar efectivamente en el VolcanEngine.
+Esta guía cubre **todo lo que falta** en la documentación existente para que puedas desarrollar efectivamente en el DarkEngine.
 
 ---
 
@@ -73,7 +73,7 @@ java --version
 
 1. **Abrir Proyecto:**
    ```
-   File → Open → Seleccionar carpeta VolcanEngine
+   File → Open → Seleccionar carpeta DarkEngine
    ```
 
 2. **Configurar JDK:**
@@ -92,7 +92,7 @@ java --version
 4. **Configurar Run Configuration:**
    ```
    Run → Edit Configurations → Add New → Application
-   Main class: sv.volcan.state.VolcanEngineMaster
+   Main class: sv.dark.state.DarkEngineMaster
    VM options: --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector
    ```
 
@@ -126,9 +126,9 @@ java --version
      "configurations": [
        {
          "type": "java",
-         "name": "VolcanEngine",
+         "name": "DarkEngine",
          "request": "launch",
-         "mainClass": "sv.volcan.state.VolcanEngineMaster",
+         "mainClass": "sv.dark.state.DarkEngineMaster",
          "vmArgs": "--enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector"
        }
      ]
@@ -199,12 +199,12 @@ compile.bat
 
 ```batch
 # Test específico
-java -cp bin sv.volcan.bus.BusBenchmarkTest
+java -cp bin sv.dark.bus.BusBenchmarkTest
 
 # Todos los tests
-java -cp bin sv.volcan.test.UltraFastBootTest
-java -cp bin sv.volcan.test.GracefulShutdownTest
-java -cp bin sv.volcan.test.PowerSavingTest
+java -cp bin sv.dark.test.UltraFastBootTest
+java -cp bin sv.dark.test.GracefulShutdownTest
+java -cp bin sv.dark.test.PowerSavingTest
 ```
 
 ---
@@ -243,10 +243,10 @@ git push origin feature/nombre-descriptivo
 #### **Paso 1: Crear el Archivo**
 
 ```java
-// src/sv/volcan/core/systems/CollisionSystem.java
-package sv.volcan.core.systems;
+// src/sv/dark/core/systems/CollisionSystem.java
+package sv.dark.core.systems;
 
-import sv.volcan.state.WorldStateFrame;
+import sv.dark.state.WorldStateFrame;
 
 /**
  * AUTORIDAD: [Tu Nombre]
@@ -274,8 +274,8 @@ public class CollisionSystem implements GameSystem {
 #### **Paso 2: Registrar el Sistema**
 
 ```java
-// En EngineKernel.java o VolcanEngineMaster.java
-import sv.volcan.core.systems.CollisionSystem;
+// En EngineKernel.java o DarkEngineMaster.java
+import sv.dark.core.systems.CollisionSystem;
 
 // En el método de inicialización:
 systemRegistry.registerSystem(new CollisionSystem());
@@ -296,8 +296,8 @@ build.bat
 #### **Ejemplo: Bus de Colisiones**
 
 ```java
-// src/sv/volcan/bus/CollisionBus.java
-package sv.volcan.bus;
+// src/sv/dark/bus/CollisionBus.java
+package sv.dark.bus;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -380,11 +380,11 @@ public final class CollisionBus implements IEventBus {
 ### **3. Crear un Test**
 
 ```java
-// src/sv/volcan/test/CollisionSystemTest.java
-package sv.volcan.test;
+// src/sv/dark/test/CollisionSystemTest.java
+package sv.dark.test;
 
-import sv.volcan.core.systems.CollisionSystem;
-import sv.volcan.state.WorldStateFrame;
+import sv.dark.core.systems.CollisionSystem;
+import sv.dark.state.WorldStateFrame;
 
 public class CollisionSystemTest {
     
@@ -426,7 +426,7 @@ El motor imprime logs detallados en consola:
 [KERNEL] Logic Thread PINNED to Core 1
 [KERNEL] EXECUTING JIT WARM-UP...
 [KERNEL] EXECUTING BOOT SEQUENCE...
-[KERNEL] Boot Time: 0.290ms
+[KERNEL] Boot Time: 0.069ms
 [KERNEL] MAIN LOOP STARTED
 ```
 
@@ -454,7 +454,7 @@ public class MiSistema implements GameSystem {
 
 #### **Breakpoints:**
 1. Click en el margen izquierdo del editor
-2. Run → Debug 'VolcanEngine'
+2. Run → Debug 'DarkEngine'
 3. El programa se detendrá en el breakpoint
 
 #### **Inspeccionar Variables:**
@@ -496,7 +496,7 @@ public boolean offer(long eventData) {
 
 #### **Grabar:**
 ```batch
-java -XX:StartFlightRecording=filename=recording.jfr,duration=60s -cp bin sv.volcan.state.VolcanEngineMaster
+java -XX:StartFlightRecording=filename=recording.jfr,duration=60s -cp bin sv.dark.state.DarkEngineMaster
 ```
 
 #### **Analizar:**
@@ -537,7 +537,7 @@ type gc_production.log | findstr "Pause"
 ### **3. JIT Compilation Logs**
 
 ```batch
-java -XX:+PrintCompilation -cp bin sv.volcan.state.VolcanEngineMaster
+java -XX:+PrintCompilation -cp bin sv.dark.state.DarkEngineMaster
 ```
 
 **Output:**
@@ -561,7 +561,7 @@ java -XX:+PrintCompilation -cp bin sv.volcan.state.VolcanEngineMaster
 public class Benchmark {
     
     public static void main(String[] args) {
-        VolcanAtomicBus bus = new VolcanAtomicBus(14); // 16K capacity
+        DarkAtomicBus bus = new DarkAtomicBus(14); // 16K capacity
         
         // Warm-up
         for (int i = 0; i < 100_000; i++) {
@@ -595,7 +595,7 @@ public class Benchmark {
 ### **1. Estructura de Tests**
 
 ```
-src/sv/volcan/test/
+src/sv/dark/test/
 ├── Test_BusBenchmark.java       # Benchmark de buses
 ├── UltraFastBootTest.java      # Boot time <1ms
 ├── GracefulShutdownTest.java   # Shutdown limpio
@@ -608,7 +608,7 @@ src/sv/volcan/test/
 ### **2. Template de Test**
 
 ```java
-package sv.volcan.test;
+package sv.dark.test;
 
 public class MiComponenteTest {
     
@@ -666,15 +666,15 @@ public class MiComponenteTest {
 build.bat
 
 # Ejecutar test específico
-java -cp bin sv.volcan.test.MiComponenteTest
+java -cp bin sv.dark.test.MiComponenteTest
 
 # Ejecutar todos los tests (crear script)
 @echo off
 echo [TESTS] Running all tests...
-java -cp bin sv.volcan.bus.BusBenchmarkTest
-java -cp bin sv.volcan.test.UltraFastBootTest
-java -cp bin sv.volcan.test.GracefulShutdownTest
-java -cp bin sv.volcan.test.PowerSavingTest
+java -cp bin sv.dark.bus.BusBenchmarkTest
+java -cp bin sv.dark.test.UltraFastBootTest
+java -cp bin sv.dark.test.GracefulShutdownTest
+java -cp bin sv.dark.test.PowerSavingTest
 echo [TESTS] Complete
 ```
 
@@ -685,7 +685,7 @@ echo [TESTS] Complete
 ### **1. Estándares de Código**
 
 #### **Naming Conventions:**
-- **Clases:** `PascalCase` (ej: `VolcanAtomicBus`)
+- **Clases:** `PascalCase` (ej: `DarkAtomicBus`)
 - **Métodos:** `camelCase` (ej: `getAcquire`)
 - **Variables:** `camelCase` (ej: `currentHead`)
 - **Constantes:** `UPPER_SNAKE_CASE` (ej: `MEMORY_SIGNATURE`)
@@ -847,6 +847,6 @@ java -XX:+HeapDumpOnOutOfMemoryError -cp bin ...
 
 ---
 
-**Última Actualización:** 2026-01-19  
+**Última Actualización:** 2026-06-08  
 **Autor:** System Architect  
 **Estado:** ✅ Guía Completa

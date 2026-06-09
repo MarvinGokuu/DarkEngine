@@ -1,7 +1,7 @@
 # Build Workflows & Scripts Reference
 
-**Version**: 2.1.0  
-**Last Updated**: 2026-01-28  
+**Version**: 2.2.0  
+**Last Updated**: 2026-06-08  
 **Status**: Production Ready
 
 ---
@@ -11,8 +11,8 @@
 | Script | Purpose | Output | Use Case | Metrics |
 |--------|---------|--------|----------|---------|
 | **clean.bat** | Remove build artifacts | - | Pre-certification cleanup | N/A |
-| **build.bat** | AAA+ optimized compilation | `bin/` | Certification, benchmarks | Boot: 0.167ms |
-| **test.bat** | Full test suite (7/7) | - | Validation, metrics verification | 100% pass rate |
+| **build.bat** | AAA+ optimized compilation | `bin/` | Certification, benchmarks | Boot: 0.069ms |
+| **test.bat** | Full test suite (10/10) | - | Validation, metrics verification | 100% pass rate |
 | **run.bat** | Execute without recompiling | - | Hot reload, development | Production runtime |
 
 ---
@@ -21,7 +21,7 @@
 
 ### **Workflow 1: AAA+ Certification (Maximum Performance)**
 
-**Use Case**: Achieving and verifying record metrics (Boot: 0.167ms, Bus: 23.35ns)
+**Use Case**: Achieving and verifying record metrics (Boot: 0.069ms, Bus: 23.35ns)
 
 ```bash
 # Step 1: Build with optimizations (includes auto-clean)
@@ -39,11 +39,11 @@ test.bat
 ```
 
 **Expected Results**:
-- ✅ Boot time: 0.221-0.427ms (typical), 0.167ms (best)
+- ✅ Boot time: 0.070-0.150ms (typical), 0.069ms (best)
 - ✅ Bus latency: 23.35ns
 - ✅ Event throughput: 185M ops/s
 - ✅ SIMD bandwidth: 4.17 GB/s
-- ✅ Test coverage: 7/7 (100%)
+- ✅ Test coverage: 10/10 (100%)
 - ✅ Memory leaks: 0
 
 **When to Use**:
@@ -228,7 +228,7 @@ test.bat
 ```
 
 **Performance Impact**:
-- ✅ Boot time: **0.167ms** (best case)
+- ✅ Boot time: **0.069ms** (best case)
 - ✅ Bus latency: **23.35ns**
 - ✅ SIMD bandwidth: **4.17 GB/s**
 
@@ -243,7 +243,7 @@ test.bat
 **What Happens**:
 ```batch
 # Line 41: Auto-executes engine
-java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector -cp bin sv.volcan.state.VolcanEngineMaster
+java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector -cp bin sv.dark.state.DarkEngineMaster
 
 # Line 43: Pause command (waits after engine stops)
 pause
@@ -273,36 +273,39 @@ pause
 
 ### **3. test.bat**
 
-**Purpose**: Execute full test suite (7/7 tests)
+**Purpose**: Execute full test suite (10/10 tests)
 
 **Prerequisites**:
 - `bin/` directory must exist (run `build.bat` first)
 
 **Test Sequence**:
 ```
-[1/7] Bus Benchmark       → Throughput, latency (cold start)
-[2/7] Bus Coordination    → Multi-thread coordination
-[3/7] Bus Hardware        → Hardware alignment
-[4/7] Ultra Fast Boot     → Boot time measurement
-[5/7] Graceful Shutdown   → Memory leak detection
-[6/7] Power Saving        → 3-tier power management
-[7/7] Bus Benchmark       → Final verification (warm JIT)
+[1/10] Bus Benchmark              → Throughput, latency (cold start)
+[2/10] Bus Coordination           → Multi-thread coordination
+[3/10] Bus Hardware               → Hardware alignment
+[4/10] Ultra Fast Boot            → Boot time measurement
+[5/10] Graceful Shutdown          → Memory leak detection
+[6/10] Power Saving               → 3-tier power management
+[7/10] Particle System            → Determinism validation
+[8/10] System Registry            → Pre-sizing validation
+[9/10] Dependency Graph           → Graph scaling validation
+[10/10] Bus Benchmark             → Final verification (warm JIT)
 ```
 
 **What It Does**:
 1. Validates `bin/` exists
-2. Runs 7 tests sequentially
+2. Runs 10 tests sequentially
 3. Stops on first failure
 4. Reports pass/fail status
 
 **Output**: Test results to console
 
 **Exit Codes**:
-- `0`: All tests passed (7/7)
+- `0`: All tests passed (10/10)
 - `1`: At least one test failed
 
 **Metrics Verified**:
-- Boot time: 0.221-0.427ms (typical)
+- Boot time: 0.070-0.150ms (typical)
 - Bus latency: 23.35ns
 - Throughput: 185M ops/s
 - Memory leaks: 0
@@ -312,18 +315,18 @@ pause
 **Notes**:
 - ✅ Runs tests **without** AAA+ JVM flags (measures real-world performance)
 - ✅ Double benchmark (cold start + warm JIT)
-- ⚠️ Requires `bin/` from `build.bat` (not compatible with legacy `compile.bat`)
-- ⚠️ **Test 6/7 (Power Saving) requires manual intervention**: The test starts the engine and waits for it to enter deep hibernation (Tier 3). You must press **Ctrl+C** to interrupt the engine, then press **S** when prompted `"¿Desea terminar el trabajo por lotes (S/N)?"` to continue to test 7/7.
+- ⚠️ Requires `bin/` from `build.bat`
+- ⚠️ **Test 6/10 (Power Saving) requires manual intervention**: The test starts the engine and waits for it to enter deep hibernation (Tier 3). You must press **Ctrl+C** to interrupt the engine, then press **S** when prompted `"¿Desea terminar el trabajo por lotes (S/N)?"` to continue to subsequent tests.
 
 **Interactive Test Flow**:
 ```bash
 test.bat
 # Tests 1-5 run automatically
-# Test 6/7 starts engine → waits for hibernation
+# Test 6/10 starts engine → waits for hibernation
 # [Press Ctrl+C when you see "Deep Hibernation"]
 # [Prompt: "¿Desea terminar el trabajo por lotes (S/N)?"]
-# [Press S to continue to test 7/7]
-# Test 7/7 runs automatically (final benchmark)
+# [Press S to continue to tests 7-10]
+# Tests 7-10 run automatically (including final benchmark)
 ```
 
 ---
@@ -346,7 +349,7 @@ test.bat
 
 **What It Does**:
 1. Validates `bin/` exists (implicit)
-2. Executes `VolcanEngineMaster` with production flags
+2. Executes `DarkEngineMaster` with production flags
 3. Reports exit code on error
 
 **Output**: Engine runtime output
@@ -477,9 +480,9 @@ test.bat
 
 ### **After test.bat**
 - Total test time: ~30-60 seconds
-- Boot time range: 0.221-0.427ms (typical)
-- Boot time best: 0.167ms (optimal conditions)
-- Pass rate: 7/7 (100%)
+- Boot time range: 0.070-0.150ms (typical)
+- Boot time best: 0.069ms (optimal conditions)
+- Pass rate: 10/10 (100%)
 
 ### **During run.bat**
 - Startup time: <1 second

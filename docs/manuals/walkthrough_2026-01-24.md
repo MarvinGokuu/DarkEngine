@@ -1,4 +1,4 @@
-# VolcanEngine - Session Walkthrough (2026-01-23/24)
+# DarkEngine - Session Walkthrough (2026-01-23/24)
 
 ## Vault Bug Fix & Comprehensive Audit
 
@@ -11,7 +11,7 @@
 ## Phase 1: Critical Vault Bug Fix
 
 ### Bug Discovery
-**File**: `src/sv/volcan/state/VolcanStateVault.java:55`  
+**File**: `src/sv/dark/state/DarkStateVault.java:55`  
 **Issue**: Incorrect byte offset calculation in `readLong()`
 
 ```java
@@ -49,7 +49,7 @@ long byteOffset = (long) slotIndex * ValueLayout.JAVA_INT.byteSize();
 ### Findings
 - **Critical Bugs**: 0 ✅
 - **Minor Issues**: 3 ⚠️
-  1. Non-deterministic `Math.random()` in VolcanParticleSystem
+  1. Non-deterministic `Math.random()` in DarkParticleSystem
   2. ArrayList dynamic growth in SystemRegistry
   3. HashMap rehashing in SystemDependencyGraph
 
@@ -58,7 +58,7 @@ long byteOffset = (long) slotIndex * ValueLayout.JAVA_INT.byteSize();
 ## Phase 3: Performance Fixes
 
 ### Fix #1: Deterministic Random
-**File**: `VolcanParticleSystem.java`
+**File**: `DarkParticleSystem.java`
 
 ```java
 // Added seeded Random for determinism
@@ -94,9 +94,9 @@ this.dependencies = new HashMap<>(32);
 
 ```batch
 # Fixed class names (Test_* → *Test)
-java -cp bin sv.volcan.test.UltraFastBootTest
-java -cp bin sv.volcan.test.GracefulShutdownTest
-java -cp bin sv.volcan.test.PowerSavingTest
+java -cp bin sv.dark.test.UltraFastBootTest
+java -cp bin sv.dark.test.GracefulShutdownTest
+java -cp bin sv.dark.test.PowerSavingTest
 ```
 
 **Impact**: 7/7 tests passing (was 3/7)
@@ -136,9 +136,9 @@ Result: 7/7 passing (100%)
 
 ## Files Modified
 
-1. `src/sv/volcan/core/VolcanParticleSystem.java` - Deterministic random
-2. `src/sv/volcan/kernel/SystemRegistry.java` - ArrayList pre-sizing
-3. `src/sv/volcan/kernel/SystemDependencyGraph.java` - HashMap pre-sizing
+1. `src/sv/dark/core/DarkParticleSystem.java` - Deterministic random
+2. `src/sv/dark/kernel/SystemRegistry.java` - ArrayList pre-sizing
+3. `src/sv/dark/kernel/SystemDependencyGraph.java` - HashMap pre-sizing
 4. `test.bat` - Class name corrections
 
 **Total**: 4 files | +57 insertions | -33 deletions
@@ -179,8 +179,8 @@ Result: 7/7 passing (100%)
 - Documentation updated
 - Code committed to GitHub
 
-**Commit**: [d02f493](https://github.com/MarvinGokuu/VolcanEngine/commit/d02f493)
+**Commit**: [d02f493](https://github.com/MarvinGokuu/DarkEngine/commit/d02f493)
 
 ---
 
-**Previous Walkthroughs**: See [walkthrough.md](file:///C:/Users/theca/Documents/GitHub/VolcanEngine/docs/manuals/walkthrough.md) for Signal Dispatcher AAA+ Upgrade
+**Previous Walkthroughs**: See [walkthrough.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/walkthrough.md) for Signal Dispatcher AAA+ Upgrade

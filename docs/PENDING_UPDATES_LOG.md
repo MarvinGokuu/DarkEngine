@@ -15,7 +15,7 @@
 *   [x] Definition of `ESTANDAR_DOCUMENTACION.md` (v2.0).
 *   [x] Implementation of `COMMIT_HISTORY_STANDARD.md`.
 *   [x] Standardization of authorship to `System Architect`.
-*   [x] Elimination of duplicate artifacts (`ARQUITECTURA_VOLCAN`).
+*   [x] Elimination of duplicate artifacts (`ARQUITECTURA_DARK`).
 *   [x] Refactoring of Legacy Documentation (Phase 12).
 
 ### Priority Backlog
@@ -30,13 +30,13 @@
 1.  ~~**Benchmarking**: Implement `BusBenchmarkTest.java` for AAA+ validation (>10M ops/s).~~ ✅ **COMPLETED** (365.69M ops/s)
 2.  **Boot Sequence**: Implement Boot Selector in `SovereignProtocol.bat`.
 3.  **Security**: Add Layer 1 thermal signature validation. ✅ **COMPLETED**
-4.  ~~**Vault Bug Fix**: Critical bug in `VolcanStateVault.readLong()` byte offset calculation.~~ ✅ **COMPLETED** (2026-01-23)
+4.  ~~**Vault Bug Fix**: Critical bug in `DarkStateVault.readLong()` byte offset calculation.~~ ✅ **COMPLETED** (2026-01-23)
 5.  ~~**Audit Fixes**: Determinism, pre-sizing optimizations, test.bat correction.~~ ✅ **COMPLETED** (2026-01-24)
 
 ### Recent Completions (2026-01-24)
-*   [x] **Vault Audit**: Fixed critical bug in `VolcanStateVault.readLong()` - incorrect byte offset
+*   [x] **Vault Audit**: Fixed critical bug in `DarkStateVault.readLong()` - incorrect byte offset
 *   [x] **Comprehensive Audit**: 100% project scan (79 files) - 0 critical bugs, 3 minor issues
-*   [x] **Determinism Fix**: Replaced `Math.random()` with seeded `Random` in `VolcanParticleSystem`
+*   [x] **Determinism Fix**: Replaced `Math.random()` with seeded `Random` in `DarkParticleSystem`
 *   [x] **Performance Fix**: Pre-sized ArrayList in `SystemRegistry` (0 reallocations)
 *   [x] **Performance Fix**: Pre-sized HashMap in `SystemDependencyGraph` (0 rehashing)
 *   [x] **Test Fix**: Corrected class names in `test.bat` (Test_* → *Test)
@@ -66,7 +66,7 @@
 ## 4. Architecture Consolidation
 
 **Duplicate Status**:
-*   `ARQUITECTURA_VOLCAN_ENGINE.md` consolidated.
+*   `ARQUITECTURA_DARK_ENGINE.md` consolidated.
 *   `task.md` vs dependencies: Resolved.
 
 ---

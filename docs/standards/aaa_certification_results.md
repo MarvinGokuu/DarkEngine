@@ -1,10 +1,10 @@
 # AAA_CERTIFICATION_RESULTS
 
 **Subsistema**: Assurance / Benchmark
-**Componente**: VolcanEngine Runtime
-**Versión**: 2.1.0
+**Componente**: DarkEngine Runtime
+**Versión**: 2.2.0
 **Estado**: Certified AAA+
-**Fecha**: 2026-01-27 (Verified)
+**Fecha**: 2026-06-08 (Verified)
 
 ---
 
@@ -81,10 +81,10 @@ La lectura en un buffer circular sin contención (SPSC) y con predicción de sal
 
 Comparación de latencia respecto a primitivas estándar y hardware.
 
-| Operación | Latencia Típica (ns) | Delta vs VolcanAtomicBus |
+| Operación | Latencia Típica (ns) | Delta vs DarkAtomicBus |
 | :--- | :--- | :--- |
 | **L1 Cache Access** | ~1.0 | 1.5x |
-| **VolcanAtomicBus.offer()** | **1.52** | **Reference** |
+| **DarkAtomicBus.offer()** | **1.52** | **Reference** |
 | **L2 Cache Access** | ~3.0 | -2.0x |
 | **RAM Access** | ~100.0 | -65.8x |
 | **synchronized block** | ~150.0 | -98.0x |
@@ -130,5 +130,27 @@ Comparación de latencia respecto a primitivas estándar y hardware.
 
 ---
 
-**Estado**: VIGENTE (Updated 2026-01-24)  
+## 6. Actualización 2026-06-08 (Visual Layer & Kernel Robustness)
+
+### 6.1. Nuevos Resultados de Performance (Verified 2026-06-08)
+
+| Métrica | Anterior | Actual | Estado |
+| :--- | :--- | :--- | :--- |
+| **Boot Time (Warm CPU)** | 0.167ms | **0.069ms** (69μs) | ✅ AAA+ Compliant |
+| **Boot Time (Cold CPU)** | 0.231ms | **0.151ms** (151μs) | ✅ AAA+ Compliant |
+| **Test Coverage** | 7/7 (100%) | **10/10 (100%)** | ✅ Completo |
+| **Fugas de Puertos & Hilos** | - | **0 (Liberación inmediata)**| ✅ Verificado |
+
+### 6.2. Fixes Implementados
+
+1. **Busy-Spin CPU Fix**: Corrección del bucle en [AdminController.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/admin/AdminController.java) (`metric != -1L`), liberando 100% del núcleo de CPU de sobrecarga inactiva.
+2. **Clean Shutdown Hook**: Liberación automática del puerto 8080 del servidor HTTP de métricas en [EngineKernel.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/EngineKernel.java).
+3. **Control de Flujo Lock-free**: Adición de interrupción en bucle `BLOCK` de [DarkEventLane.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkEventLane.java) y flag `closed` en [DarkRingBus.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/bus/DarkRingBus.java).
+4. **Determinismo de Partículas**: RNG movido a ámbito de instancia en [DarkParticleSystem.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/core/DarkParticleSystem.java).
+5. **Alineación Temporal**: Slip reset en [TimeKeeper.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/kernel/TimeKeeper.java) (>2 frames) para eliminar micro-stuttering.
+6. **Mapeo de Telemetría Visual**: Interfaz gráfica en Java2D ([DarkEngineWindow.java](file:///c:/Users/theca/Documents/GitHub/DarkEngine/src/sv/dark/ui/DarkEngineWindow.java)) de 900x520 píxeles.
+
+---
+
+**Estado**: VIGENTE (Updated 2026-06-08)  
 **Autoridad**: System Architect

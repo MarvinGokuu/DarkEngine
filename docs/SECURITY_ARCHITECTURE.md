@@ -1,4 +1,4 @@
-# 🛡️ ARQUITECTURA DE CIBERSEGURIDAD - VOLCAN ENGINE
+# 🛡️ ARQUITECTURA DE CIBERSEGURIDAD - DARK ENGINE
 ## Defense in Depth Security Architecture
 
 **Versión**: 1.0  
@@ -10,7 +10,7 @@
 
 ## 📐 DIAGRAMA DE ARQUITECTURA
 
-![Arquitectura de Seguridad](file:///C:/Users/theca/.gemini/antigravity/brain/4ef762f7-5124-44f6-ac41-8bd5b2b0aee8/volcan_security_architecture_1768363821387.png)
+![Arquitectura de Seguridad](file:///C:/Users/theca/.gemini/antigravity/brain/4ef762f7-5124-44f6-ac41-8bd5b2b0aee8/dark_security_architecture_1768363821387.png)
 
 ---
 
@@ -89,20 +89,20 @@ if %ERRORLEVEL% EQU 0 (
 **Flujo de Acceso**:
 ```java
 // 1. Aplicación solicita secreto
-String token = SecretsManager.get("VOLCAN_API_KEY", "DEMO_KEY");
+String token = SecretsManager.get("DARK_API_KEY", "DEMO_KEY");
 
 // 2. SecretsManager busca en orden:
-//    a) System.getenv("VOLCAN_API_KEY")
-//    b) volcan.secrets.properties
+//    a) System.getenv("DARK_API_KEY")
+//    b) dark.secrets.properties
 //    c) Valor por defecto: "DEMO_KEY"
 
 // 3. Retorna valor encontrado
 ```
 
 **Ubicaciones de Configuración**:
-1. `$VOLCAN_CONFIG_DIR/volcan.secrets.properties`
-2. `./volcan.secrets.properties`
-3. `~/.volcan/volcan.secrets.properties`
+1. `$DARK_CONFIG_DIR/dark.secrets.properties`
+2. `./dark.secrets.properties`
+3. `~/.dark/dark.secrets.properties`
 
 **Estado**: ✅ Implementado
 
@@ -110,15 +110,15 @@ String token = SecretsManager.get("VOLCAN_API_KEY", "DEMO_KEY");
 
 #### B. Logging Seguro
 
-**Componente**: `VolcanLogger.java` (Propuesto)
+**Componente**: `DarkLogger.java` (Propuesto)
 
 **Arquitectura**:
 ```
 ┌──────────────────────────────────────────┐
-│         VolcanLogger                     │
+│         DarkLogger                     │
 ├──────────────────────────────────────────┤
 │ Niveles:                                 │
-│ • DEBUG   → Solo en VOLCAN_DEBUG=true   │
+│ • DEBUG   → Solo en DARK_DEBUG=true   │
 │ • INFO    → Oculto en producción        │
 │ • WARNING → Siempre visible             │
 │ • ERROR   → Siempre visible             │
@@ -131,12 +131,12 @@ String token = SecretsManager.get("VOLCAN_API_KEY", "DEMO_KEY");
 
 **Implementación Propuesta**:
 ```java
-public final class VolcanLogger {
+public final class DarkLogger {
     private static final boolean DEBUG = 
-        System.getenv("VOLCAN_DEBUG") != null;
+        System.getenv("DARK_DEBUG") != null;
     
     private static final boolean PRODUCTION = 
-        System.getenv("VOLCAN_PRODUCTION") != null;
+        System.getenv("DARK_PRODUCTION") != null;
     
     public static void error(String message, Throwable t) {
         System.err.println("[ERROR] " + message);
@@ -238,8 +238,8 @@ public class EncryptedConfig {
 
 **Uso**:
 ```properties
-# volcan.secrets.properties
-VOLCAN_API_KEY=ENC(AeS256GcM:base64encodedvalue)
+# dark.secrets.properties
+DARK_API_KEY=ENC(AeS256GcM:base64encodedvalue)
 ```
 
 **Estado**: 🔴 No Implementado (Propuesto)
@@ -272,7 +272,7 @@ public class RateLimiter {
 }
 ```
 
-**Uso en VolcanNetworkRelay**:
+**Uso en DarkNetworkRelay**:
 ```java
 private final RateLimiter rateLimiter = 
     new RateLimiter(100, TimeUnit.SECONDS);
@@ -455,7 +455,7 @@ public class SecurityAuditLogger {
 | Amenaza | Probabilidad | Impacto | Riesgo | Mitigación | Estado |
 |---------|--------------|---------|--------|------------|--------|
 | **Fuga de Secretos** | Baja | Alto | Medio | SecretsManager, Pre-commit hooks | ✅ |
-| **Exposición de Stack Traces** | Media | Medio | Medio | VolcanLogger | 🟡 |
+| **Exposición de Stack Traces** | Media | Medio | Medio | DarkLogger | 🟡 |
 | **DoS en Servicios de Red** | Media | Alto | Alto | Rate Limiting | 🔴 |
 | **Inyección de Código** | Baja | Crítico | Medio | Validación de entrada | ✅ |
 | **Deserialización Insegura** | Baja | Crítico | Medio | No usar ObjectInputStream | ✅ |
@@ -478,7 +478,7 @@ public class SecurityAuditLogger {
 - [x] Documentar política de seguridad
 
 ### Fase 2: Logging y Monitoreo (Semanas 3-4) 🟡
-- [ ] Implementar VolcanLogger
+- [ ] Implementar DarkLogger
 - [ ] Eliminar printStackTrace() en producción
 - [ ] Migrar System.out/err a logging estructurado
 - [ ] Implementar logging a archivo
@@ -592,7 +592,7 @@ public class SecurityAuditLogger {
 
 ## 📝 CONCLUSIÓN
 
-La arquitectura de seguridad de VolcanEngine sigue el principio de **Defense in Depth**, con múltiples capas de protección:
+La arquitectura de seguridad de DarkEngine sigue el principio de **Defense in Depth**, con múltiples capas de protección:
 
 **Fortalezas**:
 - ✅ Arquitectura zero-dependency

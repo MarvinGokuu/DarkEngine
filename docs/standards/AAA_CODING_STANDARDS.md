@@ -33,7 +33,7 @@ Esta anotación documenta las garantías de latencia y throughput validadas.
 **Formato Estándar**:
 
 ```java
-import sv.volcan.core.AAACertified;
+import sv.dark.core.AAACertified;
 
 /**
  * HIGH-PERFORMANCE CERTIFICATION
@@ -136,7 +136,7 @@ El código debe pasar las pruebas de integridad de memoria sin errores de alinea
 
 ```bash
 # Validación de Alineación y Padding
-java sv.volcan.bus.BusHardwareTest
+java sv.dark.bus.BusHardwareTest
 ```
 
 ### 5.2 Benchmarks
