@@ -1,10 +1,10 @@
 /**
  * AUTORIDAD: Marvin-Dev
  * RESPONSABILIDAD: Cliente de Métricas AAA+ (Visual Command Center)
- * DEPENDENCIAS: VolcanMetricsServer (Backend Java)
+ * DEPENDENCIAS: DarkMetricsServer (Backend Java)
  * MÉTRICAS: Latencia de Polling <16ms (60 FPS), Zero Allocations en Loop
  * 
- * Cliente determinista para consumir métricas del Volcan Engine.
+ * Cliente determinista para consumir métricas del Dark Engine.
  * PROHIBIDO: Variables genéricas (var x, let data).
  * MANDATO: Simetría Semántica Total con el Backend Java.
  * 
@@ -49,8 +49,8 @@ let dom_terminal = null;
 // INICIALIZACIÓN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function initVolcanMetricsClient() {
-    console.log('[VOLCAN METRICS CLIENT] Initializing...');
+function initDarkMetricsClient() {
+    console.log('[DARK METRICS CLIENT] Initializing...');
 
     // Cache DOM elements (Zero-Allocation Strategy)
     dom_latencyValue = document.getElementById('latency');
@@ -66,11 +66,11 @@ function initVolcanMetricsClient() {
 
     // Verificar que todos los elementos existen
     if (!dom_latencyValue || !dom_terminal) {
-        console.error('[VOLCAN METRICS CLIENT] CRITICAL: DOM elements not found. Aborting.');
+        console.error('[DARK METRICS CLIENT] CRITICAL: DOM elements not found. Aborting.');
         return;
     }
 
-    console.log('[VOLCAN METRICS CLIENT] DOM cache ready.');
+    console.log('[DARK METRICS CLIENT] DOM cache ready.');
 
     // Iniciar polling loop
     startPollingLoop();
@@ -81,7 +81,7 @@ function initVolcanMetricsClient() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function startPollingLoop() {
-    console.log('[VOLCAN METRICS CLIENT] Starting polling loop (60 FPS)...');
+    console.log('[DARK METRICS CLIENT] Starting polling loop (60 FPS)...');
 
     setInterval(() => {
         fetchMetricsFromServer();
@@ -111,12 +111,12 @@ function fetchMetricsFromServer() {
 
             const fetch_latency = metric_lastFetchTimestamp - fetch_startTime;
             if (fetch_latency > 16) {
-                console.warn(`[VOLCAN METRICS CLIENT] Fetch latency: ${fetch_latency.toFixed(2)}ms (>16ms target)`);
+                console.warn(`[DARK METRICS CLIENT] Fetch latency: ${fetch_latency.toFixed(2)}ms (>16ms target)`);
             }
         })
         .catch(error_fetch => {
             metric_connectionStatus = 'ERROR';
-            console.error('[VOLCAN METRICS CLIENT] Fetch failed:', error_fetch.message);
+            console.error('[DARK METRICS CLIENT] Fetch failed:', error_fetch.message);
 
             // Mostrar estado de desconexión en el DOM
             if (dom_latencyValue) {
@@ -241,6 +241,6 @@ function appendLogToTerminal(log_message) {
 
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
-        initVolcanMetricsClient();
+        initDarkMetricsClient();
     });
 }
