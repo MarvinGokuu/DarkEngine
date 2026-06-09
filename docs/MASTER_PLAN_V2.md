@@ -36,30 +36,33 @@ $$ \Phi(t) = \vec{A}_{t-1} + \vec{E}_{t} + \vec{P}_{t+1} $$
 
 ## 3. Estado del Roadmap Técnico
 
-### Phase 1: Infrastructure (Completed)
-*   **Métrica**: Boot latency $< 1 \mu s$.
-*   **Componentes**: `UltraFastBootSequence`, `SectorMemoryVault`, `KernelControlRegister`, `BusSymmetryValidator`.
-*   **Estado**: Stable Release.
+**Progreso Global del Runtime: ~66%**
 
-### Phase 2: Visual Telemetry (In Progress)
-*   **Objetivo**: Visualización de métricas en tiempo real.
-*   **Implementación**:
-    *   Integración `VisualObserver.html` $\leftrightarrow$ `DarkMetricsServer`.
-    *   **Restricción**: Simetría de tipos (Java `long` $\leftrightarrow$ JS `BigInt`).
-    *   **Protocolo**: HTTP/REST binario o JSON plano sin overhead de serialización.
+### Phase 1: Infrastructure & Memory Architecture (Completed — 100%)
+*   **Métrica**: Boot latency < 0.15ms (Cold) / < 0.07ms (Warm), Event throughput > 185M/s, Bus latency ~23.35ns.
+*   **Componentes**: `UltraFastBootSequence`, `SectorMemoryVault`, `KernelControlRegister`, `BusSymmetryValidator`, `DarkRingBus`, `DarkAtomicBus`, `ThreadPinning` (Afinidad anclada a Core).
+*   **Estado**: Lanzado y estable bajo el namespace `sv.dark` con Licencia Apache 2.0.
 
-### Phase 3: Integrity & Physics (Planned)
-*   **Objetivo**: Validación de integridad de datos en vuelo.
-*   **Implementación**:
-    *   `MidAirByteAligner`: Alineación de assets mediante máscaras de bits (`address & ~63`).
-    *   `SovereignSpaceMath`: Validación de fronteras de sectores.
-    *   Entropy Masking para generación de números pseudoaleatorios (PRNG).
+### Phase 2: Visual Telemetry, GUI & Logging (In Progress — 95%)
+*   **Métrica**: Render loop estable a 60 FPS, logging asíncrono con 0ns de bloqueo en hot-path.
+*   **Componentes**: `DarkEngineWindow` (Centrada con decoraciones nativas), `DarkMetricsServer`, `AsyncLogWriter`, `EngineStateChannel`, `tools/visual-observer/`.
+*   **Pendiente**:
+    - [ ] **Optimización del Cliente (`DarkMetricsClient.js`)**: Uso exclusivo de `TypedArrays` nativos en JS para evitar allocations de Garbage Collector en el navegador.
+    - [ ] **Sincronización de Tipos**: Validación estricta del traspaso de IDs de eventos de 64 bits (Java `long` $\leftrightarrow$ JS `BigInt`).
 
-### Phase 4: Distributed Intelligence (Strategic)
-*   **Objetivo**: Optimización heurística de la ejecución.
-*   **Implementación**:
-    *   Branch Prediction Hinting.
-    *   Ajuste dinámico de carga de Workers.
+### Phase 3: Integrity & Physics Alignment (Planned — 30%)
+*   **Objetivo**: Validación de integridad de datos en vuelo libre de bifurcaciones (branchless) y control de física espacial determinista.
+*   **Componentes**:
+    - [ ] `MidAirByteAligner.java`: Alineación de assets binarios en RAM nativa mediante máscaras de bits (`address & ~63`) a velocidad del bus físico.
+    - [ ] `SovereignSupervisor.java`: Auditoría activa de integridad de frame y predicción de carga (`predictNextLoad()`) aislada en el Core 1.
+    - [ ] `SovereignSpaceMath.java` (Migración de `SpaceMath.java`): Validación matemática de fronteras de sectores utilizando instrucciones SIMD de la Vector API de Java 25.
+    - [ ] `EntropyMasking`: Generador de números pseudoaleatorios (PRNG) libre de bloqueos basado en máscaras de entropía para física reproducible.
+
+### Phase 4: Distributed Intelligence & Balancing (Planned — 0%)
+*   **Objetivo**: Optimización adaptativa del paralelismo y minimización de cache flushes.
+*   **Componentes**:
+    - [ ] **Branch Prediction Hinting**: Optimización de patrones de bifurcación de instrucciones para favorecer la inlining del compilador JIT (C2).
+    - [ ] **Dynamic Work Balancing**: Distribución dinámica de hilos de trabajo SIMD en `ParallelSystemExecutor` basada en la latencia histórica del frame.
 
 ---
 
