@@ -91,7 +91,9 @@ public final class AsyncLogWriter {
      * @param fallback stream original (solo para referencia, no se usa en runtime)
      * @return PrintStream que escribe al ring buffer en lugar de a la consola
      */
-    public PrintStream createPrintStream(@SuppressWarnings("unused") PrintStream fallback) {
+    public PrintStream createPrintStream(
+            //@SuppressWarnings("unused")
+            PrintStream fallback) {
         return new PrintStream(new OutputStream() {
 
             // StringBuilder local a este OutputStream — no compartido

@@ -45,7 +45,7 @@ public final class WorkStealingProcessor {
      * Tarea recursiva que aplica el protocolo Divide & Conquer.
      * Permite que hilos ociosos "roben" sectores de hilos sobrecargados.
      */
-    @SuppressWarnings("serial")
+    //@SuppressWarnings("serial")
     private static class SectorTask extends RecursiveAction {
         private final MemorySegment[] sectors;
         private final int start, end;

@@ -260,7 +260,7 @@ public final class EngineKernel {
         // INTERRUPCIÓN COOPERATIVA: Verificar tanto 'running' como 'interrupted'
         while (!Thread.currentThread().isInterrupted() && running) {
             timeKeeper.startFrame();
-            @SuppressWarnings("unused")
+            // @SuppressWarnings("unused")
             long frameStart = System.nanoTime();
 
             // ═══════════════════════════════════════════════════════════
@@ -373,13 +373,12 @@ public final class EngineKernel {
                 ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
                 if (executor != null) {
                     MetricsCollector.aggregateMetrics(
-                        executor.getMovementSystem(),
-                        executor.getRenderSystem(),
-                        executor.getPhysicsSystem(),
-                        executor.getAudioSystem(),
-                        adminMetricsBus,
-                        frameMetrics
-                    );
+                            executor.getMovementSystem(),
+                            executor.getRenderSystem(),
+                            executor.getPhysicsSystem(),
+                            executor.getAudioSystem(),
+                            adminMetricsBus,
+                            frameMetrics);
                     System.out.println("[METRICS] " + frameMetrics);
                 }
             }
