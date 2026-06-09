@@ -61,8 +61,13 @@ java --add-opens java.base/java.util=ALL-UNNAMED -cp bin sv.dark.test.Dependency
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [10/10] Bus Benchmark (final)...
+echo [10/11] Bus Benchmark (final)...
 java -cp bin sv.dark.bus.BusBenchmarkTest
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+echo.
+echo [11/11] Metrics Aggregation (Phase 0)...
+java -cp bin sv.dark.test.MetricsAggregationTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.

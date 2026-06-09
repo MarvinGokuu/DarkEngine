@@ -239,6 +239,10 @@ public final class SystemRegistry {
     public boolean isParallelMode() {
         return parallelMode;
     }
+
+    public ParallelSystemExecutor getParallelExecutor() {
+        return parallelExecutor;
+    }
 }
 // Creado: 03/01/2026 23:50
 // Autor: MarvinDev

@@ -26,6 +26,16 @@ public final class MovementSystem implements GameSystem {
     private static final long X_OFF = EntityLayout.X_OFFSET;
     private static final long VX_OFF = EntityLayout.VX_OFFSET;
 
+    private int processedCount = 0;
+
+    public int getProcessedCount() {
+        return processedCount;
+    }
+
+    public void incrementProcessedCount() {
+        processedCount++;
+    }
+
     /**
      * Update de alta velocidad.
      * Procesa el sector de memoria como un flujo continuo de bytes.
@@ -54,5 +64,7 @@ public final class MovementSystem implements GameSystem {
             // Avance del puntero de memoria (Evita la multiplicación en el loop)
             currentBase += STRIDE;
         }
+
+        processedCount++; // Incrementar métrica local en cada update
     }
 }

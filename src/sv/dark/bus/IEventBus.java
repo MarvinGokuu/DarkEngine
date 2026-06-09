@@ -90,4 +90,13 @@ public interface IEventBus {
     default boolean isFull() {
         return remainingCapacity() == 0;
     }
+
+    /**
+     * Retorna la latencia de la última transacción en nanosegundos.
+     * 
+     * @return Latencia en nanosegundos (0 por defecto)
+     */
+    default long getLastLatencyNs() {
+        return 0L;
+    }
 }

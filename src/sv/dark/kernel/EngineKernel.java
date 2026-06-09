@@ -9,6 +9,11 @@ import sv.dark.bus.DarkSignalCommands;
 import sv.dark.bus.DarkSignalPacker;
 import sv.dark.core.AAACertified;
 import sv.dark.core.ExecutionValidator;
+import sv.dark.core.MetricsCollector;
+import sv.dark.core.systems.MovementSystem;
+import sv.dark.core.systems.RenderSystem;
+import sv.dark.core.systems.PhysicsSystem;
+import sv.dark.core.systems.AudioSystem;
 import sv.dark.kernel.UltraFastBootSequence.BootResult;
 import sv.dark.memory.SectorMemoryVault;
 import sv.dark.state.DarkStateLayout;
@@ -243,6 +248,9 @@ public final class EngineKernel {
     private void runMainLoop() {
         System.out.println("[KERNEL] Main loop started (60 FPS target)");
 
+        // Telemetría off-critical-path
+        MetricsCollector.FrameMetrics frameMetrics = new MetricsCollector.FrameMetrics();
+
         // Variables para escalado de reposo (3 niveles)
         long lastActivityTime = System.nanoTime();
 
@@ -356,6 +364,28 @@ public final class EngineKernel {
                         phase3End - phase3Start + phase4End - phase4Start;
                 long packedMetric = MetricsPacker.packFrameStats(totalFrames, totalTimeNs);
                 adminMetricsBus.offer(packedMetric); // Zero-copy, no I/O
+            }
+
+            // ═══════════════════════════════════════════════════════════
+            // FASE 5: METRICS AGGREGATION (Off-Critical-Path)
+            // ═══════════════════════════════════════════════════════════
+            frameMetrics.frameTimeNs = System.nanoTime() - frameStart;
+            frameMetrics.frameNumber = totalFrames;
+            frameMetrics.systemsExecutionNs = phase3End - phase3Start;
+
+            if (MetricsCollector.shouldCollectMetrics(totalFrames)) {
+                ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
+                if (executor != null) {
+                    MetricsCollector.aggregateMetrics(
+                        executor.getMovementSystem(),
+                        executor.getRenderSystem(),
+                        executor.getPhysicsSystem(),
+                        executor.getAudioSystem(),
+                        adminMetricsBus,
+                        frameMetrics
+                    );
+                    System.out.println("[METRICS] " + frameMetrics);
+                }
             }
 
             // Esperar al siguiente frame (Fixed Timestep)

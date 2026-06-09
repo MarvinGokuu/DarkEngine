@@ -35,10 +35,12 @@ import java.util.concurrent.Phaser;
  * @since 2026-01-08
  */
 
-@AAACertified(date = "2026-01-08", maxLatencyNs = 10_000, minThroughput = 240, alignment = 64, lockFree = false, // Usa
-                                                                                                                 // Phaser
-                                                                                                                 // (sincronización
-                                                                                                                 // ligera)
+import sv.dark.core.systems.MovementSystem;
+import sv.dark.core.systems.RenderSystem;
+import sv.dark.core.systems.PhysicsSystem;
+import sv.dark.core.systems.AudioSystem;
+
+@AAACertified(date = "2026-01-08", maxLatencyNs = 10_000, minThroughput = 240, alignment = 64, lockFree = false,
         offHeap = false, notes = "Parallel executor - 4x throughput with deterministic layer execution")
 public final class ParallelSystemExecutor {
 
@@ -50,6 +52,12 @@ public final class ParallelSystemExecutor {
 
     // Métricas
     private long lastExecutionTimeNs;
+
+    // Referencias locales para agregación de telemetría sin false sharing
+    private MovementSystem movementSystem;
+    private RenderSystem renderSystem;
+    private PhysicsSystem physicsSystem;
+    private AudioSystem audioSystem;
 
     /**
      * Constructor.
@@ -64,13 +72,43 @@ public final class ParallelSystemExecutor {
         this.executionLayers = executionLayers;
 
         // Usar commonPool() para aprovechar paralelismo nativo
-        // Tamaño = número de cores disponibles
         this.pool = ForkJoinPool.commonPool();
         this.lastExecutionTimeNs = 0;
+
+        // Escaneo dinámico de sistemas para telemetría
+        for (List<GameSystem> layer : executionLayers) {
+            for (GameSystem system : layer) {
+                if (system instanceof MovementSystem) {
+                    this.movementSystem = (MovementSystem) system;
+                } else if (system instanceof RenderSystem) {
+                    this.renderSystem = (RenderSystem) system;
+                } else if (system instanceof PhysicsSystem) {
+                    this.physicsSystem = (PhysicsSystem) system;
+                } else if (system instanceof AudioSystem) {
+                    this.audioSystem = (AudioSystem) system;
+                }
+            }
+        }
 
         System.out.println("[PARALLEL] Executor initialized with " +
                 executionLayers.size() + " layers, " +
                 pool.getParallelism() + " threads");
+    }
+
+    public MovementSystem getMovementSystem() {
+        return movementSystem;
+    }
+
+    public RenderSystem getRenderSystem() {
+        return renderSystem;
+    }
+
+    public PhysicsSystem getPhysicsSystem() {
+        return physicsSystem;
+    }
+
+    public AudioSystem getAudioSystem() {
+        return audioSystem;
     }
 
     /**
