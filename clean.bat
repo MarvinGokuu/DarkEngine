@@ -1,7 +1,7 @@
 @echo off
 
 echo.
-echo VolcanEngine Clean
+echo DarkEngine Clean
 echo ==================
 echo.
 
