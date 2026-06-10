@@ -1,3 +1,4 @@
+// Reading Order: 00010000
 package sv.dark.kernel;
 
 import java.lang.foreign.Arena;
@@ -14,13 +15,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * TECHNICAL SPECIFICATION
+ * AUTORIDAD: Marvin-Dev
+ * RESPONSABILIDAD: Captura, optimización y restauración del estado del OS.
+ * TÉCNICA: Windows Power API + ThreadPinning (JEP 454)
+ * GARANTÍA: El sistema queda 100% limpio al cerrar el motor.
  *
- * CONTEXT:
- * - System State Manager responsible for capturing, optimizing, and restoring OS-level settings.
- *
- * MEMORY SEMANTICS:
- * - Direct off-heap interactions via Panama FFI for querying hardware power status.
+ * @author Marvin-Dev
  */
 public final class SystemStateManager {
 
@@ -52,13 +52,13 @@ public final class SystemStateManager {
 
     /**
      * Captura el estado actual del sistema.
-     * 
+     *
      * @return Un snapshot inmutable del estado del sistema.
      */
     public static SystemSnapshot captureInitialState() {
         long originalAffinity = ThreadPinning.getOriginalAffinityMask();
         String activeSchemeOutput = runCommand("powercfg", "/getactivescheme");
-        
+
         String guid = extractGuid(activeSchemeOutput);
         String name = extractName(activeSchemeOutput);
         if (guid.isEmpty()) {
@@ -76,16 +76,15 @@ public final class SystemStateManager {
     /**
      * Aplica optimizaciones de alto rendimiento al sistema.
      * Cambia el plan de energía a "Alto Rendimiento".
-     * 
+     *
      * @return true si la operación se completó con éxito.
      */
     public static boolean applyPerformanceBoost() {
         System.out.println("[SYSTEM STATE] Applying performance boost...");
         String result = runCommand("powercfg", "/setactive", HIGH_PERFORMANCE_GUID);
-        // Verificar si se cambió con éxito consultando el nuevo esquema activo
         String activeSchemeOutput = runCommand("powercfg", "/getactivescheme");
         String currentGuid = extractGuid(activeSchemeOutput);
-        
+
         if (HIGH_PERFORMANCE_GUID.equalsIgnoreCase(currentGuid)) {
             System.out.println("[SYSTEM STATE] Power Scheme transitioned to HIGH PERFORMANCE successfully.");
             return true;
@@ -97,7 +96,7 @@ public final class SystemStateManager {
 
     /**
      * Restaura el estado del sistema al snapshot inicial.
-     * 
+     *
      * @param initial El snapshot original capturado al inicio.
      * @return true si la restauración fue exitosa.
      */

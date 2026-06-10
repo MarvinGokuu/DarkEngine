@@ -105,7 +105,7 @@ public class ThreadPinning {
             // de inmediato
             long previousMask = (long) SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, 1L);
             if (previousMask != 0) {
-                long restored = (long) SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, previousMask);
+                SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, previousMask);
                 return previousMask;
             }
         } catch (Throwable t) {
