@@ -248,9 +248,9 @@ java -cp bin sv.dark.test.GracefulShutdownTest
 ## 🎓 PRÓXIMOS PASOS
 
 ### **Nivel 1: Fundamentos (1-2 horas)**
-1. 📖 Leer [README_DOCS.md](README_DOCS.md) - Resumen ejecutivo
-2. 🏗️ Leer [ARQUITECTURA_DARK_ENGINE.md](architecture/ARQUITECTURA_DARK_ENGINE.md)
-3. 📚 Leer [TECHNICAL_GLOSSARY.md](glossary/TECHNICAL_GLOSSARY.md)
+1. 📖 Leer [README_DOCS.md](../README_DOCS.md) - Resumen ejecutivo
+2. 🏗️ Leer [ARQUITECTURA_DARK_ENGINE.md](../architecture/ARQUITECTURA_DARK_ENGINE.md)
+3. 📚 Leer [TECHNICAL_GLOSSARY.md](../glossary/TECHNICAL_GLOSSARY.md)
 
 ### **Nivel 2: Desarrollo (1 semana)**
 1. 🔧 Seguir [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)
@@ -259,7 +259,7 @@ java -cp bin sv.dark.test.GracefulShutdownTest
 
 ### **Nivel 3: Maestría (1 mes)**
 1. 🎯 Dominar [VARHANDLE_PANAMA_MASTERY.md](VARHANDLE_PANAMA_MASTERY.md)
-2. ⚡ Estudiar [PEAK_PERFORMANCE_REPORT.md](certification/PEAK_PERFORMANCE_REPORT.md)
+2. ⚡ Estudiar [PEAK_PERFORMANCE_REPORT.md](../certification/PEAK_PERFORMANCE_REPORT.md)
 3. 🚀 Contribuir optimizaciones
 
 ---
@@ -268,23 +268,59 @@ java -cp bin sv.dark.test.GracefulShutdownTest
 
 ```
 docs/
-├── QUICK_START.md                    ← ESTÁS AQUÍ
-├── README_DOCS.md                    ← Resumen ejecutivo
-├── DEVELOPMENT_GUIDE.md              ← Guía de desarrollo
-├── VARHANDLE_PANAMA_MASTERY.md       ← Dominio de VarHandles
-├── PROJECT_HEALTH_REPORT.md          ← Estado del proyecto
+├── DOCUMENTATION_INDEX.md            ← Mapa maestro de indexación binaria
+├── README_DOCS.md                    ← Resumen Ejecutivo de Estado
+│
+├── vision/
+│   ├── MASTER_VISION.md              ← Filosofía y Visión
+│   └── PORQUE_DARK_ENGINE.md         ← Justificación de arquitectura
 │
 ├── architecture/
-│   └── ARQUITECTURA_DARK_ENGINE.md ← Arquitectura completa
+│   ├── ARQUITECTURA_DARK_ENGINE.md   ← Core Kernel y flujos de datos
+│   ├── SYSTEM_DEPENDENCY_GRAPH.md    ← Capas de ParallelSystemExecutor
+│   ├── COGNITIVE_ARCHITECTURE_SPECIFICATION.md ← Arquitectura del motor cognitivo
+│   ├── SECURITY_ARCHITECTURE.md      ← Aislamiento de memoria y red
+│   ├── SIGNAL_DISPATCH_SPECIFICATION.md ← Flujo de despacho binario
+│   └── BINARY_SIGNAL_INDEX.md        ← Catálogo de señales binarias
 │
 ├── certification/
-│   └── PEAK_PERFORMANCE_REPORT.md    ← Certificación AAA+
+│   ├── aaa_certification_results.md  ← Suite de pruebas y benchmarks
+│   ├── BINARY_DISPATCH_PERFORMANCE_ANALYSIS.md ← Análisis de rendimiento del bus
+│   ├── boot_latency_comparison.md    ← Tiempos de arranque comparados
+│   └── PEAK_PERFORMANCE_REPORT.md    ← Certificación AAA+ oficial
 │
-├── glossary/
-│   └── TECHNICAL_GLOSSARY.md         ← Glosario técnico
+├── standards/
+│   ├── ESTANDAR_DOCUMENTACION.md     ← Formato técnico objetivo
+│   ├── AAA_CODING_STANDARDS.md       ← Reglas de código de bajo nivel
+│   ├── BASELINE_PROTOCOL.md          ← Protocolo de línea base
+│   ├── DOCUMENTATION_BOOTSTRAP_PROTOCOL.md ← Protocolo de bootstrapping
+│   ├── INITIAL_DEPLOYMENT_PROTOCOL.md ← Protocolo de despliegue inicial
+│   ├── AAA_CERTIFICATION.md          ← Estándar de certificación AAA
+│   ├── AAA_CERTIFICATION_QUICK_GUIDE.md ← Guía rápida de certificación
+│   ├── AAA_PLUS_PLUS_VALIDATION.md   ← Validación AAA++
+│   ├── ACCELERATOR_CERTIFICATION.md  ← Certificación del acelerador
+│   └── DOCUMENTATION_REFACTORING_SPECIFICATION.md ← Especificación de refactorización
 │
-└── roadmap/
-    └── FASE_1_GAME_LAUNCHER.md       ← Plan MVP
+├── manuals/
+│   ├── walkthrough.md                ← Historial de integraciones
+│   ├── GUIA_COMMITS.md               ← Formato de commits atómicos
+│   ├── FLUJO_TRABAJO.md              ← Flujo diario de git/integración
+│   ├── DEVELOPMENT_GUIDE.md          ← Guía de desarrollo activa
+│   ├── QUICK_START.md                ← ESTÁS AQUÍ (Guía rápida)
+│   ├── VARHANDLE_PANAMA_MASTERY.md   ← Manipulación de memoria nativa
+│   ├── TROUBLESHOOTING_GUIDE.md      ← Registro e incidencias de motor
+│   ├── BUILD_WORKFLOWS.md            ← Workflows y compilaciones
+│   ├── kernel_shutdown_verification_guide.md ← Guía de parada
+│   ├── ACCELERATOR_PHYSICS.md        ← Manual de física acelerada
+│   ├── DOCUMENTACION_BUS.md          ← Especificación del bus circular
+│   ├── ESTRATEGIA_COMMITS.md         ← Estrategia de commits extendida
+│   ├── GUIA_UPDATE_SYNC.md           ← Guía de sincronización y update
+│   └── walkthrough_2026-01-24.md     ← Historial de integración específico
+│
+└── reports/
+    ├── PROJECT_HEALTH_REPORT.md      ← Estado de salud general
+    ├── DOCUMENTATION_COVERAGE_ANALYSIS.md ← Análisis de cobertura técnica
+    └── LINKS_VERIFICATION_REPORT.md  ← Reporte de enlaces y rutas
 ```
 
 ---

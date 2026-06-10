@@ -809,10 +809,10 @@ java -XX:+HeapDumpOnOutOfMemoryError -cp bin ...
 ## 📚 RECURSOS ADICIONALES
 
 ### **Documentación del Proyecto:**
-- `docs/README_DOCS.md` - Punto de entrada
-- `docs/PROJECT_HEALTH_REPORT.md` - Estado del proyecto
-- `docs/VARHANDLE_PANAMA_MASTERY.md` - Guía de VarHandles
-- `docs/DOCUMENTATION_INDEX.md` - Índice completo
+- `../README_DOCS.md` - Punto de entrada
+- `../reports/PROJECT_HEALTH_REPORT.md` - Estado del proyecto
+- `VARHANDLE_PANAMA_MASTERY.md` - Guía de VarHandles
+- `../DOCUMENTATION_INDEX.md` - Índice completo
 
 ### **Documentación Externa:**
 - [Java 25 Documentation](https://docs.oracle.com/en/java/javase/25/)

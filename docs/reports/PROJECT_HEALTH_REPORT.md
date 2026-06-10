@@ -400,11 +400,11 @@ build.bat
 
 #### **2.1. Leer Documentación en Orden**
 
-1. **`README.md`** (Raíz)
-2. **`docs/README_DOCS.md`** ← **EMPEZAR AQUÍ**
-3. **`docs/certification/PEAK_PERFORMANCE_REPORT.md`**
-4. **`docs/glossary/TECHNICAL_GLOSSARY.md`**
-5. **`docs/BINARY_SIGNAL_INDEX.md`**
+1. **[README.md](../../README.md)** (Raíz)
+2. **[README_DOCS.md](../README_DOCS.md)** ← **EMPEZAR AQUÍ**
+3. **[PEAK_PERFORMANCE_REPORT.md](../certification/PEAK_PERFORMANCE_REPORT.md)**
+4. **[TECHNICAL_GLOSSARY.md](../glossary/TECHNICAL_GLOSSARY.md)**
+5. **[BINARY_SIGNAL_INDEX.md](../architecture/BINARY_SIGNAL_INDEX.md)**
 
 ---
 
@@ -653,7 +653,7 @@ Usar VisualVM o JProfiler para analizar:
 ## 🚀 PRÓXIMOS PASOS RECOMENDADOS
 
 ### **Para Desarrolladores Nuevos:**
-1. Leer `docs/README_DOCS.md`
+1. Leer `../README_DOCS.md`
 2. Compilar y ejecutar el motor
 3. Ejecutar `BusBenchmarkTest`
 4. Crear un sistema simple
@@ -665,8 +665,8 @@ Usar VisualVM o JProfiler para analizar:
 4. Contribuir optimizaciones
 
 ### **Para Arquitectos:**
-1. Revisar `DARK_OS_MASTER_PLAN.md`
-2. Revisar `FASE_1_GAME_LAUNCHER.md`
+1. Revisar `../architecture/ARQUITECTURA_DARK_ENGINE.md`
+2. Revisar `../architecture/SYSTEM_DEPENDENCY_GRAPH.md`
 3. Proponer mejoras arquitectónicas
 4. Diseñar nuevos componentes
 
