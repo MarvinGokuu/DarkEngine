@@ -89,4 +89,48 @@ public class ThreadPinning {
             return false;
         }
     }
+
+    /**
+     * Obtiene la máscara de afinidad original del hilo actual en Windows.
+     * 
+     * @return La máscara de afinidad previa, o -1 si falla o no es compatible.
+     */
+    public static long getOriginalAffinityMask() {
+        if (SET_AFFINITY_HANDLE == null) {
+            return -1L;
+        }
+        try {
+            long currentThreadHandle = -2; // Pseudo-handle para Windows GetCurrentThread
+            // Cambiamos temporalmente a 1L (Core 0) para obtener la anterior y restauramos
+            // de inmediato
+            long previousMask = (long) SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, 1L);
+            if (previousMask != 0) {
+                long restored = (long) SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, previousMask);
+                return previousMask;
+            }
+        } catch (Throwable t) {
+            System.err.println("[KERNEL] Failed to query original thread affinity: " + t.getMessage());
+        }
+        return -1L;
+    }
+
+    /**
+     * Restaura la afinidad de hilos a una máscara guardada previamente.
+     * 
+     * @param mask La máscara de afinidad a restaurar.
+     * @return true si la restauración fue exitosa.
+     */
+    public static boolean restoreAffinityMask(long mask) {
+        if (SET_AFFINITY_HANDLE == null || mask == -1L) {
+            return false;
+        }
+        try {
+            long currentThreadHandle = -2;
+            long result = (long) SET_AFFINITY_HANDLE.invokeExact(currentThreadHandle, mask);
+            return result != 0;
+        } catch (Throwable t) {
+            System.err.println("[KERNEL] Failed to restore thread affinity: " + t.getMessage());
+            return false;
+        }
+    }
 }
