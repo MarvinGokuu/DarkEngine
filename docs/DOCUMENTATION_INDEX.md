@@ -1,400 +1,83 @@
-# DARK ENGINE - DOCUMENTATION INDEX
-## Complete Reference Guide
+# DARK ENGINE - DOCUMENTATION INDEX & MAP
+## Ultimate Reference & Reading Protocol
 
-**Fecha:** 2026-01-19  
-**Versión:** 2.0  
-**Estado:** ✅ Verificado y Consolidado
-
----
-
-## 📚 ORDEN DE LECTURA RECOMENDADO
-
-### **Para Nuevos Desarrolladores:**
-
-1. **`README.md`** (Raíz del proyecto)
-   - Introducción al proyecto
-   - Quick start
-   - Comandos básicos
-
-2. **`docs/README_DOCS.md`** ← **EMPEZAR AQUÍ**
-   - Resumen ejecutivo
-   - Estado actual del motor
-   - Referencias a todos los documentos
-
-3. **`docs/certification/PEAK_PERFORMANCE_REPORT.md`**
-   - Certificación AAA+
-   - Métricas de rendimiento
-   - Escalabilidad de hardware
-
-4. **`docs/glossary/TECHNICAL_GLOSSARY.md`**
-   - Definiciones técnicas
-   - Conceptos de hardware
-   - Primitivas de concurrencia
-
-5. **`docs/BINARY_SIGNAL_INDEX.md`**
-   - Arquitectura de señales
-   - Command Set Architecture
-   - Memory layout
-
-6. **`docs/roadmap/FASE_1_GAME_LAUNCHER.md`**
-   - Plan de implementación MVP
-   - Timeline de 10 semanas
-   - Estrategia de mercado
+**Fecha:** 2026-06-09  
+**Versión del Mapa:** 2.3.0  
+**Estado:** ✅ Consolidado con Protocolo de Indexación Binaria
 
 ---
 
-### **Para Arquitectos/Diseñadores:**
+## 🛰️ PROTOCOLO DE INDEXACIÓN BINARIA (8-Bit Addresses)
 
-1. **`docs/architecture/ARQUITECTURA_DARK_ENGINE.md`**
-   - Arquitectura completa del motor
-   - Componentes principales
-   - Diagramas de sistema
-
-2. **`docs/architecture/DARK_OS_MASTER_PLAN.md`**
-   - Plan a largo plazo (OS completo)
-   - 8 fases de desarrollo
-   - Roadmap Q1-Q4 2026
-
-3. **`docs/SYSTEM_DEPENDENCY_GRAPH.md`**
-   - Grafo de dependencias
-   - Orden de ejecución
-   - Capas de sistemas
-
----
-
-### **Para Desarrolladores Activos:**
-
-1. **`docs/standards/ESTANDAR_DOCUMENTACION.md`**
-   - Estándar de documentación AAA+
-   - Headers requeridos
-   - Ejemplos
-
-2. **`docs/standards/AAA_CODING_STANDARDS.md`**
-   - Estándares de código
-   - Naming conventions
-   - Performance guidelines
-
-3. **`docs/manuals/FLUJO_TRABAJO.md`**
-   - Flujo de trabajo diario
-   - Comandos comunes
-   - Troubleshooting
-
-4. **`docs/manuals/GUIA_COMMITS.md`**
-   - Estrategia de commits
-   - Mensajes atómicos
-   - Git workflow
-
-5. **[boot_latency_comparison.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/boot_latency_comparison.md)**
-   - Comparación y telemetría de latencia de arranque (AAA+).
-   - Análisis del impacto de I/O bloqueante en micro-benchmarking.
-
-6. **[kernel_shutdown_verification_guide.md](file:///c:/Users/theca/Documents/GitHub/DarkEngine/docs/kernel_shutdown_verification_guide.md)**
-   - Protocolo estructurado de auditoría de apagado y liberación limpia de puertos/recursos.
-
----
-
-## 🔧 COMPILACIÓN Y EJECUCIÓN
-
-### **Orden de Compilación:**
-
-#### **1. Compilación Completa (Recomendado)**
-```batch
-build.bat
-```
-
-**Qué hace:**
-1. Limpia `bin/` directory
-2. Compila todos los archivos `.java` con:
-   - Java 25 + Preview features
-   - ZGC enabled
-   - Vector API (SIMD)
-   - Heap fijo 4GB
-3. Ejecuta `DarkEngineMaster`
-
-**Orden de compilación interno:**
-```
-1. sv.dark.state.DarkEngineMaster.java
-2. sv.dark.kernel.*.java
-3. sv.dark.core.*.java
-4. sv.dark.core.memory.*.java
-5. sv.dark.core.systems.*.java
-6. sv.dark.state.*.java
-7. sv.dark.bus.*.java
-8. sv.dark.net.*.java
-9. sv.dark.test.*.java
-```
-
----
-
-#### **2. Compilación Rápida (Solo cambios)**
-```batch
-compile.bat
-```
-
-**Qué hace:**
-- Compila solo archivos modificados
-- Más rápido para desarrollo iterativo
-
----
-
-#### **3. Ejecución sin Recompilar**
-```batch
-ignite.bat
-```
-
-**Qué hace:**
-- Ejecuta el motor desde binarios existentes
-- Útil para testing rápido
-
----
-
-### **Tests Disponibles:**
-
-| Test | Ubicación | Propósito |
-|------|-----------|-----------|
-| **BusBenchmarkTest** | `sv.dark.bus` | Benchmark del bus atómico (>10M ops/s) |
-| **BusCoordinationTest** | `sv.dark.bus` | Coordinación multi-lane |
-| **BusHardwareTest** | `sv.dark.bus` | Validación de hardware |
-| **UltraFastBootTest** | `sv.dark.test` | Boot time <1ms |
-| **GracefulShutdownTest** | `sv.dark.test` | Shutdown limpio |
-| **PowerSavingTest** | `sv.dark.test` | Tiered idle system |
-| **ParticleSystemDeterminismTest** | `sv.dark.test` | Validación de RNG determinista |
-| **SystemRegistryCapacityTest** | `sv.dark.test` | Validación de pre-dimensionado de colecciones |
-| **DependencyGraphPerformanceTest**| `sv.dark.test` | Validación de pre-dimensionado de grafos de dependencia |
-
-**Ejecutar tests:**
-```batch
-.\test.bat
-```
-
----
-
-## 📁 ESTRUCTURA DE DOCUMENTACIÓN
+Para garantizar un orden determinista y el 100% de cobertura de la documentación, cada documento en el proyecto tiene asignada una dirección binaria de 8 bits. Todo desarrollador debe leer, actualizar y documentar siguiendo esta topología estricta:
 
 ```
-docs/
-├── README_DOCS.md                    ← ÍNDICE PRINCIPAL
-├── BINARY_SIGNAL_INDEX.md            (Público)
-├── TROUBLESHOOTING_GUIDE.md          (Público)
-├── boot_latency_comparison.md        (Público)
-├── kernel_shutdown_verification_guide.md (// Desarrollo únicamente)
-├── walkthrough_visual_and_kernel.md  (// Desarrollo únicamente)
-│
-├── architecture/
-│   ├── ARQUITECTURA_DARK_ENGINE.md (Público)
-│   └── DARK_OS_MASTER_PLAN.md      (// Desarrollo - Plan a largo plazo)
-│
-├── certification/
-│   └── PEAK_PERFORMANCE_REPORT.md    (Público - Marketing)
-│
-├── glossary/
-│   └── TECHNICAL_GLOSSARY.md         (Público)
-│
-├── manuals/
-│   ├── ACCELERATOR_PHYSICS.md        (Público)
-│   ├── DOCUMENTACION_BUS.md          (Público)
-│   ├── FLUJO_TRABAJO.md              (// Desarrollo únicamente)
-│   ├── GUIA_COMMITS.md               (// Desarrollo únicamente)
-│   ├── GUIA_UPDATE_SYNC.md           (// Desarrollo únicamente)
-│   └── walkthrough.md                (// Desarrollo únicamente)
-│
-├── roadmap/
-│   └── FASE_1_GAME_LAUNCHER.md       (// Desarrollo - Plan MVP)
-│
-└── standards/
-    ├── AAA_CERTIFICATION.md          (Público)
-    ├── AAA_CODING_STANDARDS.md       (// Desarrollo únicamente)
-    ├── ESTANDAR_DOCUMENTACION.md     (// Desarrollo únicamente)
-    └── aaa_certification_results.md  (Público)
+[Categoría de 4 bits] [Identificador de 4 bits]
 ```
 
-### **Leyenda:**
-- **(Público)** → Documentación para usuarios/clientes
-- **(// Desarrollo únicamente)** → Solo para equipo interno
+### 📚 ORDEN DE LECTURA OFICIAL
+
+#### **Bloque 0000xxxx: Fundación e Inicio de Lectura**
+*   `00000001` $\rightarrow$ **[README.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/README.md)** (Introducción básica al repositorio).
+*   `00000010` $\rightarrow$ **[docs/README_DOCS.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/README_DOCS.md)** (Resumen Ejecutivo y estado actual del motor).
+*   `00000011` $\rightarrow$ **[docs/DOCUMENTATION_INDEX.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/DOCUMENTATION_INDEX.md)** (Este mapa maestro de lectura y actualización).
+*   `00000100` $\rightarrow$ **[docs/glossary/TECHNICAL_GLOSSARY.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/glossary/TECHNICAL_GLOSSARY.md)** (Glosario técnico de hardware y concurrencia).
+
+#### **Bloque 0001xxxx: Arquitectura e Ingeniería de Bajo Nivel**
+*   `00010001` $\rightarrow$ **[docs/architecture/ARQUITECTURA_DARK_ENGINE.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/architecture/ARQUITECTURA_DARK_ENGINE.md)** (Especificación del Core Kernel y flujos de datos).
+*   `00010010` $\rightarrow$ **[docs/architecture/DARK_OS_MASTER_PLAN.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/architecture/DARK_OS_MASTER_PLAN.md)** (Visión a largo plazo de la plataforma híbrida).
+*   `00010011` $\rightarrow$ **[docs/SYSTEM_DEPENDENCY_GRAPH.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/SYSTEM_DEPENDENCY_GRAPH.md)** (Grafo de capas de ejecución del ParallelSystemExecutor).
+
+#### **Bloque 0010xxxx: Estándares y Reportes de Rendimiento**
+*   `00100001` $\rightarrow$ **[docs/standards/ESTANDAR_DOCUMENTACION.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/standards/ESTANDAR_DOCUMENTACION.md)** (Normativa de redacción técnica libre de subjetividad).
+*   `00100010` $\rightarrow$ **[docs/standards/AAA_CODING_STANDARDS.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/standards/AAA_CODING_STANDARDS.md)** (Normativa de código: ZGC, FFM Panama, inlining y local-metrics).
+*   `00100011` $\rightarrow$ **[docs/standards/aaa_certification_results.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/standards/aaa_certification_results.md)** (Reporte detallado de benchmarks y paso de pruebas 12/12).
+
+#### **Bloque 0011xxxx: Manuales de Operación y Soporte**
+*   `00110001` $\rightarrow$ **[docs/manuals/walkthrough.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/walkthrough.md)** (Historial e instrucciones de integración de características).
+*   `00110010` $\rightarrow$ **[docs/manuals/GUIA_COMMITS.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/GUIA_COMMITS.md)** (Normativa de commits atómicos y descriptivos).
+*   `00110011` $\rightarrow$ **[docs/manuals/FLUJO_TRABAJO.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/FLUJO_TRABAJO.md)** (Flujo diario de integración local y remota).
+*   `00110100` $\rightarrow$ **[docs/TROUBLESHOOTING_GUIDE.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/TROUBLESHOOTING_GUIDE.md)** (Registro de incidencias del motor y su respectiva resolución).
+*   `00110101` $\rightarrow$ **[docs/roadmap/FASE_1_GAME_LAUNCHER.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/roadmap/FASE_1_GAME_LAUNCHER.md)** (Lista de Milestones del Launcher).
 
 ---
 
-## 🗂️ DOCUMENTOS INTERNOS (NO PÚBLICOS)
+## 🛠️ PROTOCOLO DE ACTUALIZACIÓN (SemVer Docs)
 
-> [!WARNING]
-> Los siguientes documentos son **SOLO PARA DESARROLLO INTERNO**. No deben incluirse en releases públicos.
-
-### **Planeación y Estrategia:**
-- `docs/architecture/DARK_OS_MASTER_PLAN.md`
-- `docs/roadmap/FASE_1_GAME_LAUNCHER.md`
-- `docs/MASTER_PLAN_V2.md`
-- `docs/PENDING_UPDATES_LOG.md`
-
-### **Flujo de Trabajo:**
-- `docs/manuals/FLUJO_TRABAJO.md`
-- `docs/manuals/GUIA_COMMITS.md`
-- `docs/manuals/GUIA_UPDATE_SYNC.md`
-- `docs/manuals/ESTRATEGIA_COMMITS.md`
-- `docs/manuals/walkthrough.md`
-- `docs/walkthrough_visual_and_kernel.md`
-
-### **Estándares Internos:**
-- `docs/standards/AAA_CODING_STANDARDS.md`
-- `docs/standards/ESTANDAR_DOCUMENTACION.md`
-- `docs/standards/DOCUMENTATION_REFACTORING_SPECIFICATION.md`
-
-### **Análisis y Especificaciones:**
-- `docs/BINARY_DISPATCH_PERFORMANCE_ANALYSIS.md`
-- `docs/COGNITIVE_ARCHITECTURE_SPECIFICATION.md`
-- `docs/DOCUMENTATION_COVERAGE_ANALYSIS.md`
-- `docs/SIGNAL_DISPATCH_SPECIFICATION.md`
-
-### **Protocolos de Deployment:**
-- `docs/BASELINE_PROTOCOL.md`
-- `docs/INITIAL_DEPLOYMENT_PROTOCOL.md`
-- `docs/DOCUMENTATION_BOOTSTRAP_PROTOCOL.md`
-- `docs/SECURITY_ARCHITECTURE.md`
-- `docs/kernel_shutdown_verification_guide.md`
+1.  **Read**: Todo nuevo cambio en el kernel debe ser antecedido por la lectura del bloque `0010xxxx` (Estándares).
+2.  **Unify**: Al agregar un nuevo archivo `.java` o método crítico en el hot-path, se debe documentar en:
+    *   `TECHNICAL_GLOSSARY.md` (si introduce conceptos o métricas nuevas).
+    *   `aaa_certification_results.md` (si agrega pruebas a la suite o altera el throughput del bus).
+3.  **Depurate**: Se prohíbe la duplicidad de manuales. Cualquier walkthrough técnico temporal debe ser depurado o integrado en el walkthrough maestro de manuales (`walkthrough.md`) tras su fusión.
 
 ---
 
-## 📦 BINARIOS Y OUTPUTS
+## 📦 COMPILACIÓN Y SUITE DE PRUEBAS (12/12)
 
-### **Directorio `bin/`:**
-- Contiene archivos `.class` compilados
-- Generado por `build.bat`
-- **NO** incluir en Git (`.gitignore`)
+### **Comando de Compilación Directa (Java 25)**
+```powershell
+javac -d bin --enable-preview --source 25 --add-modules jdk.incubator.vector -Xlint:-incubating -cp src src\sv\dark\state\DarkEngineMaster.java src\sv\dark\kernel\*.java src\sv\dark\core\*.java src\sv\dark\core\memory\*.java src\sv\dark\core\systems\*.java src\sv\dark\state\*.java src\sv\dark\bus\*.java src\sv\dark\net\*.java src\sv\dark\test\*.java src\sv\dark\ui\*.java
+```
 
-### **Directorio `dist/`:**
-- Releases empaquetados
-- JARs distribuibles
-- **NO** incluir en Git
+### **Tabla de Pruebas Automatizadas (`.\test.bat`)**
 
-### **Logs de Performance:**
-- `gc_analysis.log` - Log de GC baseline
-- `gc_optimized.log` - Log de GC con optimizaciones
-- `gc_production.log` - Log de GC certificado AAA+
-- `jit_compilation.log` - Log de compilación JIT
-- **NO** incluir en Git (muy grandes)
-
-### **Directorio `brain/`:**
-- Documentación de planeación interna
-- Neuronas de desarrollo
-- **NO** incluir en Git
-
-### **Directorio `tools/`:**
-- Scripts de desarrollo
-- Herramientas internas
-- **NO** incluir en Git
-
-### **Directorio `Dark-Engine/`:**
-- Ejecutable nativo autocontenido de producción (`Dark-Engine.exe`)
-- Generado por `exe.bat` usando `jpackage`
-- **NO** incluir en Git (generado localmente)
+| Paso | Clase de Prueba | Propósito y Garantías |
+| :--- | :--- | :--- |
+| **[1/12]** | `sv.dark.bus.BusBenchmarkTest` | Latencia típica de offer/poll <150ns en el bus circular. |
+| **[2/12]** | `sv.dark.bus.BusCoordinationTest` | Multi-hilo no bloqueante bajo Dispatcher multi-lane. |
+| **[3/12]** | `sv.dark.bus.BusHardwareTest` | Validación estructural de padding de variables anti false-sharing. |
+| **[4/12]** | `sv.dark.test.UltraFastBootTest` | Latencia de arranque del motor garantizada <1.0ms. |
+| **[5/12]** | `sv.dark.test.GracefulShutdownTest` | Liberación de descriptores de memoria nativa y sockets (sin leaks). |
+| **[6/12]** | `sv.dark.test.PowerSavingTest` | Escalado de reposo de CPU de 3 niveles en modo de inactividad (idle). |
+| **[7/12]** | `sv.dark.test.ParticleSystemDeterminismTest` | Reproducibilidad de simulación con RNG determinista local. |
+| **[8/12]** | `sv.dark.test.SystemRegistryCapacityTest` | Pre-dimensionamiento de colecciones del registro de sistemas. |
+| **[9/12]** | `sv.dark.test.DependencyGraphPerformanceTest` | Grafo de dependencias de hilos sin reallocations en ejecución. |
+| **[10/12]** | `sv.dark.bus.BusBenchmarkTest` (final) | Consistencia de throughput del bus atómico (>185M ops/s). |
+| **[11/12]** | `sv.dark.test.MetricsAggregationTest` | Aislamiento de métricas de sistemas paralelos sin false-sharing (174M ops/s). |
+| **[12/12]** | `sv.dark.test.SystemStateManagerTest` | Captura, boosting a Alto Rendimiento y restauración 100% limpia de Windows. |
 
 ---
 
-## 🎯 DOCUMENTACIÓN PÚBLICA (Para Release)
-
-### **Incluir en Release:**
-
-1. **README.md** (Raíz)
-2. **LICENSE.md**
-3. **docs/README_DOCS.md**
-4. **docs/certification/PEAK_PERFORMANCE_REPORT.md**
-5. **docs/glossary/TECHNICAL_GLOSSARY.md**
-6. **docs/BINARY_SIGNAL_INDEX.md**
-7. **docs/TROUBLESHOOTING_GUIDE.md**
-8. **docs/boot_latency_comparison.md**
-9. **docs/architecture/ARQUITECTURA_DARK_ENGINE.md**
-10. **docs/manuals/ACCELERATOR_PHYSICS.md**
-11. **docs/manuals/DOCUMENTACION_BUS.md**
-12. **docs/standards/AAA_CERTIFICATION.md**
-13. **docs/standards/aaa_certification_results.md**
-
-### **Excluir de Release:**
-- Todo lo marcado como `(// Desarrollo únicamente)`
-- Directorios: `brain/`, `tools/`
-- Logs: `*.log`
-- Binarios: `bin/`, `dist/`
-
----
-
-## 🔍 VERIFICACIÓN DE CONSISTENCIA
-
-### **Checklist de Documentación:**
-
-- [x] Todos los documentos tienen headers correctos
-- [x] Glosario técnico actualizado
-- [x] Orden de lectura definido
-- [x] Orden de compilación documentado
-- [x] Tests listados y documentados
-- [x] Documentos internos marcados como `// Desarrollo`
-- [x] Documentos públicos identificados
-- [x] Referencias cruzadas correctas
-- [x] Escalabilidad de hardware documentada
-- [x] Certificación AAA+ actualizada
-
----
-
-## 📊 MÉTRICAS DE DOCUMENTACIÓN
-
-| Categoría | Total | Público | Desarrollo |
-|-----------|-------|---------|------------|
-| **Architecture** | 2 | 1 | 1 |
-| **Certification** | 1 | 1 | 0 |
-| **Glossary** | 1 | 1 | 0 |
-| **Manuals** | 6 | 2 | 4 |
-| **Roadmap** | 1 | 0 | 1 |
-| **Standards** | 7 | 2 | 5 |
-| **Root Docs** | 13 | 3 | 10 |
-| **TOTAL** | 31 | 10 | 21 |
-
-**Cobertura Pública:** 32% (suficiente para release)  
-**Cobertura Interna:** 68% (para desarrollo)
-
----
-
-## ✅ ESTADO DE VERIFICACIÓN
-
-### **Binarios:**
-- ✅ Directorio `bin/` existe
-- ✅ Compilación funcional (`build.bat`)
-- ✅ Tests compilados y ejecutables
-
-### **Glosario:**
-- ✅ `TECHNICAL_GLOSSARY.md` actualizado
-- ✅ Términos técnicos definidos
-- ✅ Sin referencias a neuronas/planeación
-
-### **Orden de Lectura:**
-- ✅ Definido en este documento
-- ✅ Tres rutas: Nuevos, Arquitectos, Desarrolladores
-- ✅ Referencias cruzadas correctas
-
-### **Orden de Compilación:**
-- ✅ `build.bat` es el script principal
-- ✅ Orden de paquetes documentado
-- ✅ Flags de JVM documentados
-
-### **Tests:**
-- ✅ 7 tests identificados
-- ✅ Propósito de cada test documentado
-- ✅ Comandos de ejecución proporcionados
-
----
-
-## 🚀 PRÓXIMOS PASOS
-
-1. **Revisar documentos marcados como `// Desarrollo`**
-   - Confirmar que no se incluyan en releases públicos
-   - Actualizar `.gitignore` si es necesario
-
-2. **Crear script de empaquetado**
-   - Script que genere release con solo documentos públicos
-   - Excluir automáticamente `brain/`, `tools/`, logs
-
-3. **Validar referencias cruzadas**
-   - Verificar que todos los links funcionen
-   - Actualizar paths si es necesario
-
----
-
-**Última Verificación:** 2026-01-19  
+**Última Verificación:** 2026-06-09  
 **Verificado Por:** System Architect  
 **Estado:** ✅ Consistente y Actualizado

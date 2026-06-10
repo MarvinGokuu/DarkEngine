@@ -22,6 +22,15 @@ Buffer de escritura intermedio en el CPU.
 Mecanismo del CPU para adivinar el resultado de una condicional.
 *   **Optimización**: El código "branchless" o con patrones predecibles maximiza el throughput del pipeline de instrucciones.
 
+### 1.4. False Sharing
+Efecto degenerativo del rendimiento en CPUs multinúcleo en el que hilos independientes modifican variables adyacentes que comparten la misma línea de caché de 64 bytes, lo que provoca constantes invalidaciones de caché y caídas en el throughput.
+
+### 1.5. Cache Line Padding (64B)
+Técnica microarquitectónica consistente en la inserción de variables no funcionales ("escudos" o "padding") alrededor de variables de alta contención para forzar su separación física en diferentes líneas de caché de 64 bytes.
+
+### 1.6. NUMA Socket Interconnect
+Enlace físico de alta velocidad (como AMD Infinity Fabric o Intel UPI) entre nodos de memoria no uniforme (NUMA). El False Sharing masivo en muchos cores satura este interconnect, colapsando el rendimiento general.
+
 ---
 
 ## 2. Definiciones de Runtime
@@ -39,6 +48,12 @@ Arquitectura de transferencia de datos donde la información no se duplica en me
 Single Instruction, Multiple Data. Capacidad del CPU para procesar múltiples valores (ej. 8 integers) en un solo ciclo de reloj.
 *   **Implementación**: `jdk.incubator.vector.IntVector`.
 *   **Uso**: Procesamiento masivo de entidades y cálculos físicos.
+
+### 2.4. ZGC (Z Garbage Collector)
+Recolector de basura de ultra-baja latencia y escalable de Java. DarkEngine está configurado para operar con ZGC, garantizando pausas de recolección de basura menores a 0.028ms para evitar jitter.
+
+### 2.5. Off-Critical-Path Aggregation
+Patrón arquitectónico donde el procesamiento pesado o la agregación de métricas e instrumentación se relegan fuera del hot-path de ejecución (por ejemplo, al final del frame o a hilos secundarios), garantizando latencia cero en el loop de simulación.
 
 ---
 
@@ -156,4 +171,4 @@ Canal de comunicación unidireccional no bloqueante basado en buffers circulares
 ---
 
 **Autoridad**: System Architect  
-**Versión**: 2.2 (Updated 2026-06-08)
+**Versión**: 2.3 (Updated 2026-06-09)

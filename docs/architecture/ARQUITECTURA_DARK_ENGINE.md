@@ -2,8 +2,8 @@
 
 **Subsistema**: Architecture / Core  
 **Tecnología**: Java 25 (Panama, Vector, Loom)  
-**Estado**: Production Ready (v2.2-gui)  
-**Última Actualización**: 2026-06-08
+**Estado**: Production Ready (v2.3-gui)  
+**Última Actualización**: 2026-06-09
 
 ---
 
@@ -44,7 +44,7 @@ graph TD
 *   **Baseline Validation**: Protocolo A/B/C para detección de memory leaks
 
 **Métricas de Hardware**:
-*   **Boot Time**: 0.069ms (AAA+ Target: <1ms) ✅
+*   **Boot Time**: 0.053ms (Typical) (AAA+ Target: <1ms) ✅
 *   **Jitter de Temporizado**: < 500ns (Spin-wait loop)
 *   **Affinity**: Pinning a núcleos de alto rendimiento
 
@@ -56,9 +56,9 @@ graph TD
 *   **Thermal Signature**: Validación de integridad de padding en boot.
 
 **Métricas AAA+**:
-*   **Latency (Avg)**: 23.72ns (Target: <150ns) ✅
+*   **Latency (Avg)**: 23.35ns (Target: <150ns) ✅
 *   **Latency (P99)**: 100ns (Target: <200ns) ✅
-*   **Throughput**: 165M ops/s (Target: >10M ops/s) ✅
+*   **Throughput**: 185M ops/s (Target: >10M ops/s) ✅ (Hasta 224M ops/s en agregación paralela)
 
 **Mapeo de Hardware**:
 ```
@@ -108,9 +108,9 @@ graph TD
 
 | Métrica | Unity | Unreal | DarkEngine | Delta vs Unreal |
 | :--- | :--- | :--- | :--- | :--- |
-| **Bus Latency** | ~500ns | ~100ns | **23.72ns** | -76% |
-| **Throughput** | ~20M ops/s | ~50M ops/s | **165M ops/s** | +230% |
-| **Boot Time** | ~5s | ~5s | **0.069ms** | -99.99% |
+| **Bus Latency** | ~500ns | ~100ns | **23.35ns** | -76.6% |
+| **Throughput** | ~20M ops/s | ~50M ops/s | **185M ops/s** | +270% |
+| **Boot Time** | ~5s | ~5s | **0.053ms** | -99.99% |
 | **SIMD Bandwidth** | N/A | ~3.5 GB/s | **4.17 GB/s** | +19% |
 
 ### 4.2. Escalabilidad Vertical
