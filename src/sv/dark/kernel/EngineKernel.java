@@ -90,6 +90,8 @@ public final class EngineKernel {
     // Métricas
     private long totalFrames = 0;
 
+    private final SystemSnapshot initialSystemState;
+
     /**
      * Constructor principal con Dependency Injection.
      * Permite inyectar el DarkEventDispatcher y SectorMemoryVault.
@@ -98,6 +100,10 @@ public final class EngineKernel {
      * @param sectorVault     Vault de memoria física (inyectado desde Engine)
      */
     public EngineKernel(DarkEventDispatcher eventDispatcher, SectorMemoryVault sectorVault) {
+        // Capturar estado inicial del sistema y aplicar optimizaciones (Fase 1)
+        this.initialSystemState = SystemStateManager.captureInitialState();
+        SystemStateManager.applyPerformanceBoost();
+
         this.systemRegistry = new SystemRegistry();
         this.timeKeeper = new TimeKeeper();
         // Crear Arena explícita para control de ciclo de vida
@@ -628,6 +634,15 @@ public final class EngineKernel {
         System.out.println("═══════════════════════════════════════════════════════════════");
         System.out.println("[KERNEL] GRACEFUL SHUTDOWN COMPLETED");
         System.out.println("═══════════════════════════════════════════════════════════════");
+
+        // ═══════════════════════════════════════════════════════════════
+        // RESTAURAR ESTADO DEL SISTEMA Y VALIDAR (Milestone 1)
+        // ═══════════════════════════════════════════════════════════════
+        if (initialSystemState != null) {
+            SystemStateManager.restoreInitialState(initialSystemState);
+            SystemSnapshot currentSystemState = SystemStateManager.captureInitialState();
+            CleanupValidator.validate(initialSystemState, currentSystemState);
+        }
 
         // [GARANTIA DE CIERRE]
         // Forzamos al kernel de Windows a limpiar descriptores de memoria nativa y CPU

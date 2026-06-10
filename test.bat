@@ -66,8 +66,13 @@ java -cp bin sv.dark.bus.BusBenchmarkTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [11/11] Metrics Aggregation (Phase 0)...
+echo [11/12] Metrics Aggregation (Phase 0)...
 java -cp bin sv.dark.test.MetricsAggregationTest
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+echo.
+echo [12/12] System State Manager (Phase 1)...
+java -cp bin sv.dark.test.SystemStateManagerTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
