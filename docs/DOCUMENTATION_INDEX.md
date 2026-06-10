@@ -25,7 +25,6 @@ Para garantizar un orden determinista y el 100% de cobertura de la documentació
 
 #### **Bloque 0001xxxx: Arquitectura e Ingeniería de Bajo Nivel**
 *   `00010001` $\rightarrow$ **[docs/architecture/ARQUITECTURA_DARK_ENGINE.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/architecture/ARQUITECTURA_DARK_ENGINE.md)** (Especificación del Core Kernel y flujos de datos).
-*   `00010010` $\rightarrow$ **[docs/architecture/DARK_OS_MASTER_PLAN.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/architecture/DARK_OS_MASTER_PLAN.md)** (Visión a largo plazo de la plataforma híbrida).
 *   `00010011` $\rightarrow$ **[docs/SYSTEM_DEPENDENCY_GRAPH.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/SYSTEM_DEPENDENCY_GRAPH.md)** (Grafo de capas de ejecución del ParallelSystemExecutor).
 
 #### **Bloque 0010xxxx: Estándares y Reportes de Rendimiento**
@@ -38,7 +37,6 @@ Para garantizar un orden determinista y el 100% de cobertura de la documentació
 *   `00110010` $\rightarrow$ **[docs/manuals/GUIA_COMMITS.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/GUIA_COMMITS.md)** (Normativa de commits atómicos y descriptivos).
 *   `00110011` $\rightarrow$ **[docs/manuals/FLUJO_TRABAJO.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/manuals/FLUJO_TRABAJO.md)** (Flujo diario de integración local y remota).
 *   `00110100` $\rightarrow$ **[docs/TROUBLESHOOTING_GUIDE.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/TROUBLESHOOTING_GUIDE.md)** (Registro de incidencias del motor y su respectiva resolución).
-*   `00110101` $\rightarrow$ **[docs/roadmap/FASE_1_GAME_LAUNCHER.md](file:///C:/Users/theca/Documents/GitHub/DarkEngine/docs/roadmap/FASE_1_GAME_LAUNCHER.md)** (Lista de Milestones del Launcher).
 
 ---
 

@@ -203,7 +203,7 @@ Delta:    Heap=+25MB, NonHeap=+10MB, Threads=+2
 ```bash
 # Compilar el proyecto
 cd c:\Users\theca\Documents\GitHub\DarkEngine
-SovereignProtocol.bat
+build.bat
 
 # Ejecutar test de Graceful Shutdown
 java -cp bin sv.dark.test.GracefulShutdownTest

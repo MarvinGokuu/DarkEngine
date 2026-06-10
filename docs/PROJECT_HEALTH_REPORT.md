@@ -216,18 +216,19 @@ import java.nio.file.*;
 ```
 src/sv/dark/
 ├── state/           ✅ 4 archivos (WorldStateFrame, DarkStateVault, etc.)
-├── kernel/          ✅ 11 archivos (EngineKernel, ParallelSystemExecutor, etc.)
-├── core/            ✅ 15 archivos (DarkDataAccelerator, systems/, etc.)
-│   ├── systems/     ✅ 7 archivos (MovementSystem, RenderSystem, etc.)
+├── kernel/          ✅ 13 archivos (EngineKernel, ParallelSystemExecutor, SystemStateManager, ThreadPinning, etc.)
+├── core/            ✅ 24 archivos (DarkDataAccelerator, SpaceMath, systems/, etc.)
+│   ├── systems/     ✅ 11 archivos (MovementSystem, RenderSystem, PhysicsSystem, AudioSystem, etc.)
 │   └── memory/      ✅ 1 archivo (SectorMemoryPartitioner)
 ├── bus/             ✅ 12 archivos (DarkAtomicBus, DarkRingBus, etc.)
-├── net/             ✅ 3 archivos (Telemetry, Saturation, etc.)
+├── net/             ✅ 5 archivos (DarkMetricsServer, MemoryMonitor, etc.)
 ├── memory/          ✅ 1 archivo (SectorMemoryVault)
-├── admin/           ✅ 1 archivo (SovereignAdmin)
-└── test/            ✅ 7 archivos (Tests de boot, shutdown, etc.)
+├── admin/           ✅ 1 archivo (AdminController)
+├── validation/      ✅ 1 archivo (BusSymmetryValidator)
+└── test/            ✅ 16 archivos (Tests de boot, shutdown, etc.)
 ```
 
-**Total:** ~55 archivos Java
+**Total:** ~77 archivos Java
 
 ---
 

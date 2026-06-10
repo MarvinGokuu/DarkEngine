@@ -108,19 +108,19 @@ Para información detallada sobre todos los scripts de compilación y sus casos 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   DarkEngineMaster                        │
+│                   DarkEngineMaster                          │
 │                   (Punto de Entrada)                        │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   EngineKernel                           │
+│                   EngineKernel                              │
 │                   (Loop Principal 60Hz)                     │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  FASE 1: Input Latch    (Captura input)              │  │
-│  │  FASE 2: Bus Processing (Procesa eventos)            │  │
-│  │  FASE 3: Systems Execution (Ejecuta lógica)          │  │
-│  │  FASE 4: State Audit    (Valida estado)              │  │
+│  │  FASE 1: Input Latch    (Captura input)               │  │
+│  │  FASE 2: Bus Processing (Procesa eventos)             │  │
+│  │  FASE 3: Systems Execution (Ejecuta lógica)           │  │
+│  │  FASE 4: State Audit    (Valida estado)               │  │
 │  └───────────────────────────────────────────────────────┘  │
 └────────────────────────┬────────────────────────────────────┘
                          │
@@ -128,15 +128,15 @@ Para información detallada sobre todos los scripts de compilación y sus casos 
 ┌─────────────────────────────────────────────────────────────┐
 │              ParallelSystemExecutor                         │
 │              (Ejecuta sistemas en paralelo)                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │ Movement    │  │ Collision   │  │ Render      │        │
-│  │ System      │  │ System      │  │ System      │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │ Movement    │  │ Collision   │  │ Render      │          │
+│  │ System      │  │ System      │  │ System      │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              DarkAtomicBus (Lock-Free)                    │
+│               DarkAtomicBus (Lock-Free)                     │
 │              (Comunicación entre threads <150ns)            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -203,7 +203,7 @@ build.bat
 
 **Esperado:**
 ```
-[HELLO] Frame 60 | Delta: 16.666ms
+[HELLO] Frame 60  | Delta: 16.666ms
 [HELLO] Frame 120 | Delta: 16.666ms
 [HELLO] Frame 180 | Delta: 16.666ms
 ```
@@ -236,12 +236,12 @@ java -cp bin sv.dark.test.GracefulShutdownTest
 
 ### **Certificación AAA+ Actual:**
 
-| Métrica | Target | Actual | Estado |
-|---------|--------|--------|--------|
-| **Boot Time** | <1ms | 0.069ms | ✅ 93% mejor |
-| **VarHandle Latency** | <150ns | 100ns | ✅ 33% mejor |
-| **GC Pause Max** | <1ms | 0.028ms | ✅ 97.2% mejor |
-| **Throughput** | >10M ops/s | >12M ops/s | ✅ 20% mejor |
+| Métrica                     | Target    | Actual     | Estado |
+|-----------------------------|-----------|------------|--------|
+| **Boot Time**               | <1ms      | 0.069ms    | ✅ 93% mejor |
+| **VarHandle Latency**       | <150ns    | 100ns      | ✅ 33% mejor |
+| **GC Pause Max**            | <1ms      | 0.028ms    | ✅ 97.2% mejor |
+| **Throughput**              | >10M ops/s| >12M ops/s | ✅ 20% mejor |
 
 ---
 
@@ -294,9 +294,9 @@ docs/
 ### **1. DarkAtomicBus (Lock-Free Communication)**
 ```
 ┌──────────────────────────────────────┐
-│ headShield (56 bytes) | head (8)    │ ← Cache Line 1
+│ headShield (56 bytes) | head (8)     │  ← Cache Line 1
 ├──────────────────────────────────────┤
-│ isolationBridge (56) | tail (8)     │ ← Cache Line 2
+│ isolationBridge (56) | tail (8)      │  ← Cache Line 2
 └──────────────────────────────────────┘
 
 Latencia: <150ns
@@ -375,7 +375,7 @@ java --enable-preview --enable-native-access=ALL-UNNAMED -cp bin ...
 rd /s /q bin
 
 # 2. Recompilar
-SovereignProtocol.bat
+build.bat
 ```
 
 ---
@@ -419,7 +419,7 @@ SovereignProtocol.bat
 
 ---
 
-**¡Bienvenido al DarkEngine!** 🌋🚀
+**¡Bienvenido al DarkEngine!**
 
 ---
 
