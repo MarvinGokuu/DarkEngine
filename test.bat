@@ -32,17 +32,17 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 :: System tests
 echo.
 echo [4/10] Ultra Fast Boot...
-java -cp bin sv.dark.test.UltraFastBootTest
+java --enable-native-access=ALL-UNNAMED -cp bin sv.dark.test.UltraFastBootTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
 echo [5/10] Graceful Shutdown...
-java -cp bin sv.dark.test.GracefulShutdownTest
+java --enable-native-access=ALL-UNNAMED -cp bin sv.dark.test.GracefulShutdownTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
 echo [6/10] Power Saving...
-java -cp bin sv.dark.test.PowerSavingTest
+java --enable-native-access=ALL-UNNAMED -cp bin sv.dark.test.PowerSavingTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
@@ -72,8 +72,9 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
 echo [12/12] System State Manager (Phase 1)...
-java -cp bin sv.dark.test.SystemStateManagerTest
+java --enable-native-access=ALL-UNNAMED -cp bin sv.dark.test.SystemStateManagerTest
 if %ERRORLEVEL% NEQ 0 goto :test_failed
+
 
 echo.
 echo ========================
