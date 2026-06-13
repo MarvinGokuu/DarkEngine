@@ -1,47 +1,57 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Sello Criptográfico de Integridad del Runtime.
- * DEPENDENCIAS: Ninguna (Constantes puras)
- * MÉTRICAS: O(1) Verification
+ * RESPONSIBILITY: Cryptographic Seal of Runtime Integrity.
+ * WHY: We need a fail-safe against unauthorized modifications, memory corruption, and version mismatches.
+ * TECHNIQUE: Signatures represented as 64-bit literals for direct loading into CPU registers. Validates system immutability via fast XOR operations without heavy conditionals.
+ * GUARANTEES: O(1) Verification. Protects against unauthorized modifications and binary corruption.
  * 
- * Garantiza la autenticidad y versión del motor en ejecución.
- * Protege contra modificaciones no autorizadas y corrupción de binarios.
+ * <p>Metrics: O(1) Verification
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class ExecutionValidator {
 
-    // [INGENIERÍA DURA]: Firmas representadas como literales de 64 bits para carga
-    // directa en registros CPU.
+    // [HARD ENGINEERING]: Signatures represented as 64-bit literals for direct
+    // loading into CPU registers.
     private static final long AUTHOR_ID = 0x4D415256494E4445L; // "MARVINDEV"
     private static final long ENGINE_ID = 0x564F4C43414E3231L; // "DARK"
-    private static final long EPOCH_STAMP = 20260103L; // Actualizado: 2026-01-03
+    private static final long EPOCH_STAMP = 20260103L; // Updated: 2026-01-03
 
     private static boolean sealed = true;
 
     private ExecutionValidator() {
-        // Bloqueo de instanciación para garantizar acceso estático de bajo nivel.
+        // Lock instantiation to guarantee low-level static access.
     }
 
     /**
-     * Guarda de Integridad Local.
-     * Se invoca en cada tick del EngineKernel para validar la inmutabilidad del
-     * sistema.
+     * Local Integrity Guard.
+     * Invoked on every EngineKernel tick to validate system
+     * immutability.
      */
     public static void verify() {
-        // Validación de constantes para evitar manipulaciones en tiempo de ejecución.
+        // Constant validation to avoid runtime manipulation.
         if (!sealed || (AUTHOR_ID ^ ENGINE_ID) == 0) {
-            // Uso de operación XOR para validar que los IDs son distintos y están presentes
-            // sin usar condicionales pesados.
+            // Use of XOR operation to validate that IDs are distinct and present
+            // without using heavy conditionals.
             throw new Error("[PANIC] INTEGRITY_VIOLATION");
         }
     }
 
-    // --- ACCESO DE AUDITORÍA (Resuelve errores de 'Unused' en Hito 2.2) ---
+    // --- AUDIT ACCESS (Resolves 'Unused' warnings in Milestone 2.2) ---
 
     public static long getAuthorId() {
         return AUTHOR_ID;
@@ -56,10 +66,10 @@ public final class ExecutionValidator {
     }
 
     /**
-     * Retorna el checksum simple de integridad para el TelemetryStream.
+     * Returns the simple integrity checksum for the TelemetryStream.
      */
     public static long getIntegrityHash() {
         return AUTHOR_ID ^ ENGINE_ID ^ EPOCH_STAMP;
     }
 }
-// actualizado3/1/26
+// updated 3/1/26

@@ -3,22 +3,28 @@ title Dark-Engine Compiler
 cls
 
 echo.
-echo Dark-Engine Build System
-echo ========================
+echo ==============================================
+echo  DARK ENGINE - COMPILATION ROUTINE
+echo ==============================================
 echo.
 
-:: Detectar version del javac activo (funciona con cualquier JDK 23+)
+:: Detect JDK
 for /f "tokens=2 delims= " %%v in ('javac --version 2^>^&1') do set JAVAC_VER=%%v
 for /f "tokens=1 delims=." %%m in ("%JAVAC_VER%") do set JAVA_MAJOR=%%m
-echo [INFO] javac detectado: %JAVAC_VER% (major: %JAVA_MAJOR%)
 
-:: Clean previous build
-if exist bin rd /s /q bin
-mkdir bin
+:: Subsystem clear (Prevents JDK version mismatch and stale classes)
+call clean.bat >nul 2>&1
 
-:: Compile con la version detectada dinamicamente
-echo [STAGE] Compiling...
-javac -d bin --enable-preview --source %JAVA_MAJOR% ^
+:: Zombie process elimination (Strict match for DarkEngineMaster inside JVM)
+for /f "tokens=2 delims=," %%p in ('wmic process where "Name='java.exe' or Name='javaw.exe'" get ProcessId^,CommandLine /format:csv 2^>nul ^| findstr /i "DarkEngineMaster"') do (
+    echo [SYSTEM] Eliminating lingering zombie process [PID: %%p]
+    taskkill /F /PID %%p >nul 2>&1
+)
+
+if not exist bin mkdir bin
+
+echo [BUILD] Compiling kernel and subsystems (JDK %JAVAC_VER%)...
+javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
     -Xlint:-incubating ^
     -cp src ^
@@ -34,25 +40,27 @@ javac -d bin --enable-preview --source %JAVA_MAJOR% ^
     src\sv\dark\bus\*.java ^
     src\sv\dark\net\*.java ^
     src\sv\dark\test\*.java ^
-    src\sv\dark\ui\*.java
+    src\sv\dark\ui\*.java ^
+    src\sv\dark\admin\*.java > compile.log 2>&1
 
 if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Build failed. Check errors above.
+    echo [ERROR] BUILD FAILED. Critical compilation errors found.
+    echo ----------------------------------------------
+    type compile.log
+    echo ----------------------------------------------
     exit /b %errorlevel%
 )
 
-:: Copy resources (images, configurations, etc.) to bin
 if not exist bin\sv\dark\ui mkdir bin\sv\dark\ui
 copy /y src\sv\dark\ui\darkengine_logo.png bin\sv\dark\ui\darkengine_logo.png >nul
 
-echo [SUCCESS] Build complete.
+if not exist bin\sv\dark\admin mkdir bin\sv\dark\admin
+copy /y src\sv\dark\admin\editor.html bin\sv\dark\admin\editor.html >nul
+copy /y src\sv\dark\admin\index.html bin\sv\dark\admin\index.html >nul
+
+if exist compile.log del /q compile.log
+if exist logs\clean.log del /q logs\clean.log
+
+echo [SUCCESS] AAA+ Compiled. Engine ready.
 echo.
-
-:: Run engine sin consola visible
-echo [STAGE] Starting Dark-Engine...
-start "Dark-Engine" javaw --enable-preview --enable-native-access=ALL-UNNAMED ^
-    --add-modules jdk.incubator.vector ^
-    -cp bin sv.dark.state.DarkEngineMaster
-
-pause
+exit /b 0

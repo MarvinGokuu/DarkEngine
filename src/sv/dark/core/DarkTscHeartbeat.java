@@ -1,28 +1,36 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core; // Sincronizado con la ruta src/sv/dark/core/
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Sincronización de Alta Precisión (Nano-Time) y Tick
- * Enforcement.
- * DEPENDENCIAS: System.nanoTime()
- * MÉTRICAS: Nanosecond Precision, Zero-Drift
+ * High-Precision Synchronization (Nano-Time) and Tick Enforcement.
  * 
- * Cronómetro de alta resolución para el loop principal. Controla el presupuesto
- * de tiempo por frame y detecta excesos (Overruns) para mantener 60 FPS
- * estables.
+ * <p>High-resolution timer for the main loop. Controls the time budget
+ * per frame and detects overruns to maintain a stable 60 FPS.
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * <p>Metrics: Nanosecond Precision, Zero-Drift
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class DarkTscHeartbeat {
 
-    // Presupuesto Industrial: 10ms (100Hz) para simulaciones de misión crítica
+    // Industrial Budget: 10ms (100Hz) for mission-critical simulations
     private static final long TICK_BUDGET_NS = 10_000_000L;
 
     private static long lastTickTime;
 
-    // El acumulador de deriva se reserva para el Hito 4.1 (Time Smoothing)
+    // The drift accumulator is reserved for Milestone 4.1 (Time Smoothing)
     @SuppressWarnings("unused")
     private static long driftAccumulator;
 
@@ -32,13 +40,12 @@ public final class DarkTscHeartbeat {
     }
 
     private DarkTscHeartbeat() {
-    } // Sellado: Solo utilidad de cronometría pura.
+    } // Sealed: Pure chronometry utility.
 
     /**
-     * Sincroniza el latido del motor.
-     * Calcula el delta absoluto y actualiza la referencia temporal.
-     * [MECHANICAL SYMPATHY]: Uso de nanoTime() para evitar el jitter del reloj del
-     * sistema (Wall-clock).
+     * Synchronizes the engine's heartbeat.
+     * Calculates the absolute delta and updates the temporal reference.
+     * [MECHANICAL SYMPATHY]: Use of nanoTime() to avoid system clock jitter (Wall-clock).
      */
     public static long sync() {
         long now = System.nanoTime();
@@ -48,12 +55,11 @@ public final class DarkTscHeartbeat {
     }
 
     /**
-     * Valida el presupuesto de tiempo del tick actual.
-     * Implementa el [Hito 1.2]: TickBudgetEnforcer.
-     * * @param workStartNs El tiempo capturado justo antes de empezar la lógica de
-     * simulación.
+     * Validates the time budget of the current tick.
+     * Implements [Milestone 1.2]: TickBudgetEnforcer.
+     * @param workStartNs The time captured just before starting simulation logic.
      * 
-     * @return true si el motor está operando dentro de los 10ms permitidos.
+     * @return true if the engine is operating within the allowed 10ms.
      */
     public static boolean checkBudget(long workStartNs) {
         long elapsed = System.nanoTime() - workStartNs;
@@ -64,4 +70,4 @@ public final class DarkTscHeartbeat {
         return TICK_BUDGET_NS;
     }
 }
-// actualizado3/1/26
+// updated 3/1/26

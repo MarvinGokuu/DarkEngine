@@ -1,57 +1,94 @@
 // Reading Order: 00000001
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.state;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Memory Layout Constants - Offset Map
- * DEPENDENCIAS: None (Pure Constants)
- * MÉTRICAS: Zero-allocation, Compile-time resolution
- * 
- * Defines memory offsets for WorldStateFrame.
- * Guarantees L1 cache alignment and optimized offsets.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * Off-heap memory address map for WorldStateFrame.
+ *
+ * <p>All constants are byte offsets into a native MemorySegment.
+ * Guarantees L1 cache alignment and optimized offsets for zero-allocation
+ * compile-time resolution.
+ *
+ * <p><b>Layout contract:</b>
+ * <ul>
+ *   <li>Slots 0-99: Hot data (high-frequency actor state).</li>
+ *   <li>Slots 100-199: Critical kernel control logic.</li>
+ *   <li>Slots 200-299: Hardware telemetry data.</li>
+ *   <li>Slots 300-399: Input pipeline.</li>
+ * </ul>
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+@AAACertified(
+    date         = "2026-01-05",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment    = 64,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Compile-time pure constants — zero runtime overhead"
+)
 public final class DarkStateLayout {
 
+    /** Utility class — no instances. */
     private DarkStateLayout() {
-    } // Sealed: Pure addressing constants only.
+        throw new AssertionError("DarkStateLayout is a static utility class");
+    }
 
-    // --- [BLOQUE 0-99]: ESTADO DE ACTORES (HOT DATA - Alta Frecuencia) ---
+    // -------------------------------------------------------------------------
+    // Slots 0-99: High-Frequency State Buffer (Actor Coordinates)
+    // -------------------------------------------------------------------------
+
     public static final int PLAYER_X = 0;
     public static final int PLAYER_Y = 4;
     public static final int PLAYER_DIR = 8;
     public static final int PLAYER_SCORE = 12;
 
-    // --- [BLOQUE 100-199]: CONTROL DE KERNEL (CRITICAL) ---
+    // -------------------------------------------------------------------------
+    // Slots 100-199: Kernel Control Registers
+    // -------------------------------------------------------------------------
+
     public static final int SYS_TICK = 400; // Slot 100
-    public static final int SYS_ENGINE_FLAGS = 404; // Slot 101: 0=Running, 1=Alert, 2=Healing
+    // Engine lifecycle states: 0=RUNNING, 1=ALERT, 2=HALTED
+    public static final int SYS_ENGINE_FLAGS = 404; // Slot 101
     public static final int SYS_TARGET_FPS = 408; // Slot 102
-    public static final int SYS_DELTA_TIME = 412; // Slot 103: dt escalado a int
-    public static final int ENTITY_COUNT = 416; // Slot 104: Entidades activas
+    // Fixed execution frame duration (timestep) represented as integer
+    public static final int SYS_FRAME_INTERVAL = 412; // Slot 103 (was DELTA_TIME)
+    public static final int ENTITY_COUNT = 416; // Slot 104
 
-    // --- [BLOQUE 200-299]: TELEMETRÍA DE HARDWARE ---
-    public static final int METRIC_CPU_LOAD = 800; // Slot 200: 0-10000
-    public static final int METRIC_RAM_FREE = 804; // Slot 201: MB
-    public static final int METRIC_RAM_TOTAL = 808; // Slot 202: MB
+    // -------------------------------------------------------------------------
+    // Slots 200-299: Hardware Telemetry Metrics (Scaled 0-10000)
+    // -------------------------------------------------------------------------
 
-    // Alias para compatibilidad con sensores previos
+    public static final int METRIC_CPU_LOAD = 800; // Slot 200
+    public static final int METRIC_RAM_FREE = 808; // Slot 202
+    public static final int METRIC_RAM_TOTAL = 816; // Slot 204
+
+    // Legacy telemetry aliases
     public static final int SYS_CPU_LOAD = METRIC_CPU_LOAD;
     public static final int SYS_MEM_FREE = METRIC_RAM_FREE;
 
-    // --- [BLOQUE 300-399]: INPUT PIPELINE ---
+    // -------------------------------------------------------------------------
+    // Slots 300-399: Input Pipeline (Latched State)
+    // -------------------------------------------------------------------------
+
     public static final int INPUT_MOUSE_X = 1200; // Slot 300
     public static final int INPUT_MOUSE_Y = 1204; // Slot 301
     public static final int INPUT_LAST_SIGNAL = 1208; // Slot 302
 
-    // --- LÍMITES FÍSICOS ---
+    // -------------------------------------------------------------------------
+    // Memory Segment Bounds
+    // -------------------------------------------------------------------------
+
     /**
-     * 1024 slots de 4 bytes = 4096 bytes (4KB).
-     * Tamaño óptimo para una página de memoria o línea de caché L1.
+     * Total allocated memory slots (1024 slots * 4 bytes = 4096 bytes / 4KB).
+     * Defines the maximum boundary for the memory page to prevent cache thrashing.
      */
     public static final int MAX_SLOTS = 1024;
 
-    // --- [BLOQUE EXTENDIDO]: ENTITY LAYOUT (BYTE OFFSETS) ---
 }

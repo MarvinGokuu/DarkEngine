@@ -1,134 +1,67 @@
-# 🌌 DarkEngine — High-Performance Low-Latency Java Simulation Runtime
+# 🌌 DarkEngine — High-Performance Lock-Free Java Runtime
 
-**Subsistema**: Kernel / Core  
-**Tecnología**: Java 25 (Panama, Vector, Loom)  
-**Estado**: Production Ready (Certified AAA+)  
+**Autoridad**: Chief Executive Officer / Kernel Architect  
+**Tecnología Core**: Java 25 (Project Panama, Vector API, Loom)  
+**Estado**: Production Ready (AAA+ Certified)  
 
-> **🚀 NEW:** [Quick Start Guide](docs/QUICK_START.md) - De 0 a Running en 5 minutos.
-
----
-
-## 1. Visión General del Sistema
-Este proyecto implementa un runtime de simulación determinista de alta frecuencia (60Hz) diseñado para maximizar el throughput de instrucciones y minimizar la latencia de memoria en hardware x86_64 moderno.
-
-### Principios de Ingeniería (Mechanical Sympathy)
-*   **Gestión de Memoria**: Uso exclusivo de segmentos off-heap (`java.lang.foreign.MemorySegment`) para evitar interferencia y pausas del Garbage Collector.
-*   **Paralelismo de Datos**: Procesamiento vectorial (SIMD) mediante el módulo incubadora `jdk.incubator.vector`.
-*   **Concurrencia**: Comunicación lock-free entre hilos via Ring Buffers circulares y VarHandles con semántica de barreras de memoria (Acquire/Release fences).
-*   **Afinidad a Núcleos**: Pinning de hilos de lógica crítica a cores dedicados para eludir las latencias del programador del sistema operativo.
+> **🚀 "Un simple mortal les vino a bajar la industria"**  
+> *DarkEngine no es un motor; es la demostración física de que el hardware barato puede entregar latencias extremas si aplicas Mechanical Sympathy absoluta.*
 
 ---
 
-## 2. Métricas de Certificación (Verificado 2026-06-08)
+## 1. VISION Y DOMINIO DEL HARDWARE
 
-| Métrica | Target | Typical | Best | Delta | Unidad |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Atomic Bus Latency** | < 150 | **23.35** | **23.35** | -84.4% | ns |
-| **Event Throughput** | > 10.0 | **185.0** | **185.0** | +1750% | M/s |
-| **SIMD Bandwidth** | > 4.0 | **4.17** | **4.17** | +4.2% | GB/s |
-| **Boot Latency** | < 1.0 | **0.069 (Warm) / 0.151 (Cold)** | **0.069** | -93.1% | ms |
+El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Garbage Collectors, OS Schedulers, Thread Locks). **DarkEngine somete al hardware:**
 
-**Notas de Verificación**:
-*   **Typical**: Rango observado en el test suite completo de 10 pasos (10/10 tests) bajo JVM con GraalVM 25.
-*   **Best**: Latencia mínima registrada tras calentamiento JIT completo (C2 compiler).
-*   **Test Coverage**: 100% verificado vía suites especializadas (ver `test.bat`).
+1.  **Cero Pausas GC**: Todo el estado reside en memoria nativa (Off-Heap) vía **Project Panama**. 
+2.  **Cero Locks**: La concurrencia se logra con colas en anillo (Ring Buffers) usando **VarHandles** atómicos. Latencia de transferencia inter-núcleos: `~23ns`.
+3.  **Ancho de Banda SIMD**: Matemáticas vectorizadas vía `jdk.incubator.vector` (AVX-512) para anchos de banda procesados superiores a `4.17 GB/s`.
+4.  **Anti-False Sharing**: Aislamiento y padding de estructuras críticas a 64 bytes para empatizar perfectamente con las *L1 Cache Lines*.
 
-### 2.1. Características AAA+ Implementadas
-
-*   **Graceful Shutdown**: Parada ordenada cooperativa en 6 etapas deterministas, garantizando un drenaje del 100% de los segmentos de memoria off-heap sin fugas de recursos.
-*   **Baseline Validation (A/B/C)**: Protocolo científico automatizado de snapshot de memoria (Heap/Non-Heap) antes, durante y después del ciclo de vida del motor para comprobar la integridad.
-*   **3-Tier Power Saving**: Escalado dinámico inteligente del consumo de CPU bajo inactividad prolongada (Tier 1: Spin Wait → Tier 2: Sleep 1ms → Tier 3: Hibernation 100ms).
-*   **Deterministic 4-Phase Loop**: Loop síncrono ultra-rápido: *Input Latch* → *Bus Processing* → *Systems Execution* → *State Audit*.
+Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes, lee:
+👉 **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**
 
 ---
 
-## 3. Guía de Inicio Rápido (Bootstrapping)
+## 2. ARQUITECTURA TÉCNICA (MECHANICAL SYMPATHY)
 
-### 3.1. Prerrequisitos de Compilación
-*   **JDK**: Oracle GraalVM 25 / OpenJDK 25 (con módulos incubadora habilitados).
-*   **OS**: Windows 11 / Linux Kernel 6.x (con soporte para Huge Pages recomendado).
+No existe un "sistema orquestador" que ahogue el rendimiento con overhead de gestión. Toda la base de código se rige por el determinismo asíncrono y paralelismo puro.
 
-### 3.2. Secuencia de Ejecución
+### 📚 El Santo Grial Técnico
+Si quieres entender cómo implementamos todo esto usando Java 25, debes estudiar nuestras especificaciones de arquitectura Core. Aquí reside el conocimiento clasificado del motor:
 
-**Para validación y compilación completa:**
-```bash
-# 1. Limpieza y compilación optimizada
-build.bat
+1. **[MECHANICAL SYMPATHY CORE](docs/architecture/MECHANICAL_SYMPATHY_CORE.md)**: Cómo destruir el "False Sharing", alinear estructuras de memoria y operar atómicamente con VarHandles.
+2. **[SYSTEM ARCHITECTURE](docs/architecture/SYSTEM_ARCHITECTURE.md)**: El flujo de ejecución del Kernel y el diseño modular libre de bloqueos.
+3. **[CODE_DEBT_DETAILED_AUDIT](docs/reports/CODE_DEBT_DETAILED_AUDIT.md)**: La auditoría completa y detallada de deuda técnica de código, cuellos de botella de hardware, y plan de escalamiento a Java 26 / Valhalla.
 
-# 2. Ejecutar la suite de pruebas de certificación (10/10 tests)
-test.bat
-```
+---
 
-**Para desarrollo rápido (Hot-run en segundo plano sin consola):**
-```bash
-# Ejecutar binarios compilados usando javaw
-run.bat
-```
+## 3. COMPILACIÓN Y EJECUCIÓN (BOOTSTRAPPING)
 
-> 📖 **Referencia completa**: Ver [docs/BUILD_WORKFLOWS.md](docs/BUILD_WORKFLOWS.md) para configuraciones de compilación adicionales y políticas de Garbage Collection (ZGC).
+### Prerrequisitos de Compilación
+*   **JDK**: Oracle GraalVM 25 / OpenJDK 25 (módulos incubadora habilitados).
+*   **OS**: Windows 11 / Linux Kernel 6.x.
 
-### 3.3. Perfiles de Configuración
-
-#### Production Profile (Default)
-- **Logging**: DISABLED (0ns overhead)
-- **Metrics Sampling**: 0.1% (5ns overhead)
-- **Validation**: DISABLED (0ns overhead)
-- **Target Latency**: < 150ns (Garantizado) ✅
-
-#### Development Profile
-- **Logging**: ENABLED (Nivel debug volcado asíncronamente a `darkengine.log`)
-- **Metrics Sampling**: 100% (monitoreo de telemetría completa)
-- **Validation**: ENABLED (auditorías y comprobación de límites de memoria activas)
-
-**Archivos de configuración**:
-- `config/darkengine-production.properties`
-- `config/darkengine-development.properties`
-
-### 3.4. Ejecución Manual de Tests Individuales
-
-Puedes ejecutar cualquiera de las pruebas críticas de la suite de forma manual desde el classpath:
+### Operación Básica
+Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para comandar el runtime:
 
 ```bash
-# Benchmark de rendimiento del bus lock-free
-java -cp bin sv.dark.bus.BusBenchmarkTest
+# 1. Compilación brutal y enlazado
+.\build.bat
 
-# Validación de Graceful Shutdown (Detección de fugas con snapshots de Heap)
-java -cp bin sv.dark.test.GracefulShutdownTest
+# 2. Verificación de todas las pruebas AAA+ y benchmarks
+.\scripts\test.bat
 
-# Validación de escalado de Power Saving
-java -cp bin sv.dark.test.PowerSavingTest
+# 3. Limpiar binarios y liberar memoria de procesos "zombies"
+.\clean.bat
+
+# 4. Lanzar el motor en segundo plano de manera autónoma
+.\run.bat
 ```
 
----
-
-## 4. Mapa de Documentación Técnica
-
-### Inicio Rápido y Desarrollo
-*   **[Quick Start Guide](docs/QUICK_START.md)** - De 0 a ejecución en 5 minutos.
-*   [Guía de Desarrollo](docs/DEVELOPMENT_GUIDE.md) - Estructura de código y flujo de trabajo diario.
-*   [Resumen Ejecutivo](docs/README_DOCS.md) - Índice de subsistemas y tecnologías del motor.
-
-### Estándares y Especificaciones
-*   [Estándar de Documentación v2.0](docs/standards/ESTANDAR_DOCUMENTACION.md)
-*   [Certificación de Aceleración Vectorial](docs/standards/ACCELERATOR_CERTIFICATION.md)
-*   [Estándares de Codificación AAA](docs/standards/AAA_CODING_STANDARDS.md)
-
-### Arquitectura de Sistemas
-*   [Especificación de la Arquitectura de Kernel](docs/architecture/ARQUITECTURA_DARK_ENGINE.md)
-*   [Especificación del Bus de Eventos](docs/manuals/DOCUMENTACION_BUS.md)
-*   [Glosario Técnico de Runtime](docs/glossary/TECHNICAL_GLOSSARY.md)
-
-### Guías de Operación y Procesos
-*   [Protocolo de Inicialización de Documentación](docs/DOCUMENTATION_BOOTSTRAP_PROTOCOL.md)
-*   [Protocolo de Commits y Versionado](docs/manuals/GUIA_COMMITS.md)
+> ⚠️ **Nota de Arquitecto**: Al modificar código, respeta los estándares AAA+. Nunca inyectes clases `new String()` ni reservas de Heap en el hot-path del motor. Todo se ejecuta `Off-Heap`.
 
 ---
 
-## 5. Reporte de Estado
-
-**Versión del Runtime**: v2.2.0  
-**Última Validación**: 2026-06-08  
-**Licencia**: [Apache License 2.0](LICENSE)  
-**Autoridad**: System Architect / MarvinDev (Dark Engine Architecture)  
-
-> ⚠️ **Nota Técnica**: Este runtime requiere acceso nativo y la habilitación explícita del módulo `jdk.incubator.vector` en los parámetros de la JVM. No hacerlo causará excepciones de tipo `NoClassDefFoundError` o `IllegalAccessError`.
+**Licencia**: [GNU Lesser General Public License v3.0](LICENSE)  
+**Versión**: v3.0 (Pure Mechanical Sympathy Edition)

@@ -1,85 +1,82 @@
 // Reading Order: 00010011
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core;
 
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Orquestación de Dominios Espaciales (Grid Management).
- * DEPENDENCIAS: SpaceMath, DarkSector, SectorMap
- * MÉTRICAS: O(1) Lookup, Zero-Allocation, Bit-Packed Keys
+ * Spatial Domain Orchestration (Grid Management).
  * 
- * Administra la rejilla espacial y la transferencia de entidades entre
- * sectores.
- * Utiliza llaves espaciales de 64 bits para direccionamiento rápido.
+ * <p>Manages the spatial grid and the transfer of entities between sectors.
+ * Uses 64-bit spatial keys for fast addressing.
  * 
- * @author Marvin-Dev
- * @version 1.2 (AAA+ Certified Zero-Alloc)
- * @since 2026-01-08
+ * @author Marvin Alexander Flores Canales
+ * @since 1.2
  */
 @AAACertified(date = "2026-01-10", maxLatencyNs = 50, minThroughput = 1_000_000, alignment = 0, lockFree = true, offHeap = false, notes = "Spatial Grid Orchestration (Zero-Allocation Lookups)")
 public final class DarkSectorManager {
 
-    // [ARQUITECTURA DE DATOS]:
-    // Reemplazo de ConcurrentHashMap por SectorMap (Long2Object).
-    // Eliminado el Boxing de Long.
-    // Zero-Allocation garantizado en operaciones de actualización de ubicación.
+    // [DATA ARCHITECTURE]:
+    // Replacement of ConcurrentHashMap with SectorMap (Long2Object).
+    // Removed Long Boxing.
+    // Zero-Allocation guaranteed in location update operations.
     private final SectorMap<DarkSector> sectores = new SectorMap<>(1024);
 
     /**
-     * Reubica la entidad utilizando su firma de sector actual para evitar búsquedas
-     * globales.
+     * Relocates the entity using its current sector signature to avoid global searches.
      * 
-     * [MECHANICAL SYMPATHY]: Uso de bit-shifting para mapear coordenadas a celdas
-     * de rejilla mediante SpaceMath.
+     * <p>[MECHANICAL SYMPATHY]: Bit-shifting used to map coordinates to grid cells
+     * via SpaceMath.
      * 
-     * @param entityId ID único de la entidad
-     * @param x        Coordenada X del mundo
-     * @param y        Coordenada Y del mundo
-     * @param frame    Frame de estado actual (Snapshot)
+     * @param entityId Unique entity ID.
+     * @param x        World X coordinate.
+     * @param y        World Y coordinate.
+     * @param frame    Current state frame (Snapshot).
      */
     public void updateLocation(long entityId, float x, float y, WorldStateFrame frame) {
         // [OPTIMIZATION]: Delegated to SpaceMath
         int sx = SpaceMath.getSectorIndex(x);
         int sy = SpaceMath.getSectorIndex(y);
 
-        // Empaquetado de coordenadas 2D en una sola llave de 64 bits.
+        // Pack 2D coordinates into a single 64-bit key.
         long newKey = SpaceMath.packKey2D(sx, sy);
 
-        // Obtenemos el sector donde residía la entidad desde el WorldState.
+        // Get the sector where the entity resided from the WorldState.
         long oldKey = frame.readLong(entityId + EntityLayout.SECTOR_ID_OFFSET);
 
         if (newKey != oldKey) {
             transferEntity(entityId, oldKey, newKey);
-            // Persistencia del nuevo dominio espacial de la entidad.
+            // Persist the entity's new spatial domain.
             frame.writeLong(entityId + EntityLayout.SECTOR_ID_OFFSET, newKey);
         }
     }
 
     /**
-     * Transfiere una entidad de un sector a otro de forma atómica.
+     * Atomically transfers an entity from one sector to another.
      * 
-     * OPTIMIZACIÓN AAA+:
-     * - Uso de primtivas long en SectorMap.
-     * - Sin boxing, sin lambdas, sin iterators basura.
+     * <p>AAA+ OPTIMIZATION:
+     * <ul>
+     *   <li>Use of primitive longs in SectorMap.</li>
+     *   <li>No boxing, no lambdas, no garbage iterators.</li>
+     * </ul>
      */
     private void transferEntity(long entityId, long fromKey, long toKey) {
-        // 1. Salir del sector antiguo (Safe Null Check)
+        // 1. Leave the old sector (Safe Null Check)
         DarkSector oldSector = sectores.get(fromKey); // Zero-Alloc get
         if (oldSector != null) {
             oldSector.unregisterEntity();
         }
 
-        // 2. Entrar al sector nuevo
+        // 2. Enter the new sector
         DarkSector newSector = sectores.get(toKey); // Zero-Alloc get
 
         // Lazy Initialization
         if (newSector == null) {
-            // Nota: Se pasa null como MemorySegment temporalmente.
-            // El mapeo de memoria real se realiza en la fase de Boot del SectorMemoryVault.
+            // Note: null is passed as MemorySegment temporarily.
+            // Actual memory mapping is done in the Boot phase of SectorMemoryVault.
             DarkSector freshSector = new DarkSector(toKey, null, 1024);
-            // putIfAbsent retorna el valor existente (si hubo race condition) o null (si
-            // ganó)
+            // putIfAbsent returns the existing value (if race condition) or null (if won)
             DarkSector existing = sectores.putIfAbsent(toKey, freshSector);
             newSector = (existing != null) ? existing : freshSector;
         }

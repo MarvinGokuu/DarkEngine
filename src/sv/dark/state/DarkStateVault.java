@@ -1,76 +1,92 @@
-// Reading Order: 00000011
+// Reading Order: 00001010
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.state;
 
+// JDK — Panama FFI
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+
+// DarkEngine — core
 import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Almacenamiento Off-Heap - Long-term memory neuron
- * DEPENDENCIAS: Java Panama (Foreign Memory API)
- * MÉTRICAS: Latencia <150ns, Capacidad ilimitada (solo RAM física)
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-06
+ * RESPONSIBILITY: Off-heap storage vault for long-term AI state persistence and critical telemetry.
+ * WHY: JVM Garbage Collector pauses ruin E-Sports determinism. Creating an off-heap vault completely evades the GC.
+ * TECHNIQUE: Wraps a native MemorySegment via FFI (Project Panama) to provide O(1) direct memory access without Java object allocation overhead. Hardware layout is contiguous and aligned to 64-byte boundaries.
+ * GUARANTEES: 0 allocations. Contiguous hardware layout maximizing L1/L2 cache utilization. Prevention of False Sharing across CPU cache lines.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-@AAACertified(date = "2026-01-06", maxLatencyNs = 150, alignment = 64, lockFree = false, offHeap = true, notes = "Long-term memory neuron - Off-heap storage for AI state persistence")
+@AAACertified(
+    date         = "2026-01-06",
+    maxLatencyNs = 150,
+    minThroughput = 0,
+    alignment    = 64,
+    lockFree     = false,
+    offHeap      = true,
+    notes        = "Long-term memory neuron — Off-heap storage for AI state persistence"
+)
 public final class DarkStateVault {
 
     private final MemorySegment storage;
-    private static final long ALIGNMENT = 64L; // Alineación para evitar False Sharing
+    
+    // Aligns allocations to 64-byte boundaries to prevent false sharing 
+    // across CPU cache lines.
+    private static final long ALIGNMENT = 64L; 
 
     /**
-     * @param arena    El ciclo de vida de la memoria (Shared o Confined).
-     * @param maxSlots Cantidad de registros definidos en DarkStateLayout.
+     * Initializes the off-heap vault with the specified capacity.
+     *
+     * @param arena    Memory lifecycle scope (Shared or Confined).
+     * @param maxSlots Number of slots defined by the state layout.
      */
     public DarkStateVault(Arena arena, int maxSlots) {
-        // Reserva memoria nativa alineada.
-        // [INGENIERÍA]: El layout de memoria es contiguo y predecible para el hardware.
+        // Native memory allocation ensures contiguous hardware layout 
+        // avoiding JVM heap fragmentation.
         this.storage = arena.allocate(
                 ValueLayout.JAVA_INT.byteSize() * maxSlots,
                 ALIGNMENT);
     }
 
     /**
-     * Acceso O(1) puro. Sin parsing, sin hashing.
+     * Injects an integer scalar directly into native memory.
      * 
-     * @param slotIndex Índice obtenido de DarkStateLayout.
-     * @param value     Valor escalar a inyectar.
+     * <p>Pure O(1) access. No parsing, no hashing.
+     * 
+     * @param slotIndex Index from the DarkStateLayout map.
+     * @param value     The scalar value to write.
      */
     public void write(int slotIndex, int value) {
         storage.setAtIndex(ValueLayout.JAVA_INT, (long) slotIndex, value);
     }
 
+    /**
+     * Reads an integer scalar directly from native memory.
+     * 
+     * @param slotIndex Index from the DarkStateLayout map.
+     * @return The read scalar value.
+     */
     public int read(int slotIndex) {
         return storage.getAtIndex(ValueLayout.JAVA_INT, (long) slotIndex);
     }
 
     /**
-     * Lee un long (8 bytes) desde la posición especificada.
+     * Reads a 64-bit long scalar from the specified slot.
      * 
-     * PORQUÉ:
-     * - Telemetría de alta precisión requiere valores de 64 bits
-     * - Un long ocupa 2 slots de int (8 bytes = 2 × 4 bytes)
-     * - Validación condicional previene errores en development
+     * <p>Requires even indices (0, 2, 4...) to maintain 8-byte alignment 
+     * within the 4-byte slot layout. Validation is elided in production by 
+     * the JIT compiler to ensure 0ns overhead.
      * 
-     * TÉCNICA:
-     * - slotIndex debe ser par (0, 2, 4, 6, ...) para alineación correcta
-     * - Conversión: slotIndex → byte offset (slotIndex × 4 bytes)
-     * - Validación solo en development (0ns overhead en production)
-     * 
-     * GARANTÍA:
-     * - Production: 0ns overhead (validación eliminada por JIT)
-     * - Development: Fail-fast si slotIndex es impar
-     * - Latencia: ~50-150ns (acceso directo a memoria nativa)
-     * 
-     * @param slotIndex Índice del slot (debe ser par: 0, 2, 4, 6, ...)
-     * @return Valor long leído (8 bytes)
+     * @param slotIndex The starting slot index (must be an even number).
+     * @return The 64-bit value read.
+     * @throws IllegalArgumentException if validation is enabled and the index is odd.
      */
     public long readLong(int slotIndex) {
-        // Validación condicional (solo en development profile)
+        // Fail-fast boundary validation (development profile only)
         if (sv.dark.config.DarkEngineConfig.VALIDATION_ENABLED) {
             if (slotIndex % 2 != 0) {
                 throw new IllegalArgumentException(
@@ -80,34 +96,23 @@ public final class DarkStateVault {
             }
         }
 
-        // Convertir slotIndex (índice de int) a byte offset
+        // Translate the integer slot index to a byte offset
         long byteOffset = (long) slotIndex * ValueLayout.JAVA_INT.byteSize();
         return storage.get(ValueLayout.JAVA_LONG, byteOffset);
     }
 
     /**
-     * Escribe un long (8 bytes) en la posición especificada.
+     * Writes a 64-bit long scalar to the specified slot.
      * 
-     * PORQUÉ:
-     * - API simétrica: readLong() ↔ writeLong()
-     * - Evita tener que escribir 2 ints separados
-     * - Validación condicional previene errores en development
+     * <p>Provides a symmetric API to {@link #readLong(int)}. Requires even 
+     * indices (0, 2, 4...) to maintain 8-byte alignment.
      * 
-     * TÉCNICA:
-     * - slotIndex debe ser par (0, 2, 4, 6, ...) para alineación correcta
-     * - Conversión: slotIndex → byte offset (slotIndex × 4 bytes)
-     * - Validación solo en development (0ns overhead en production)
-     * 
-     * GARANTÍA:
-     * - Production: 0ns overhead (validación eliminada por JIT)
-     * - Development: Fail-fast si slotIndex es impar
-     * - Latencia: ~50-150ns (acceso directo a memoria nativa)
-     * 
-     * @param slotIndex Índice del slot (debe ser par: 0, 2, 4, 6, ...)
-     * @param value     Valor long a escribir (8 bytes)
+     * @param slotIndex The starting slot index (must be an even number).
+     * @param value     The 64-bit value to write.
+     * @throws IllegalArgumentException if validation is enabled and the index is odd.
      */
     public void writeLong(int slotIndex, long value) {
-        // Validación condicional (solo en development profile)
+        // Fail-fast boundary validation (development profile only)
         if (sv.dark.config.DarkEngineConfig.VALIDATION_ENABLED) {
             if (slotIndex % 2 != 0) {
                 throw new IllegalArgumentException(
@@ -117,29 +122,38 @@ public final class DarkStateVault {
             }
         }
 
-        // Convertir slotIndex (índice de int) a byte offset
+        // Translate the integer slot index to a byte offset
         long byteOffset = (long) slotIndex * ValueLayout.JAVA_INT.byteSize();
         storage.set(ValueLayout.JAVA_LONG, byteOffset, value);
     }
 
     /**
-     * Snapshot instantáneo para el sistema de Rollback o Telemetría Externa.
-     * [MECHANICAL SYMPATHY]: Copia por bloque a nivel de hardware.
+     * Captures an instantaneous snapshot for the Rollback or Telemetry systems.
+     * 
+     * <p>Utilizes hardware-level block copying for maximum throughput.
+     * 
+     * @param destination The memory segment to copy the state into.
      */
     public void snapshotTo(MemorySegment destination) {
         destination.copyFrom(storage);
     }
 
+    /**
+     * Retrieves the raw underlying memory segment.
+     * 
+     * @return The native memory segment.
+     */
     public MemorySegment getRawSegment() {
         return this.storage;
     }
 
     /**
-     * Cierra el vault (no-op, el Arena es propiedad del caller).
-     * Mantenido por interfaz AutoCloseable.
+     * Disconnects the vault logic (no-op).
+     * 
+     * <p>The provided Arena's lifecycle is managed by the caller 
+     * (e.g., EngineKernel), so it is not closed here.
      */
     public void close() {
-        // No cerramos el Arena aquí porque se inyecta en el constructor.
-        // El ownership del Arena pertenece al EngineKernel (o test).
+        // Explicitly ignoring close. Arena ownership belongs to the injector.
     }
 }
