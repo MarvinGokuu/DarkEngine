@@ -1,6 +1,11 @@
-// Reading Order: 00001011
+// Reading Order: 00001010
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
+
+import sv.dark.core.DarkLogger;
 import sv.dark.core.AAACertified; // 00000100 // AAA+ Check
 import sv.dark.core.systems.GameSystem;
 import sv.dark.core.systems.DarkRenderSystem;
@@ -8,36 +13,41 @@ import sv.dark.state.WorldStateFrame;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Registro y Orquestación de Sistemas (Logic & Render).
- * DEPENDENCIAS: GameSystem, DarkRenderSystem
- * MÉTRICAS: O(N) Execution, Zero-GC en Runtime
+ * RESPONSIBILITY: System Registry and Orchestration.
+ * WHY: We need a centralized registry to manage the lifecycle and ordered execution of all game logic and rendering systems.
+ * TECHNIQUE: Implements the Registry + Strategy pattern. Defaults to sequential safe execution, but supports parallel execution via the ParallelSystemExecutor.
+ * GUARANTEES: Deterministic order execution. O(N) Execution. Zero-GC allocations at Runtime.
  * 
- * Implementa el patrón Registry + Strategy para gestionar el ciclo de vida
- * y la ejecución ordenada de todos los sistemas del motor.
+ * <p>Dependencies: GameSystem, DarkRenderSystem
+ * <p>Metrics: O(N) Execution, Zero-GC at Runtime
  * 
- * @author Marvin-Dev
+ * @author Marvin Alexander Flores Canales
  * @version 1.0
  * @since 2026-01-05
  */
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - SYSTEM REGISTRY
-// ═══════════════════════════════════════════════════════════════════════════════
-// PORQUÉ: Orquesta la ejecución determinista de la lógica del juego.
-// TÉCNICA: Iteración directa sobre listas pre-asignadas (ArrayList).
-// GARANTÍA: Orden de ejecución garantizado e inmutable durante el frame.
-@AAACertified(date = "2026-01-10", maxLatencyNs = 1000, minThroughput = 60, alignment = 0, lockFree = false, offHeap = false, notes = "Deterministic execution orchestrator (Sequential/Parallel)")
+@AAACertified(
+    date = "2026-01-10",
+    maxLatencyNs = 1000,
+    minThroughput = 60,
+    alignment = 0,
+    lockFree = false,
+    offHeap = false,
+    notes = "Deterministic execution orchestrator (Sequential/Parallel)"
+)
 public final class SystemRegistry {
 
-    // Sistemas de lógica de juego (ejecutan en el loop principal)
+    // Game logic systems (execute in the main loop)
     private final List<GameSystem> gameSystems;
+    private GameSystem[] gameSystemsArray = new GameSystem[0];
 
-    // Sistemas de renderizado (ejecutan en thread de render)
+    // Render systems (execute in the render thread)
     private final List<DarkRenderSystem> renderSystems;
+    private DarkRenderSystem[] renderSystemsArray = new DarkRenderSystem[0];
 
-    // Métricas de performance
+    // Performance metrics
     private long lastExecutionTimeNs;
 
     // [NEURONA_048 STEP 4] Parallel Execution Infrastructure
@@ -47,13 +57,13 @@ public final class SystemRegistry {
 
     public SystemRegistry() {
         // [FIX AUDIT]: Pre-size collections to avoid reallocation
-        // PORQUÉ: ArrayList crece dinámicamente (1.5x), causando copias y GC
-        // TÉCNICA: Initial capacity = expected max systems
-        // GARANTÍA: 0 reallocations durante startup, menos GC pressure
+        // WHY: ArrayList grows dynamically (1.5x), causing copies and GC
+        // TECHNIQUE: Initial capacity = expected max systems
+        // GUARANTEE: 0 reallocations during startup, less GC pressure
         //
-        // Capacidades típicas:
-        // - gameSystems: 16 (suficiente para juegos pequeños/medianos)
-        // - renderSystems: 8 (típicamente menos sistemas de render)
+        // Typical capacities:
+        // - gameSystems: 16 (enough for small/medium games)
+        // - renderSystems: 8 (typically fewer render systems)
         this.gameSystems = new ArrayList<>(16);
         this.renderSystems = new ArrayList<>(8);
         this.lastExecutionTimeNs = 0;
@@ -62,62 +72,62 @@ public final class SystemRegistry {
     }
 
     /**
-     * Registra un sistema de lógica de juego.
+     * Registers a game logic system.
      * 
-     * ORDEN: Los sistemas se ejecutan en el orden en que se registran.
-     * DETERMINISMO: El orden debe ser consistente entre ejecuciones.
+     * ORDER: Systems are executed in the order they are registered.
+     * DETERMINISM: Order must be consistent across executions.
      * 
-     * @param system Sistema a registrar
+     * @param system The system to register.
      */
     public void registerGameSystem(GameSystem system) {
-        if (system == null) {
-            throw new IllegalArgumentException("System cannot be null");
-        }
+        Objects.requireNonNull(system, "System cannot be null");
         gameSystems.add(system);
-        System.out.println("[REGISTRY] Registered game system: " + system.getName());
+        gameSystemsArray = gameSystems.toArray(new GameSystem[0]);
+        DarkLogger.info("REGISTRY", "Registered game system: " + system.getName());
     }
 
     /**
-     * Registra un sistema de renderizado.
+     * Registers a rendering system.
      * 
-     * @param system Sistema de render a registrar
+     * @param system The rendering system to register.
      */
     public void registerRenderSystem(DarkRenderSystem system) {
-        if (system == null) {
-            throw new IllegalArgumentException("System cannot be null");
-        }
+        Objects.requireNonNull(system, "System cannot be null");
         renderSystems.add(system);
-        System.out.println("[REGISTRY] Registered render system: " + system.getName());
+        renderSystemsArray = renderSystems.toArray(new DarkRenderSystem[0]);
+        DarkLogger.info("REGISTRY", "Registered render system: " + system.getName());
     }
 
     /**
-     * Ejecuta todos los sistemas de lógica de juego.
+     * Executes all game logic systems.
      * 
-     * FASE 3 DEL LOOP: Systems Execution
+     * LOOP PHASE 3: Systems Execution
      * 
-     * GARANTÍAS:
-     * - Orden determinista (mismo orden siempre)
-     * - Mismo WorldStateFrame para todos
-     * - Mismo deltaTime para todos
+     * GUARANTEES:
+     * - Deterministic order (always the same order)
+     * - Same WorldStateFrame for all systems
+     * - Same deltaTime for all systems
      * 
-     * @param state     Estado del mundo (SSOT)
-     * @param deltaTime Tiempo transcurrido en segundos
+     * @param state     World state (SSOT)
+     * @param deltaTime Elapsed time in seconds
      */
     public void executeGameSystems(WorldStateFrame state, double deltaTime) {
         long startTime = System.nanoTime();
 
-        // [NEURONA_048 STEP 4] Usar executor paralelo si está habilitado
+        // [NEURONA_048 STEP 4] Use parallel executor if enabled
         if (parallelMode && parallelExecutor != null) {
             parallelExecutor.execute(state, deltaTime);
             lastExecutionTimeNs = parallelExecutor.getLastExecutionTimeNs();
         } else {
-            // Fallback: Ejecución secuencial (modo seguro)
-            for (GameSystem system : gameSystems) {
+            // Fallback: Sequential execution (safe mode)
+            GameSystem[] systems = this.gameSystemsArray;
+            int len = systems.length;
+            for (int i = 0; i < len; i++) {
                 try {
-                    system.update(state, deltaTime);
+                    systems[i].update(state, deltaTime);
                 } catch (Exception e) {
-                    System.err.println("[REGISTRY] Error in system " + system.getName() + ": " + e.getMessage());
-                    e.printStackTrace();
+                    // [MECHANICAL SYMPATHY] Removed I/O block in hot path
+                    // Future: Route to AdminBus telemetry
                 }
             }
 
@@ -127,114 +137,116 @@ public final class SystemRegistry {
     }
 
     /**
-     * Ejecuta todos los sistemas de renderizado.
+     * Executes all rendering systems.
      * 
-     * RENDER PHASE: Después del loop principal
+     * RENDER PHASE: After the main loop
      * 
-     * @param g2d   Contexto gráfico
-     * @param state Estado del mundo (Read-Only)
+     * @param g2d   Graphics context
+     * @param state World state (Read-Only)
      */
     public void executeRenderSystems(Graphics2D g2d, WorldStateFrame state) {
-        for (DarkRenderSystem system : renderSystems) {
+        DarkRenderSystem[] systems = this.renderSystemsArray;
+        int len = systems.length;
+        for (int i = 0; i < len; i++) {
             try {
-                system.render(g2d, state);
+                systems[i].render(g2d, state);
             } catch (Exception e) {
-                System.err.println("[REGISTRY] Error in render system " + system.getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // [MECHANICAL SYMPATHY] Removed I/O block in hot path
+                // Future: Route to AdminBus telemetry
             }
         }
     }
 
     /**
-     * Retorna el tiempo de ejecución de la última llamada a executeGameSystems().
+     * Returns the execution time of the last call to executeGameSystems().
      * 
-     * @return Tiempo en nanosegundos
+     * @return Time in nanoseconds.
      */
     public long getLastExecutionTimeNs() {
         return lastExecutionTimeNs;
     }
 
     /**
-     * Retorna el tiempo de ejecución en milisegundos.
+     * Returns the execution time in milliseconds.
      * 
-     * @return Tiempo en milisegundos
+     * @return Time in milliseconds.
      */
     public double getLastExecutionTimeMs() {
         return lastExecutionTimeNs / 1_000_000.0;
     }
 
     /**
-     * Retorna el número de sistemas de lógica registrados.
+     * Returns the number of registered logic systems.
      * 
-     * @return Cantidad de sistemas
+     * @return Number of systems.
      */
     public int getGameSystemCount() {
         return gameSystems.size();
     }
 
     /**
-     * Retorna el número de sistemas de render registrados.
+     * Returns the number of registered render systems.
      * 
-     * @return Cantidad de sistemas
+     * @return Number of systems.
      */
     public int getRenderSystemCount() {
         return renderSystems.size();
     }
 
     /**
-     * Construye el grafo de dependencias y habilita ejecución paralela.
+     * Builds the dependency graph and enables parallel execution.
      * 
-     * DEBE LLAMARSE DESPUÉS de registrar todos los sistemas.
+     * MUST BE CALLED AFTER registering all systems.
      * 
-     * @throws IllegalStateException si hay dependencias circulares
+     * @throws IllegalStateException if circular dependencies exist.
      */
     public void buildDependencyGraph() {
-        System.out.println("[REGISTRY] Building dependency graph...");
+        DarkLogger.info("REGISTRY", "Building dependency graph...");
 
         dependencyGraph = new SystemDependencyGraph();
 
-        // Agregar todos los sistemas al grafo
+        // Add all systems to the graph
         for (GameSystem system : gameSystems) {
             String[] deps = system.getDependencies();
             dependencyGraph.addSystem(system, deps);
         }
 
-        // Validar y construir capas de ejecución
+        // Validate and build execution layers
         try {
             dependencyGraph.validate();
             dependencyGraph.printGraph();
 
-            // Crear executor paralelo
+            // Create parallel executor
             parallelExecutor = new ParallelSystemExecutor(dependencyGraph.getExecutionLayers());
 
-            System.out.println("[REGISTRY] Dependency graph built successfully");
-            System.out.println("[REGISTRY] Parallel execution ready (" + dependencyGraph.getLayerCount() + " layers)");
+            DarkLogger.info("REGISTRY", "Dependency graph built successfully");
+            DarkLogger.info("REGISTRY", "Parallel execution ready (" + dependencyGraph.getLayerCount() + " layers)");
         } catch (IllegalStateException e) {
-            System.err.println("[REGISTRY] Failed to build dependency graph: " + e.getMessage());
-            System.err.println("[REGISTRY] Falling back to sequential execution");
+            DarkLogger.error("REGISTRY", "Failed to build dependency graph: " + e.getMessage());
+            DarkLogger.error("REGISTRY", "Falling back to sequential execution");
             dependencyGraph = null;
             parallelExecutor = null;
         }
     }
 
     /**
-     * Habilita o deshabilita la ejecución paralela.
+     * Enables or disables parallel execution mode.
      * 
-     * @param enabled true para habilitar, false para deshabilitar
+     * @param enabled true to enable, false to disable.
      */
     public void setParallelMode(boolean enabled) {
         if (enabled && parallelExecutor == null) {
-            System.err.println("[REGISTRY] Cannot enable parallel mode: dependency graph not built");
+            DarkLogger.error("REGISTRY", "Cannot enable parallel mode: dependency graph not built");
             return;
         }
         this.parallelMode = enabled;
-        System.out.println("[REGISTRY] Parallel mode: " + (enabled ? "ENABLED" : "DISABLED"));
+        DarkLogger.info("REGISTRY", "Parallel mode: " + (enabled ? "ENABLED" : "DISABLED"));
     }
 
     /**
-     * Retorna si el modo paralelo está habilitado.
+     * Returns whether parallel mode is enabled.
      * 
-     * @return true si está habilitado
+     * @return true if enabled.
      */
     public boolean isParallelMode() {
         return parallelMode;
@@ -244,6 +256,3 @@ public final class SystemRegistry {
         return parallelExecutor;
     }
 }
-// Creado: 03/01/2026 23:50
-// Autor: MarvinDev
-// Patrón: Registry Pattern + Strategy Pattern

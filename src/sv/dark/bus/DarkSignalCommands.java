@@ -1,210 +1,220 @@
 // Reading Order: 00000010
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.bus;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Dark
- * RESPONSABILIDAD: Catálogo centralizado de comandos del sistema.
- * GARANTÍAS: IDs únicos, organización por dominio, extensibilidad.
- * PROHIBICIONES: Prohibido usar IDs duplicados o fuera del rango del tipo.
- * DOMINIO CRÍTICO: Arquitectura / Comunicación
- * 
- * PATRÓN: Registry Pattern + Constant Pool
- * CONCEPTO: Command Catalog
- * ROL: Event Type Definition
- * 
- * FORMATO DE COMMAND ID (32 bits):
- * [16 bits: Type Base (0xX000)] [16 bits: Specific Command (0x0XXX)]
- * 
- * @author MarvinDev
- * @version 2.0
- * @since 2026-01-04
+ * Centralized system command catalog.
+ *
+ * <p>Defines unique 32-bit IDs for all events, mapped into domains.
+ * Format: [16 bits: Type Base (0xX000)] [16 bits: Specific Command (0x0XXX)].
+ * Designed as a zero-allocation constant pool for the event bus.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 2.0
  */
+@AAACertified(
+    date         = "2026-01-04",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment    = 64,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Constant pool for event bus — zero allocation"
+)
 public final class DarkSignalCommands {
 
+    /** Utility class — no instances. */
     private DarkSignalCommands() {
-        // Sellado: Solo constantes estáticas
+        throw new AssertionError("DarkSignalCommands is a static utility class");
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // ADMIN COMMANDS (HUMAN INTERFACE) - CORE COMMANDS
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Admin Commands (Human Interface / Core Commands)
+    // -------------------------------------------------------------------------
 
-    /** ENCENDIDO (MarvinDevOn) */
+    /** Power On command (MarvinDevOn). */
     public static final int ADMIN_CMD_ON = 0x9001;
 
-    /** APAGADO (MarvinDevoff) */
+    /** Power Off command (MarvinDevoff). */
     public static final int ADMIN_CMD_OFF = 0x9002;
 
-    /** INSTALADOR (MarvinDevinstaller) */
+    /** Installer trigger (MarvinDevinstaller). */
     public static final int ADMIN_CMD_INSTALLER = 0x9003;
 
-    /** RECUPERACIÓN (MarvinDevsv) */
+    /** Recovery mode trigger (MarvinDevsv). */
     public static final int ADMIN_CMD_RECOVERY = 0x9004;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // INPUT COMMANDS (0x1000 - 0x1FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Input Commands (0x1000 - 0x1FFF)
+    // -------------------------------------------------------------------------
 
-    /** Tecla Maestra ENCENDIDO (1) */
-    public static final int INPUT_KEY_MASTER_ON = 0x31; // ASCII '1'
+    /** Master Key ON (ASCII '1'). */
+    public static final int INPUT_KEY_MASTER_ON = 0x31; 
 
-    /** Tecla Maestra APAGADO (0) */
-    public static final int INPUT_KEY_MASTER_OFF = 0x30; // ASCII '0'
+    /** Master Key OFF (ASCII '0'). */
+    public static final int INPUT_KEY_MASTER_OFF = 0x30;
 
-    /** Tecla presionada (payload: keyCode) */
+    /** Key pressed event (payload: keyCode). */
     public static final int INPUT_KEY_DOWN = 0x1001;
 
-    /** Tecla liberada (payload: keyCode) */
+    /** Key released event (payload: keyCode). */
     public static final int INPUT_KEY_UP = 0x1002;
 
-    /** Mouse movido (payload: packed X,Y) */
+    /** Mouse movement event (payload: packed X,Y). */
     public static final int INPUT_MOUSE_MOVE = 0x1003;
 
-    /** Click del mouse (payload: button ID) */
+    /** Mouse click event (payload: button ID). */
     public static final int INPUT_MOUSE_CLICK = 0x1004;
 
-    /** Gamepad botón presionado (payload: button ID) */
+    /** Gamepad button pressed (payload: button ID). */
     public static final int INPUT_GAMEPAD_BUTTON = 0x1005;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // NETWORK COMMANDS (0x2000 - 0x2FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Network Commands (0x2000 - 0x2FFF)
+    // -------------------------------------------------------------------------
 
-    /** Sincronizar estado de entidad (payload: entity ID) */
+    /** Synchronize entity state (payload: entity ID). */
     public static final int NET_SYNC_ENTITY = 0x2001;
 
-    /** Paquete recibido (payload: packet ID) */
+    /** Packet received event (payload: packet ID). */
     public static final int NET_PACKET_RECEIVED = 0x2002;
 
-    /** Conexión establecida (payload: client ID) */
+    /** Connection established event (payload: client ID). */
     public static final int NET_CONNECTION_ESTABLISHED = 0x2003;
 
-    /** Conexión perdida (payload: client ID) */
+    /** Connection lost event (payload: client ID). */
     public static final int NET_CONNECTION_LOST = 0x2004;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SYSTEM COMMANDS (0x3000 - 0x3FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // System Commands (0x3000 - 0x3FFF)
+    // -------------------------------------------------------------------------
 
-    /** Spawn de entidad (payload: entity type) */
+    /** Spawn entity request (payload: entity type). */
     public static final int SYS_ENTITY_SPAWN = 0x3001;
 
-    /** Destruir entidad (payload: entity ID) */
+    /** Destroy entity request (payload: entity ID). */
     public static final int SYS_ENTITY_DESTROY = 0x3002;
 
-    /** Mover entidad (payload: entity ID) */
+    /** Move entity request (payload: entity ID). */
     public static final int SYS_ENTITY_MOVE = 0x3003;
 
-    /** Pausar motor (payload: 0) */
+    /** Pause engine execution (payload: 0). */
     public static final int SYS_ENGINE_PAUSE = 0x3100;
 
-    /** Reanudar motor (payload: 0) */
+    /** Resume engine execution (payload: 0). */
     public static final int SYS_ENGINE_RESUME = 0x3101;
 
-    /** Shutdown del motor (payload: exit code) */
+    /** Engine shutdown request (payload: exit code). */
     public static final int SYS_ENGINE_SHUTDOWN = 0x3102;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // AUDIO COMMANDS (0x4000 - 0x4FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    /** Rollback engine state (payload: 0). */
+    public static final int SYS_ENGINE_ROLLBACK = 0x3103;
 
-    /** Reproducir sonido (payload: sound ID) */
+    // -------------------------------------------------------------------------
+    // Audio Commands (0x4000 - 0x4FFF)
+    // -------------------------------------------------------------------------
+
+    /** Play sound request (payload: sound ID). */
     public static final int AUDIO_PLAY_SOUND = 0x4001;
 
-    /** Detener sonido (payload: sound ID) */
+    /** Stop sound request (payload: sound ID). */
     public static final int AUDIO_STOP_SOUND = 0x4002;
 
-    /** Cambiar volumen (payload: volume 0-100) */
+    /** Adjust global volume (payload: volume 0-100). */
     public static final int AUDIO_SET_VOLUME = 0x4003;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // PHYSICS COMMANDS (0x5000 - 0x5FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Physics Commands (0x5000 - 0x5FFF)
+    // -------------------------------------------------------------------------
 
-    /** Aplicar fuerza (payload: entity ID) */
+    /** Apply physical force (payload: entity ID). */
     public static final int PHYSICS_APPLY_FORCE = 0x5001;
 
-    /** Colisión detectada (payload: entity ID) */
+    /** Collision detected event (payload: entity ID). */
     public static final int PHYSICS_COLLISION = 0x5002;
 
-    /** Cambiar gravedad (payload: gravity value) */
+    /** Set global gravity scale (payload: gravity value). */
     public static final int PHYSICS_SET_GRAVITY = 0x5003;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // RENDER COMMANDS (0x6000 - 0x6FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Render Commands (0x6000 - 0x6FFF)
+    // -------------------------------------------------------------------------
 
-    /** Cambiar shader (payload: shader ID) */
+    /** Change active shader (payload: shader ID). */
     public static final int RENDER_SET_SHADER = 0x6001;
 
-    /** Actualizar textura (payload: texture ID) */
+    /** Update texture mapping (payload: texture ID). */
     public static final int RENDER_UPDATE_TEXTURE = 0x6002;
 
-    /** Cambiar cámara (payload: camera ID) */
+    /** Change active camera (payload: camera ID). */
     public static final int RENDER_SET_CAMERA = 0x6003;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // SPATIAL COMMANDS (0x7000 - 0x7FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Spatial Commands (0x7000 - 0x7FFF)
+    // -------------------------------------------------------------------------
 
-    /** Actualización orbital recibida (payload: orbit ID) */
+    /** Orbital update received (payload: orbit ID). */
     public static final int SPATIAL_ORBITAL_UPDATE = 0x7001;
 
-    /** Telemetría recibida desde satélite (payload: telemetry ID) */
+    /** Telemetry received from satellite (payload: telemetry ID). */
     public static final int SPATIAL_TELEMETRY_RECEIVED = 0x7002;
 
-    /** Sincronización con satélite (payload: satellite ID) */
+    /** Synchronize with satellite clock/state (payload: satellite ID). */
     public static final int SPATIAL_SATELLITE_SYNC = 0x7003;
 
-    /** Calcular diferencial orbital (payload: orbit pair ID) */
+    /** Compute orbital differential (payload: orbit pair ID). */
     public static final int SPATIAL_COMPUTE_DIFFERENTIAL = 0x7010;
 
-    /** Escalar flujo de datos (payload: percentage) */
+    /** Scale data flow throughput (payload: percentage). */
     public static final int SPATIAL_SCALE_FLOW = 0x7011;
 
-    /** Alinear datos a página (payload: alignment type) */
+    /** Align data to hardware page boundary (payload: alignment type). */
     public static final int SPATIAL_ALIGN_PAGE = 0x7012;
 
-    /** Inyección desde edge computing (payload: buffer ID) */
+    /** Data injection from edge computing nodes (payload: buffer ID). */
     public static final int SPATIAL_EDGE_INJECT = 0x7020;
 
-    /** Activar modo zero-copy (payload: 0=off, 1=on) */
+    /** Toggle zero-copy memory mode (payload: 0=off, 1=on). */
     public static final int SPATIAL_ZERO_COPY_MODE = 0x7021;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // MEMORY COMMANDS (0x8000 - 0x8FFF)
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Memory Commands (0x8000 - 0x8FFF)
+    // -------------------------------------------------------------------------
 
-    /** Asignar memoria off-heap (payload: size in bytes) */
+    /** Allocate off-heap memory region (payload: size in bytes). */
     public static final int MEMORY_ALLOC_OFFHEAP = 0x8001;
 
-    /** Liberar memoria off-heap (payload: pointer ID) */
+    /** Free allocated off-heap memory (payload: pointer ID). */
     public static final int MEMORY_FREE_OFFHEAP = 0x8002;
 
-    /** Mapear segmento de memoria (payload: segment ID) */
+    /** Map a specific memory segment (payload: segment ID). */
     public static final int MEMORY_MAP_SEGMENT = 0x8003;
 
-    /** Alinear a página de 4KB (payload: pointer ID) */
+    /** Align memory to 4KB page boundary (payload: pointer ID). */
     public static final int MEMORY_ALIGN_PAGE_4KB = 0x8010;
 
-    /** Alinear a página de 2MB (payload: pointer ID) */
+    /** Align memory to 2MB huge-page boundary (payload: pointer ID). */
     public static final int MEMORY_ALIGN_PAGE_2MB = 0x8011;
 
-    /** Habilitar prefetch (payload: buffer ID) */
+    /** Enable hardware prefetching for buffer (payload: buffer ID). */
     public static final int MEMORY_PREFETCH_ENABLE = 0x8020;
 
-    /** Deshabilitar prefetch (payload: buffer ID) */
+    /** Disable hardware prefetching for buffer (payload: buffer ID). */
     public static final int MEMORY_PREFETCH_DISABLE = 0x8021;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // UTILIDADES
-    // ═══════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Utilities
+    // -------------------------------------------------------------------------
 
     /**
-     * Retorna el nombre legible de un comando.
+     * Translates a command ID into a human-readable string for debugging.
      * 
-     * @param commandId ID del comando
-     * @return Nombre del comando o "UNKNOWN"
+     * @param commandId The 32-bit command identifier.
+     * @return The string representation of the command, or "UNKNOWN_COMMAND" if not found.
      */
     public static String getCommandName(int commandId) {
         switch (commandId) {
@@ -243,6 +253,8 @@ public final class DarkSignalCommands {
                 return "SYS_ENGINE_RESUME";
             case SYS_ENGINE_SHUTDOWN:
                 return "SYS_ENGINE_SHUTDOWN";
+            case SYS_ENGINE_ROLLBACK:
+                return "SYS_ENGINE_ROLLBACK";
 
             // Audio
             case AUDIO_PLAY_SOUND:

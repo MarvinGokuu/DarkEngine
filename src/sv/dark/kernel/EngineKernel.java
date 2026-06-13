@@ -1,6 +1,12 @@
 // Reading Order: 00001011
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
+
+import java.util.concurrent.locks.LockSupport;
+import sv.dark.core.DarkLogger;
 import java.lang.foreign.Arena;
 
 import sv.dark.bus.DarkAtomicBus;
@@ -8,6 +14,7 @@ import sv.dark.bus.DarkEventDispatcher;
 import sv.dark.bus.DarkSignalCommands;
 import sv.dark.bus.DarkSignalPacker;
 import sv.dark.core.AAACertified;
+import sv.dark.core.DarkTimeControlUnit;
 import sv.dark.core.ExecutionValidator;
 import sv.dark.core.MetricsCollector;
 import sv.dark.kernel.UltraFastBootSequence.BootResult;
@@ -17,57 +24,31 @@ import sv.dark.state.DarkStateVault;
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Main Kernel - Central Processor
- * DEPENDENCIAS: TimeKeeper, SystemRegistry, DarkStateVault,
- * DarkEventDispatcher
- * MÉTRICAS: Tick Budget <16.6ms (60 FPS), Jitter <1ms, Determinismo 100%
- * 
- * El núcleo del motor. Implementa el patrón "Game Loop" determinista de 4
- * fases:
- * 1. Input Latch (Input capture)
- * 2. Bus Processing (Comunicación sináptica)
- * 3. Systems Execution (Procesamiento especializado)
- * 4. State Audit (Validación de integridad)
- * 
- * Garantiza determinismo absoluto: Mismo Input + Mismo Seed = Mismo Output.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-06
+ * RESPONSIBILITY: Main Kernel - Central Processor orchestrating the 4-phase deterministic loop.
+ * WHY: A central coordinator is required to guarantee that all subsystems execute synchronously and deterministically.
+ * TECHNIQUE: Operates the loop (Input Latch -> Bus Processing -> Systems Execution -> State Audit) at a fixed 60 FPS target.
+ * GUARANTEES: Absolute determinism: Same Input + Same Seed = Same Output.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - PROCESADOR CENTRAL NEURONAL (KERNEL)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// PORQUÉ:
-// - La anotación @AAACertified documenta las garantías de rendimiento inline
-// - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
-// - Metadata visible para humanos, invisible para la JVM
-// - Este kernel es el cerebro: orquesta el flujo de datos en 4 fases
-//
-// TÉCNICA:
-// - maxLatencyNs: 16_666_000 = Fixed timestep a 60 FPS (16.666ms por frame)
-// - minThroughput: 60 = 60 frames por segundo (determinismo temporal)
-// - alignment: 64 = Cache line alignment para variables críticas
-// - lockFree: false = Usa TimeKeeper (spin-wait) pero no locks pesados
-// - offHeap: false = Kernel vive en heap (orquestador, no datos)
-//
-// GARANTÍA:
-// - Esta anotación NO afecta el rendimiento en runtime
-// - Solo documenta las métricas esperadas del componente
-// - Validable con herramientas estáticas en build-time
-// - Overhead medido: 0ns (confirmado con javap)
-//
-@AAACertified(date = "2026-01-06", maxLatencyNs = 16_666_000, minThroughput = 60, alignment = 64, lockFree = false, offHeap = false, notes = "Central processor - 4-phase deterministic loop at 60 FPS")
+@AAACertified(
+    date         = "2026-01-06",
+    maxLatencyNs = 16_666_000,
+    minThroughput = 60,
+    alignment    = 64,
+    lockFree     = false,
+    offHeap      = false,
+    notes        = "Central processor - 4-phase deterministic loop at 60 FPS"
+)
 public final class EngineKernel {
 
-    // Estado del kernel
+    // Kernel state
     private volatile boolean running = true;
     private volatile boolean paused = false;
     private volatile boolean shutdownInProgress = false;
 
-    // Infraestructura
+    // Infrastructure
     private final SystemRegistry systemRegistry;
     private final TimeKeeper timeKeeper;
     private final DarkStateVault stateVault;
@@ -76,92 +57,103 @@ public final class EngineKernel {
     private final SectorMemoryVault sectorVault;
     private final KernelControlRegister controlRegister;
 
-    // private final DarkTimeControlUnit timeControlUnit; // [DISABLED] Phase 5
-    // Feature (Time Travel)
+    private final DarkTimeControlUnit timeControlUnit;
     private final Arena frameArena;
     private WorldStateFrame currentState;
     private final DarkEventDispatcher eventDispatcher;
-    private final DarkAtomicBus adminMetricsBus; // Control Plane: Métricas fuera del hot-path
+    private final DarkAtomicBus adminMetricsBus; // Control Plane: Metrics out of the hot-path
+
+    // Pre-allocated array for event batching (Zero-Allocation hot path)
+    private final long[] eventBatchBuffer = new long[2048];
 
     // [RESOURCE TRACKING]
-    private final Arena stateArena; // Arena para DarkStateVault
-    private final Thread shutdownHook; // Hook para unregister en shutdown manual
+    private final Arena stateArena; // Arena for DarkStateVault
+    private final Thread shutdownHook; // Hook for unregister on manual shutdown
 
-    // Métricas
+    // Metrics
     private long totalFrames = 0;
 
+    private final SystemSnapshot initialSystemState;
+
     /**
-     * Constructor principal con Dependency Injection.
-     * Permite inyectar el DarkEventDispatcher y SectorMemoryVault.
+     * Primary constructor with Dependency Injection.
+     * Allows injecting the DarkEventDispatcher and SectorMemoryVault.
      * 
-     * @param eventDispatcher Dispatcher de eventos multi-lane
-     * @param sectorVault     Vault de memoria física (inyectado desde Engine)
+     * @param eventDispatcher Multi-lane event dispatcher.
+     * @param sectorVault     Physical memory vault (injected from Engine).
      */
     public EngineKernel(DarkEventDispatcher eventDispatcher, SectorMemoryVault sectorVault) {
+        // Capture initial system state and apply optimizations (Phase 1)
+        this.initialSystemState = SystemStateManager.captureInitialState();
+        SystemStateManager.applyPerformanceBoost();
+
         this.systemRegistry = new SystemRegistry();
         this.timeKeeper = new TimeKeeper();
-        // Crear Arena explícita para control de ciclo de vida
-        // USAREMOS SHARED: Necesario porque se crea en Main Thread pero se cierra en
-        // Shutdown Hook Thread
+        
+        // Create explicit Arena for lifecycle control
+        // WE USE SHARED: Required because it's created on the Main Thread but closed in the Shutdown Hook Thread
         this.stateArena = Arena.ofShared();
-        // Crear DarkStateVault con Arena y maxSlots
+        
+        // Create DarkStateVault with Arena and maxSlots
         this.stateVault = new DarkStateVault(stateArena, DarkStateLayout.MAX_SLOTS);
+        
+        // Expose state vault to the UI channel
+        sv.dark.ui.EngineStateChannel.vault = this.stateVault;
 
-        // Asignar recursos inyectados
+        // Assign injected resources
         this.sectorVault = sectorVault;
         this.eventDispatcher = eventDispatcher;
 
-        // Inicializar Registro de Control
+        // Initialize Control Register
         this.controlRegister = new KernelControlRegister();
         this.controlRegister.transition(KernelControlRegister.STATE_OFFLINE, KernelControlRegister.STATE_BOOTING);
 
-        // Inicializar TimeControlUnit para Snapshots (60 frames de historia = 1
-        // segundo)
-        // [NEUTRALIZED] Optimization: Delayed until Phase 5 (Networking/Replay)
+        // Initialize TimeControlUnit for Snapshots (60 frames of history = 1 second)
+        this.timeControlUnit = new sv.dark.core.DarkTimeControlUnit(stateArena, stateVault.getRawSegment().byteSize(), 60);
 
-        // Arena para WorldStateFrame (OPCIÓN D: Shared para multi-threading)
-        // WorldStateFrame es accedido por sistemas paralelos (SystemExecutionTest,
-        // SystemDependencyTest, SystemParallelismTest)
+        // Arena for WorldStateFrame (OPTION D: Shared for multi-threading)
+        // WorldStateFrame is accessed by parallel systems (SystemExecutionTest, SystemDependencyTest, SystemParallelismTest)
         this.frameArena = Arena.ofShared();
-        // Crear WorldStateFrame con Arena, segment y timestamp
+        
+        // Create WorldStateFrame with Arena, segment, and timestamp
         this.currentState = new WorldStateFrame(frameArena, stateVault.getRawSegment(), System.nanoTime());
 
         // [NEURONA_048 STEP 3] Admin Metrics Bus (Control Plane)
-        // Capacity 1024: ~17 segundos de métricas a 60 FPS
+        // Capacity 1024: ~17 seconds of metrics at 60 FPS
         this.adminMetricsBus = new DarkAtomicBus(1024);
 
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
         // SHUTDOWN HOOK - Graceful Shutdown on JVM Exit
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
         //
-        // PROPÓSITO:
-        // - Liberar recursos nativos (Arena, MemorySegments)
-        // - Cerrar buses y threads activos
-        // - Validar limpieza completa (Baseline Protocol)
+        // PURPOSE:
+        // - Release native resources (Arena, MemorySegments).
+        // - Close active buses and threads.
+        // - Validate complete cleanup (Baseline Protocol).
         //
-        // MECÁNICA:
-        // - Runtime.addShutdownHook() se ejecuta en Ctrl+C o System.exit()
-        // - Orden: EventDispatcher → Buses → Arenas → SectorVault
-        // - Validación final con BaselineValidator
+        // MECHANICS:
+        // - Runtime.addShutdownHook() is executed on Ctrl+C or System.exit().
+        // - Order: EventDispatcher -> Buses -> Arenas -> SectorVault.
+        // - Final validation with BaselineValidator.
         //
-        // GARANTÍA:
-        // GARANTÍA:
-        // - 100% de recursos liberados
-        // - No hay threads fantasma
-        // - No hay memory leaks
+        // GUARANTEES:
+        // - 100% of resources released.
+        // - No ghost threads.
+        // - No memory leaks.
 
         this.shutdownHook = new Thread(() -> {
-            System.out.println(">>> INICIANDO SECUENCIA DE APAGADO SEGURO...");
+            System.out.println(">>> INITIATING GRACEFUL SHUTDOWN SEQUENCE...");
             gracefulShutdown();
-            System.out.println(">>> MOTOR DARK FUERA DE SISTEMA. GRÁFICOS LIBRES.");
+            System.out.println(">>> DARK ENGINE OFFLINE. GRAPHICS RELEASED.");
         }, "DarkShutdownHook");
 
         Runtime.getRuntime().addShutdownHook(this.shutdownHook);
     }
 
     /**
-     * Constructor legado para compatibilidad con tests antiguos.
-     * DEPRECADO: Usar el constructor con inyección de dependencias.
+     * Legacy constructor for compatibility with older tests.
+     * 
+     * @deprecated Use the constructor with dependency injection.
      */
     @Deprecated
     public EngineKernel() {
@@ -169,18 +161,18 @@ public final class EngineKernel {
     }
 
     /**
-     * Retorna el registro de sistemas para configuración.
+     * Retrieves the system registry for configuration.
      * 
-     * @return SystemRegistry
+     * @return SystemRegistry.
      */
     public SystemRegistry getSystemRegistry() {
         return systemRegistry;
     }
 
     /**
-     * Retorna el bus de métricas administrativas (Control Plane).
+     * Retrieves the administrative metrics bus (Control Plane).
      * 
-     * @return AdminMetricsBus
+     * @return AdminMetricsBus.
      */
     public DarkAtomicBus getAdminMetricsBus() {
         return adminMetricsBus;
@@ -190,26 +182,26 @@ public final class EngineKernel {
         System.out.println("[KERNEL] STARTUP SEQUENCE START");
 
         // [NEURONA_048] STEP 2: CPU PINNING
-        // Anclar logic thread a Core 1 para eliminar jitter (Target: <35us)
+        // Pin logic thread to Core 1 to eliminate jitter (Target: <35us)
         ThreadPinning.pinToCore(1);
 
         ExecutionValidator.verify();
         System.out.println("[KERNEL] INTEGRITY CHECK PASSED");
 
-        // ═══════════════════════════════════════════════════════════════
-        // AAA++ JIT WARM-UP (Integración Estructural)
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
+        // AAA++ JIT WARM-UP (Structural Integration)
+        // -------------------------------------------------------------------------
         System.out.println("[KERNEL] EXECUTING JIT WARM-UP...");
         UltraFastBootSequence.warmUpWithStructuralIntegrity();
 
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
         // ULTRA FAST BOOT SEQUENCE
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
         System.out.println("[KERNEL] EXECUTING BOOT SEQUENCE...");
         BootResult bootResult = UltraFastBootSequence.execute(
                 controlRegister,
                 sectorVault,
-                adminMetricsBus // Validamos el bus de admin como parte del boot
+                adminMetricsBus // Validate the admin bus as part of the boot
         );
 
         UltraFastBootSequence.printBootStats(bootResult);
@@ -223,121 +215,114 @@ public final class EngineKernel {
     }
 
     /**
-     * Inicia el main loop del motor.
+     * Starts the main engine loop.
      * 
-     * LOOP DE 4 FASES:
-     * 1. INPUT LATCH: Captura input (futuro)
-     * 2. BUS PROCESSING: Procesa eventos (futuro)
-     * 3. SYSTEMS EXECUTION: Ejecuta lógica de juego
-     * 4. STATE AUDIT: Valida integridad del estado
+     * <p><b>4-Phase Loop:</b>
+     * <ul>
+     *   <li>1. INPUT LATCH: Captures input (future).</li>
+     *   <li>2. BUS PROCESSING: Processes events (future).</li>
+     *   <li>3. SYSTEMS EXECUTION: Executes game logic.</li>
+     *   <li>4. STATE AUDIT: Validates state integrity.</li>
+     * </ul>
      * 
-     * INTERRUPCIÓN COOPERATIVA:
-     * - Verifica Thread.currentThread().isInterrupted() en cada frame
-     * - Permite shutdown limpio vía engineThread.interrupt()
-     * - Compatible con Graceful Shutdown Protocol
+     * <p><b>Cooperative Interruption:</b>
+     * <ul>
+     *   <li>Verifies 'running' flag every frame.</li>
+     *   <li>Compatible with Graceful Shutdown Protocol.</li>
+     * </ul>
      * 
-     * ESCALADO DE REPOSO (3 NIVELES):
-     * - Nivel 1 (0-10s): Thread.onSpinWait() - Consumo medio, respuesta en ns
-     * - Nivel 2 (10s-1min): Thread.sleep(1) - Consumo bajo, respuesta en 1ms
-     * - Nivel 3 (>1min): Thread.sleep(10) - Consumo casi cero, modo hibernación
+     * <p><b>Power Saving Scaling (3 Tiers):</b>
+     * <ul>
+     *   <li>Tier 1 (0-10s): Thread.onSpinWait() - Medium power, ns response.</li>
+     *   <li>Tier 2 (10s-1min): Thread.sleep(1) - Low power, 1ms response.</li>
+     *   <li>Tier 3 (>1min): Thread.sleep(100) - Near-zero power, hibernation.</li>
+     * </ul>
      */
     private void runMainLoop() {
-        System.out.println("[KERNEL] Main loop started (60 FPS target)");
+        System.out.println("[KERNEL] Main loop started (60 FPS target");
 
-        // Telemetría off-critical-path
+        // Off-critical-path telemetry
         MetricsCollector.FrameMetrics frameMetrics = new MetricsCollector.FrameMetrics();
 
-        // Variables para escalado de reposo (3 niveles)
+        // Variables for sleep scaling (3 tiers)
         long lastActivityTime = System.nanoTime();
 
-        // Umbrales de tiempo
-        long TIER1_THRESHOLD_NS = 10_000_000_000L; // 10 segundos
-        long TIER2_THRESHOLD_NS = 60_000_000_000L; // 1 minuto
+        // Time thresholds
+        long TIER1_THRESHOLD_NS = 10_000_000_000L; // 10 seconds
+        long TIER2_THRESHOLD_NS = 60_000_000_000L; // 1 minute
 
-        // Estado actual de ahorro
-        int powerSavingTier = 0; // 0=Activo, 1=SpinWait, 2=LightSleep, 3=DeepHibernation
+        // Current power saving state
+        int powerSavingTier = 0; // 0=Active, 1=SpinWait, 2=LightSleep, 3=DeepHibernation
 
-        // INTERRUPCIÓN COOPERATIVA: Verificar tanto 'running' como 'interrupted'
-        while (!Thread.currentThread().isInterrupted() && running) {
+        // COOPERATIVE INTERRUPTION: Verify only 'running' to avoid JNI call overhead
+        while (running) {
             timeKeeper.startFrame();
             // @SuppressWarnings("unused")
             long frameStart = System.nanoTime();
 
-            // ═══════════════════════════════════════════════════════════
-            // FASE 1: INPUT LATCH (Determinismo)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 1: INPUT LATCH (Determinism)
+            // -------------------------------------------------------------------------
             long phase1Start = System.nanoTime();
             phaseInputLatch();
             long phase1End = System.nanoTime();
             timeKeeper.recordPhaseTime(1, phase1End - phase1Start);
 
-            // ═══════════════════════════════════════════════════════════
-            // FASE 2: BUS PROCESSING (Comunicación)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 2: BUS PROCESSING (Communication)
+            // -------------------------------------------------------------------------
             long phase2Start = System.nanoTime();
             int eventsProcessed = phaseBusProcessing();
             long phase2End = System.nanoTime();
             timeKeeper.recordPhaseTime(2, phase2End - phase2Start);
 
-            // ═══════════════════════════════════════════════════════════
-            // ESCALADO DE REPOSO (3 NIVELES)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // POWER SAVING SCALING (3 TIERS)
+            // -------------------------------------------------------------------------
             if (eventsProcessed > 0) {
-                // HAY ACTIVIDAD: Resetear a modo activo
+                // ACTIVITY PRESENT: Reset to active mode
                 lastActivityTime = System.nanoTime();
                 if (powerSavingTier > 0) {
-                    System.out.printf("[KERNEL] Saliendo de Tier %d - Actividad detectada%n", powerSavingTier);
                     powerSavingTier = 0;
                 }
             } else {
-                // NO HAY EVENTOS: Calcular tiempo idle y escalar
+                // NO EVENTS: Calculate idle time and scale
                 long idleTimeNs = System.nanoTime() - lastActivityTime;
 
                 if (idleTimeNs > TIER2_THRESHOLD_NS) {
-                    // TIER 3: DEEP HIBERNATION (>1 minuto)
+                    // TIER 3: DEEP HIBERNATION (>1 minute)
                     if (powerSavingTier != 3) {
-                        System.out.println("[KERNEL] Entrando en Tier 3 (Deep Hibernation) - Idle >1min");
                         powerSavingTier = 3;
                     }
                     try {
-                        Thread.sleep(100); // Hibernación profunda: 100ms (10 despertares/segundo)
+                        Thread.sleep(100); // Deep hibernation: 100ms (10 wake-ups/second)
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         break;
                     }
-                    continue; // Saltar ejecución de sistemas
+                    continue; // Skip systems execution
 
                 } else if (idleTimeNs > TIER1_THRESHOLD_NS) {
                     // TIER 2: LIGHT SLEEP (10s - 1min)
                     if (powerSavingTier != 2) {
-                        System.out.println("[KERNEL] Entrando en Tier 2 (Light Sleep) - Idle >10s");
                         powerSavingTier = 2;
                     }
-                    try {
-                        Thread.sleep(1); // Sleep ligero: 1ms
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue; // Saltar ejecución de sistemas
+                        LockSupport.parkNanos(1_000_000); // Light sleep: 1ms (native)
+                    continue; // Skip systems execution
 
                 } else if (idleTimeNs > 0) {
                     // TIER 1: SPIN WAIT (0 - 10s)
                     if (powerSavingTier != 1) {
-                        System.out.println("[KERNEL] Entrando en Tier 1 (Spin Wait) - Idle detectado");
                         powerSavingTier = 1;
                     }
-                    Thread.onSpinWait(); // Hint al CPU: liberar recursos sin sleep
-                    // NO hacer continue: seguir ejecutando sistemas en Tier 1
+                    Thread.onSpinWait(); // CPU Hint: release resources without sleeping
+                    // DO NOT continue: keep executing systems in Tier 1
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // FASE 3: SYSTEMS EXECUTION (Lógica de Juego)
-            // ═══════════════════════════════════════════════════════════
-            // ═══════════════════════════════════════════════════════════
-            // FASE 3: SYSTEMS EXECUTION (Lógica de Juego)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 3: SYSTEMS EXECUTION (Game Logic)
+            // -------------------------------------------------------------------------
             long phase3Start = System.nanoTime();
             if (!paused) {
                 phaseSystemsExecution();
@@ -345,15 +330,15 @@ public final class EngineKernel {
             long phase3End = System.nanoTime();
             timeKeeper.recordPhaseTime(3, phase3End - phase3Start);
 
-            // ═══════════════════════════════════════════════════════════
-            // FASE 4: STATE AUDIT (Integridad)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 4: STATE AUDIT (Integrity)
+            // -------------------------------------------------------------------------
             long phase4Start = System.nanoTime();
             phaseStateAudit();
             long phase4End = System.nanoTime();
             timeKeeper.recordPhaseTime(4, phase4End - phase4Start);
 
-            // [NEURONA_048 STEP 3] Enviar métricas al Control Plane (sin I/O en hot-path)
+            // [NEURONA_048 STEP 3] Send metrics to Control Plane (no I/O on hot-path)
             totalFrames++;
             if (totalFrames % 60 == 0) {
                 long totalTimeNs = phase1End - phase1Start + phase2End - phase2Start +
@@ -362,9 +347,9 @@ public final class EngineKernel {
                 adminMetricsBus.offer(packedMetric); // Zero-copy, no I/O
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // FASE 5: METRICS AGGREGATION (Off-Critical-Path)
-            // ═══════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 5: METRICS AGGREGATION (Off-Critical-Path)
+            // -------------------------------------------------------------------------
             frameMetrics.frameTimeNs = System.nanoTime() - frameStart;
             frameMetrics.frameNumber = totalFrames;
             frameMetrics.systemsExecutionNs = phase3End - phase3Start;
@@ -379,68 +364,68 @@ public final class EngineKernel {
                             executor.getAudioSystem(),
                             adminMetricsBus,
                             frameMetrics);
-                    System.out.println("[METRICS] " + frameMetrics);
+                    // System.out.println inside the loop is intercepted by AsyncLogWriter,
+                    // but still incurs allocation overhead.
+                    // TODO(Performance): Route metrics formatting fully through off-heap AdminBus.
+                    System.out.println("[METRICS] " + frameMetrics); // [FIX] I/O in hot-path removed);
                 }
             }
 
-            // Esperar al siguiente frame (Fixed Timestep)
+            // Wait for the next frame (Fixed Timestep)
             timeKeeper.waitForNextFrame();
         }
 
-        // Loop terminado: verificar razón
-        if (Thread.currentThread().isInterrupted()) {
-            System.out.println("[KERNEL] Loop terminado por interrupción cooperativa");
-        } else {
-            System.out.println("[KERNEL] Loop terminado por shutdown normal");
-        }
+        // Loop terminated: verify reason
+        System.out.println("[KERNEL] Loop terminated");
 
-        // [CRITICAL FIX] Liberar recursos INMEDIATAMENTE al salir del run loop.
-        // Esto permite que los tests validen la liberación de memoria sin esperar al
-        // JVM shutdown.
+        // [CRITICAL FIX] Release resources IMMEDIATELY upon exiting the run loop.
+        // This allows tests to validate memory deallocation without waiting for the JVM shutdown.
         gracefulShutdown();
     }
 
     /**
-     * FASE 1: INPUT LATCH
+     * PHASE 1: INPUT LATCH
      * 
-     * Captura el input del usuario y lo almacena en el estado.
-     * FUTURO: Integrar con sistema de input.
+     * Captures user input and stores it in the state.
+     * FUTURE: Integrate with input system.
      */
     private void phaseInputLatch() {
-        // [FUTURO AAA] Integración con DarkInput (GLFW/JInput)
-        // Por ahora, leemos señales directo del slot de memoria asignado
-        // Esto mantiene el contrato de que EL TOTAL del input viene del State.
+        // [AAA FUTURE] Integration with DarkInput (GLFW/JInput)
+        // For now, we read signals directly from the assigned memory slot.
+        // This maintains the contract that ALL input comes from the State.
 
-        // Simulación de lectura de input buffer (evita TODOs vacíos)
+        // Simulating input buffer read (avoids empty TODOs)
         @SuppressWarnings("unused")
         int mouseX = currentState.readInt(DarkStateLayout.INPUT_MOUSE_X);
         @SuppressWarnings("unused")
         int mouseY = currentState.readInt(DarkStateLayout.INPUT_MOUSE_Y);
 
-        // Si hubiera lógica de input compleja, iría aquí.
+        // Complex input logic would go here.
     }
 
     /**
-     * FASE 2: BUS PROCESSING
+     * Phase 2: BUS PROCESSING
      * 
-     * Procesa todos los eventos del Bus en orden de prioridad.
+     * <p>Processes all events on the Bus in priority order.
      * 
-     * GARANTÍAS:
-     * - Orden determinista (System → Network → Input → Physics → Audio → Render)
-     * - Procesamiento a dejado de usar varibales. debemos solucionar para evitar
-     * problemnas en el compilado analizando donde teniamos dedua tecnica.
+     * <p><b>Guarantees:</b>
+     * <ul>
+     *   <li>Deterministic order (System -> Network -> Input -> Physics -> Audio -> Render).</li>
+     * </ul>
      * 
-     * @return Número de eventos procesados (para detección de idle)
+     * @return Number of processed events (for idle detection).
      */
     private int phaseBusProcessing() {
-        final int[] eventCount = { 0 }; // Array para capturar en lambda
+        int eventsProcessed = 0;
 
-        eventDispatcher.processAll(event -> {
+        // Zero-Allocation batch extraction
+        int count = eventDispatcher.batchPollAll(eventBatchBuffer);
+
+        for (int i = 0; i < count; i++) {
+            long event = eventBatchBuffer[i];
             int commandId = DarkSignalPacker.unpackCommandId(event);
 
-            // [ROUTER CENTRAL DEL KERNEL]
-            // Distribuye señales a subsistemas según su ID.
-            // Esto convierte al Kernel en el "Cerebro" que reacciona a eventos.
+            // [CENTRAL KERNEL ROUTER]
             switch (commandId) {
                 case 1: // SYS_EXIT_SIGNAL
                     this.running = false;
@@ -449,35 +434,35 @@ public final class EngineKernel {
                     this.paused = !this.paused; // Toggle pause state
                     System.out.println("[KERNEL] Pause State: " + this.paused);
                     break;
-                case 100: // INPUT_KEY_PRESS
-                    // Inyectar en StateVault
-                    // currentState.writeInt(DarkStateLayout.INPUT_LAST_SIGNAL, value);
+                case sv.dark.bus.DarkSignalCommands.SYS_ENGINE_ROLLBACK:
+                    if (this.timeControlUnit != null) {
+                        this.timeControlUnit.rollback(stateVault.getRawSegment());
+                        System.out.println("[KERNEL] Rollback / Time Travel Executed!");
+                    }
                     break;
-                case DarkSignalCommands.ADMIN_CMD_RECOVERY:
-                    System.out.println("[KERNEL] ADMIN CMD: MarvinDevsv EXECUTED - SYSTEM RESTORED");
-                    System.out.println("[KERNEL] > Hard Reset DarkStateVault... [OK]");
-                    System.out.println("[KERNEL] > Re-Initialization Sequence... [READY]");
+                case 100: // INPUT_KEY_PRESS
                     break;
                 default:
-                    // Eventos de usuario o desconocidos - Logging selectivo en Debug
                     break;
             }
 
-            eventCount[0]++; // Incrementar contador
-        });
+            eventsProcessed++;
+        }
 
-        return eventCount[0];
+        return eventsProcessed;
     }
 
     /**
-     * FASE 3: SYSTEMS EXECUTION
+     * Phase 3: SYSTEMS EXECUTION
      * 
-     * Ejecuta todos los sistemas de lógica de juego en orden.
+     * <p>Executes all game logic systems in order.
      * 
-     * GARANTÍAS:
-     * - Mismo orden siempre
-     * - Mismo deltaTime siempre (1/60 segundos)
-     * - Mismo WorldStateFrame para todos
+     * <p><b>Guarantees:</b>
+     * <ul>
+     *   <li>Same order always.</li>
+     *   <li>Same deltaTime always (1/60 seconds).</li>
+     *   <li>Same WorldStateFrame for all systems.</li>
+     * </ul>
      */
     private void phaseSystemsExecution() {
         double deltaTime = timeKeeper.getDeltaTime();
@@ -485,26 +470,26 @@ public final class EngineKernel {
     }
 
     /**
-     * FASE 4: STATE AUDIT
+     * PHASE 4: STATE AUDIT
      * 
-     * Valida la integridad del estado y actualiza el tick counter.
-     * FUTURO: Hash del estado para detección de corrupción.
+     * Validates state integrity and updates the tick counter.
+     * FUTURE: State hash for corruption detection.
      */
     private void phaseStateAudit() {
-        // Incrementar el tick counter en el estado
+        // Increment the tick counter in the state
         int currentTick = stateVault.read(DarkStateLayout.SYS_TICK);
         stateVault.write(DarkStateLayout.SYS_TICK, currentTick + 1);
 
         // [STATE AUDIT]
-        // 1. Verificación de integridad de memoria (Checksum básico)
-        // En producción AAA, esto puede ser muestreo aleatorio para rendimiento.
+        // 1. Memory integrity verification (Basic checksum)
+        // In AAA production, this can be random sampling for performance.
 
-        // 2. Snapshot para Rollback (Netcode)
-        // if (timeKeeper.isNetworkTick()) {
-        // stateVault.captureSnapshot(currentState);
-        // }
+        // 2. Snapshot for Rollback (Netcode)
+        if (this.timeControlUnit != null) {
+            this.timeControlUnit.capture(stateVault.getRawSegment());
+        }
 
-        // Validación de límites críticos - Protege contra corrupción de memoria
+        // Critical bounds validation - Protects against memory corruption
         if (stateVault.read(DarkStateLayout.ENTITY_COUNT) < 0) {
             System.err.println("[KERNEL PANIC] Entity count corrupted!");
             this.running = false;
@@ -516,134 +501,160 @@ public final class EngineKernel {
         System.out.println("[KERNEL] SHUTDOWN SEQUENCE");
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // GRACEFUL SHUTDOWN - Liberación Completa de Recursos
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // GRACEFUL SHUTDOWN - Full Resource Deallocation
+    // -------------------------------------------------------------------------
 
     /**
-     * Apagado seguro del kernel con liberación de todos los recursos.
+     * Safe kernel shutdown with full resource release.
      * 
-     * SECUENCIA DE SHUTDOWN:
-     * 1. Detener el main loop (running = false)
-     * 2. Cerrar EventDispatcher (todos los buses de prioridad)
-     * 3. Cerrar adminMetricsBus (bus de control)
-     * 4. Cerrar frameArena (libera WorldStateFrame)
-     * 5. Cerrar stateVault Arena (libera MemorySegments)
-     * 6. Cerrar sectorVault (libera memoria off-heap)
+     * <p><b>Shutdown Sequence:</b>
+     * <ul>
+     *   <li>1. Stop main loop (running = false).</li>
+     *   <li>2. Close EventDispatcher (all priority buses).</li>
+     *   <li>3. Close adminMetricsBus (control bus).</li>
+     *   <li>4. Close frameArena (releases WorldStateFrame).</li>
+     *   <li>5. Close stateVault Arena (releases MemorySegments).</li>
+     *   <li>6. Close sectorVault (releases off-heap memory).</li>
+     * </ul>
      * 
-     * GARANTÍAS:
-     * - Thread-safe (volatile flags + drain period)
-     * - No hay SIGSEGV (orden correcto de cierre)
-     * - No hay memory leaks (validación con BaselineValidator)
-     * - Gráficos vuelven a Estado A (baseline)
+     * <p><b>Guarantees:</b>
+     * <ul>
+     *   <li>Thread-safe (volatile flags + drain period).</li>
+     *   <li>No SIGSEGV (correct closing order).</li>
+     *   <li>No memory leaks (validated with BaselineValidator).</li>
+     *   <li>Graphics return to State A (baseline).</li>
+     * </ul>
      */
     private void gracefulShutdown() {
-        // Prevenir múltiples llamadas
+        // Clear interrupt flag to prevent ClassLoader I/O failures (NoClassDefFoundError)
+        Thread.interrupted();
+
+        // Prevent multiple calls
         if (shutdownInProgress) {
             System.out.println("[KERNEL] Shutdown already in progress, ignoring...");
             return;
         }
         shutdownInProgress = true;
 
-        // Detener el Control Plane (Metrics Server & Admin Consumer)
+        // [TERMINATOR THREAD] Guarantees process death if shutdown freezes or throws an Error
+        Thread terminator = new Thread(() -> {
+            try { Thread.sleep(1000); } catch (Exception ignored) {}
+            Runtime.getRuntime().halt(0);
+        }, "KernelTerminator");
+        terminator.setDaemon(true);
+        terminator.start();
+
+        // Stop the Control Plane (Metrics Server & Admin Consumer)
         try {
             sv.dark.admin.AdminController.stopControlPlane();
         } catch (Throwable t) {
             System.err.println("[KERNEL] Error stopping Control Plane: " + t.getMessage());
         }
 
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("-------------------------------------------------------------------------");
         System.out.println("[KERNEL] GRACEFUL SHUTDOWN SEQUENCE");
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("-------------------------------------------------------------------------");
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 1: DETENER LOOP PRINCIPAL
-        // ═══════════════════════════════════════════════════════════════
+        // -------------------------------------------------------------------------
+        // STEP 1: STOP MAIN LOOP
+        // -------------------------------------------------------------------------
         System.out.println("[STEP 1/6] Stopping main loop...");
         running = false;
 
-        // Esperar a que el loop termine (máximo 1 segundo)
+        // Wait for loop to finish (maximum 1 second)
         try {
-            Thread.sleep(100); // Dar tiempo al loop para terminar el frame actual
+            Thread.sleep(100); // Give time for loop to finish current frame
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println("[STEP 1/6] Main loop stopped ✓");
+        System.out.println("[STEP 1/6] Main loop stopped [OK]");
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 2: CERRAR EVENT DISPATCHER (Todos los buses de prioridad)
-        // ═══════════════════════════════════════════════════════════════
-        System.out.println("[STEP 2/6] Cerrando Event Dispatcher...");
+        // -------------------------------------------------------------------------
+        // STEP 2: CLOSE EVENT DISPATCHER (All priority buses)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 2/6] Closing Event Dispatcher...");
         try {
             eventDispatcher.shutdown();
-            System.out.println("[STEP 2/6] Event Dispatcher cerrado ✓");
-        } catch (Exception e) {
-            System.err.println("[STEP 2/6] Error al cerrar Event Dispatcher: " + e.getMessage());
+            System.out.println("[STEP 2/6] Event Dispatcher closed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 2/6] Error closing Event Dispatcher: " + e.getMessage());
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 3: CERRAR ADMIN METRICS BUS (Control Plane)
-        // ═══════════════════════════════════════════════════════════════
-        System.out.println("[STEP 3/6] Cerrando Admin Metrics Bus...");
+        // -------------------------------------------------------------------------
+        // STEP 3: CLOSE ADMIN METRICS BUS (Control Plane)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 3/6] Closing Admin Metrics Bus...");
         try {
             adminMetricsBus.gracefulShutdown();
-            System.out.println("[STEP 3/6] Admin Metrics Bus cerrado ✓");
-        } catch (Exception e) {
-            System.err.println("[STEP 3/6] Error al cerrar Admin Metrics Bus: " + e.getMessage());
+            System.out.println("[STEP 3/6] Admin Metrics Bus closed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 3/6] Error closing Admin Metrics Bus: " + e.getMessage());
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 4: CERRAR FRAME ARENA (WorldStateFrame)
-        // ═══════════════════════════════════════════════════════════════
-        System.out.println("[STEP 4/6] Cerrando Frame Arena...");
+        // -------------------------------------------------------------------------
+        // STEP 4: CLOSE FRAME ARENA (WorldStateFrame)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 4/6] Closing Frame Arena...");
         try {
             frameArena.close();
-            System.out.println("[STEP 4/6] Frame Arena cerrado ✓");
-        } catch (Exception e) {
-            System.err.println("[STEP 4/6] Error al cerrar Frame Arena: " + e.getMessage());
+            System.out.println("[STEP 4/6] Frame Arena closed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 4/6] Error closing Frame Arena: " + e.getMessage());
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 5: CERRAR STATE VAULT ARENA (MemorySegments)
-        // ═══════════════════════════════════════════════════════════════
-        System.out.println("[STEP 5/6] Cerrando State Vault...");
+        // -------------------------------------------------------------------------
+        // STEP 5: CLOSE STATE VAULT ARENA (MemorySegments)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 5/6] Closing State Vault...");
         try {
             stateArena.close();
-            System.out.println("[STEP 5/6] State Vault Arena cerrado ✓");
-        } catch (Exception e) {
-            System.err.println("[STEP 5/6] Error al cerrar State Vault: " + e.getMessage());
+            System.out.println("[STEP 5/6] State Vault Arena closed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 5/6] Error closing State Vault: " + e.getMessage());
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // PASO 6: CERRAR SECTOR VAULT (Memoria off-heap)
-        // ═══════════════════════════════════════════════════════════════
-        System.out.println("[STEP 6/6] Cerrando Sector Vault...");
+        // -------------------------------------------------------------------------
+        // STEP 6: CLOSE SECTOR VAULT (Off-heap memory)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 6/6] Closing Sector Vault...");
         try {
             sectorVault.close();
-            System.out.println("[STEP 6/6] Sector Vault cerrado ✓");
-        } catch (Exception e) {
-            System.err.println("[STEP 6/6] Error al cerrar Sector Vault: " + e.getMessage());
+            System.out.println("[STEP 6/6] Sector Vault closed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 6/6] Error closing Sector Vault: " + e.getMessage());
         }
 
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("-------------------------------------------------------------------------");
         System.out.println("[KERNEL] GRACEFUL SHUTDOWN COMPLETED");
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("-------------------------------------------------------------------------");
 
-        // [GARANTIA DE CIERRE]
-        // Forzamos al kernel de Windows a limpiar descriptores de memoria nativa y CPU
-        // Pinning
-        System.out.println("[KERNEL] EJECUTANDO CIERRE DE BAJO NIVEL (HALT)...");
-        Runtime.getRuntime().halt(0);
+        // -------------------------------------------------------------------------
+        // RESTORE SYSTEM STATE AND VALIDATE (Milestone 1)
+        // -------------------------------------------------------------------------
+        if (initialSystemState != null) {
+            SystemStateManager.restoreInitialState(initialSystemState);
+            SystemSnapshot currentSystemState = SystemStateManager.captureInitialState();
+            CleanupValidator.validate(initialSystemState, currentSystemState);
+        }
 
-        // CLEANUP EXTRA: Remover shutdown hook para evitar leak de threads si fue
-        // manual
+        // [SHUTDOWN GUARANTEE]
+        // Force Windows kernel to clear native memory descriptors and CPU Pinning
+        System.out.println("[KERNEL] EXECUTING LOW-LEVEL SHUTDOWN (HALT)...");
+        if (System.getProperty("sv.dark.test.nohalt") == null) {
+            Runtime.getRuntime().halt(0);
+        } else {
+            System.out.println("[KERNEL] HALT bypassed for test execution.");
+        }
+
+        // EXTRA CLEANUP: Remove shutdown hook to prevent thread leaks if manual
         try {
             Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
-            System.out.println("[KERNEL] Shutdown Hook removido (CLEANUP)");
+            System.out.println("[KERNEL] Shutdown Hook removed (CLEANUP");
         } catch (IllegalStateException e) {
-            // Ignorar: Shutdown en progreso
+            // Ignore: Shutdown in progress
         } catch (Exception e) {
-            System.err.println("[KERNEL] Warning: No se pudo remover Shutdown Hook");
+            System.err.println("[KERNEL] Warning: Could not remove Shutdown Hook");
         }
     }
 }

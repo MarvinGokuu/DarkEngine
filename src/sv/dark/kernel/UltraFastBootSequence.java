@@ -1,64 +1,53 @@
 // Reading Order: 00001100
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
+
+import sv.dark.core.DarkLogger;
 import sv.dark.core.AAACertified; // 00000100
 import sv.dark.memory.SectorMemoryVault;
 import sv.dark.validation.BusSymmetryValidator;
 import sv.dark.bus.DarkAtomicBus;
 import sv.dark.bus.DarkRingBus;
-// import sv.dark.security.IntrinsicIntegrity;  // TEMPORAL: Comentado hasta implementar seguridad
+// import sv.dark.security.IntrinsicIntegrity;  // TEMPORARY: Commented until security is implemented
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Secuencia de boot ultra-rápida del kernel (<1ms)
- * DEPENDENCIAS: KernelControlRegister, SectorMemoryVault, BusSymmetryValidator
- * MÉTRICAS: Boot <1ms, Inicialización determinista
+ * RESPONSIBILITY: Kernel Ultra-Fast Boot sequence (<1ms) and JIT Warm-Up.
+ * WHY: Java applications historically suffer from slow startup and JIT compilation lag. E-Sports engines must launch and stabilize instantly.
+ * TECHNIQUE: Executes a deterministic sequence that pre-compiles hot-paths via 10,000 warm-up iterations to force C2 JIT compilation of VarHandles, then verifies structural integrity before transitioning to RUNNING.
+ * GUARANTEES: Boot time <1ms after warm-up. Predictable state transitions. Immediate fail-fast on memory corruption.
  * 
- * Secuencia de boot optimizada para inicialización del kernel en menos de 1ms.
- * Usa inicialización determinista y validación en paralelo.
+ * <p>Dependencies: KernelControlRegister, SectorMemoryVault, BusSymmetryValidator
+ * <p>Metrics: Boot <1ms, Deterministic Initialization
  * 
- * @author Marvin-Dev
+ * @author Marvin Alexander Flores Canales
  * @version 1.0
  * @since 2026-01-06
  */
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - SECUENCIA DE BOOT ULTRA-RÁPIDA
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// PORQUÉ:
-// - La anotación @AAACertified documenta las garantías de rendimiento inline
-// - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
-// - Metadata visible para humanos, invisible para la JVM
-// - Este boot es el core del arranque: <1ms para estar operativo
-//
-// TÉCNICA:
-// - maxLatencyNs: 1_000_000 = Boot completo en <1ms (1,000,000ns)
-// - minThroughput: 1000 = 1000 boots/segundo (para testing)
-// - alignment: 64 = Cache line alignment
-// - lockFree: true = Sin locks durante boot
-// - offHeap: false = Boot sequence vive en heap
-//
-// GARANTÍA:
-// - Esta anotación NO afecta el rendimiento en runtime
-// - Solo documenta las métricas esperadas del componente
-// - Validable con herramientas estáticas en build-time
-// - Overhead medido: 0ns (confirmado con javap)
-//
-@AAACertified(date = "2026-01-06", maxLatencyNs = 1_000_000, minThroughput = 1000, alignment = 64, lockFree = true, offHeap = false, notes = "Ultra-fast boot sequence with <1ms initialization and deterministic setup")
+@AAACertified(
+    date = "2026-01-06",
+    maxLatencyNs = 1_000_000,
+    minThroughput = 1000,
+    alignment = 64,
+    lockFree = true,
+    offHeap = false,
+    notes = "Ultra-fast boot sequence with <1ms initialization and deterministic setup"
+)
 public final class UltraFastBootSequence {
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // RESULTADO DE BOOT
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // BOOT RESULT
+    // -------------------------------------------------------------------------
 
     /**
-     * Resultado de la secuencia de boot.
+     * Boot sequence result.
      * 
-     * PORQUÉ:
-     * - Encapsula éxito/fallo + tiempo de boot
-     * - Inmutable para thread-safety
-     * - Útil para logging y debugging
+     * WHY:
+     * - Encapsulates success/failure + boot time
+     * - Immutable for thread-safety
+     * - Useful for logging and debugging
      */
     public static final class BootResult {
         public final boolean success;
@@ -91,49 +80,49 @@ public final class UltraFastBootSequence {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // AAA++ JIT WARM-UP CON INTEGRACIÓN ESTRUCTURAL
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // AAA++ JIT WARM-UP WITH STRUCTURAL INTEGRATION
+    // -------------------------------------------------------------------------
 
     /**
-     * Ejecuta warm-up del JIT con validación de integridad estructural.
+     * Executes JIT warm-up with structural integrity validation.
      * 
-     * PROPÓSITO:
-     * - Forzar compilación JIT C2 de VarHandles
-     * - Eliminar checks de seguridad mediante inlining
-     * - Alcanzar latencias <150ns en runtime
+     * PURPOSE:
+     * - Force C2 JIT compilation of VarHandles
+     * - Eliminate safety checks via inlining
+     * - Reach latencies <150ns at runtime
      * 
-     * MECÁNICA:
-     * - 10,000 iteraciones para forzar JIT C2
-     * - Validar latencia post-warm-up (<150ns)
-     * - Garantizar integración CPU-Software
+     * MECHANICS:
+     * - 10,000 iterations to force C2 JIT
+     * - Validate post-warm-up latency (<150ns)
+     * - Guarantee CPU-Software integration
      * 
-     * GARANTÍA:
-     * - Boot time: 19ms → <1ms después de warm-up
-     * - Latencia offer(): ~150ns → <100ns
+     * GUARANTEE:
+     * - Boot time: 19ms → <1ms after warm-up
+     * - offer() latency: ~150ns → <100ns
      * - Throughput: ~10M ops/s → >50M ops/s
      */
     public static void warmUpWithStructuralIntegrity() {
-        System.out.println("[WARM-UP] Iniciando integración estructural...");
+        DarkLogger.info("WARM-UP", "Starting structural integration...");
 
         long warmUpStart = System.nanoTime();
 
-        // PASO 1: Crear componentes de prueba
+        // STEP 1: Create test components
         KernelControlRegister testRegister = new KernelControlRegister();
         SectorMemoryVault testVault = new SectorMemoryVault(1);
         DarkAtomicBus testBus = new DarkAtomicBus(10);
 
-        // PASO 2: Ejecutar 10,000 iteraciones para JIT C2
-        for (int i = 0; i < 10_000; i++) {
-            // Forzar VarHandle inlining (offer/poll)
+        // STEP 2: Execute 10,000 iterations for C2 JIT
+        for (int i= 0; i< 10_000; i++) {
+            // Force VarHandle inlining (offer/poll)
             testBus.offer(0xDEADBEEFL);
             testBus.poll();
 
-            // Forzar memory access inlining
+            // Force memory access inlining
             testVault.writeLong(0, 0xCAFEBABEL);
             testVault.readLong(0);
 
-            // Forzar state transition inlining
+            // Force state transition inlining
             testRegister.transition(
                     KernelControlRegister.STATE_OFFLINE,
                     KernelControlRegister.STATE_BOOTING);
@@ -148,53 +137,53 @@ public final class UltraFastBootSequence {
         long warmUpEnd = System.nanoTime();
         long warmUpTimeMs = (warmUpEnd - warmUpStart) / 1_000_000;
 
-        // PASO 3: Verificar que JIT compiló correctamente
+        // STEP 3: Verify that JIT compiled correctly
         long startNs = System.nanoTime();
         testBus.offer(0x12345678L);
         long latencyNs = System.nanoTime() - startNs;
 
-        System.out.println("[WARM-UP] Tiempo total: " + warmUpTimeMs + "ms");
-        System.out.println("[WARM-UP] Latencia VarHandle: " + latencyNs + "ns");
+        DarkLogger.info("WARM-UP", "Total time: " + warmUpTimeMs + "ms");
+        DarkLogger.info("WARM-UP", "VarHandle Latency: " + latencyNs + "ns");
 
         if (latencyNs > 150) {
-            System.err.println("[WARM-UP WARNING] Latencia alta: " + latencyNs + "ns");
-            System.err.println("[WARM-UP WARNING] JIT puede no haber optimizado");
+            DarkLogger.warning("WARM-UP", "High latency: " + latencyNs + "ns");
+            DarkLogger.warning("WARM-UP", "JIT may not have optimized");
         } else {
-            System.out.println("[WARM-UP] ✓ Integración estructural completa");
-            System.out.println("[WARM-UP] ✓ VarHandles optimizados por JIT C2");
+            DarkLogger.info("WARM-UP", "[OK] Structural integration complete");
+            DarkLogger.info("WARM-UP", "[OK] VarHandles optimized by JIT C2");
         }
 
         // Cleanup
         testVault.close();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // SECUENCIA DE BOOT
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // BOOT SEQUENCE
+    // -------------------------------------------------------------------------
 
     /**
-     * Ejecuta la secuencia de boot completa.
+     * Executes the complete boot sequence.
      * 
-     * @param controlRegister Registro de control del kernel
-     * @param memoryVault     Vault de memoria off-heap
-     * @param buses           Buses a validar
-     * @return Resultado del boot
+     * @param controlRegister Kernel control register
+     * @param memoryVault     Off-heap memory vault
+     * @param buses           Buses to validate
+     * @return Boot result
      * 
-     *         PORQUÉ:
-     *         - Boot determinista (siempre mismo orden)
-     *         - Validación temprana (fail-fast)
-     *         - Medición precisa de tiempo
+     * WHY:
+     * - Deterministic boot (always same order)
+     * - Early validation (fail-fast)
+     * - Precise time measurement
      * 
-     *         TÉCNICA:
-     *         - Fase 1: Validar estado inicial (BOOT)
-     *         - Fase 2: Validar memoria (page alignment)
-     *         - Fase 3: Validar buses (symmetry)
-     *         - Fase 4: Transición a RUNNING
+     * TECHNIQUE:
+     * - Phase 1: Validate initial state (BOOT)
+     * - Phase 2: Validate memory (page alignment)
+     * - Phase 3: Validate buses (symmetry)
+     * - Phase 4: Transition to RUNNING
      * 
-     *         GARANTÍA:
-     *         - Boot <1ms (objetivo AAA+)
-     *         - Determinista (reproducible)
-     *         - Fail-fast (error inmediato)
+     * GUARANTEE:
+     * - Boot <1ms (AAA+ target)
+     * - Deterministic (reproducible)
+     * - Fail-fast (immediate error)
      */
     public static BootResult execute(
             KernelControlRegister controlRegister,
@@ -204,12 +193,12 @@ public final class UltraFastBootSequence {
         long startTime = System.nanoTime();
 
         try {
-            // ═══════════════════════════════════════════════════════════════
-            // FASE 1: VERIFICACIÓN ESTRUCTURAL (AAA++)
-            // ═══════════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 1: STRUCTURAL VERIFICATION (AAA++)
+            // -------------------------------------------------------------------------
 
-            // 1.1: Validar memory signature de buses
-            for (int i = 0; i < buses.length; i++) {
+            // 1.1: Validate memory signature of buses
+            for (int i= 0; i< buses.length; i++) {
                 if (!buses[i].validateMemorySignature()) {
                     long elapsed = System.nanoTime() - startTime;
                     return BootResult.failure(elapsed,
@@ -217,14 +206,14 @@ public final class UltraFastBootSequence {
                 }
             }
 
-            // 1.2: Validar page alignment de memoria
+            // 1.2: Validate memory page alignment
             if (!memoryVault.isPageAligned()) {
                 long elapsed = System.nanoTime() - startTime;
                 return BootResult.failure(elapsed,
                         "Memory not page-aligned");
             }
 
-            // 1.3: Validar VarHandle integrity (un solo acceso de prueba)
+            // 1.3: Validate VarHandle integrity (single test access)
             long testValue = 0xDEADBEEFCAFEBABEL;
             memoryVault.writeLong(0, testValue);
             if (memoryVault.readLong(0) != testValue) {
@@ -233,9 +222,9 @@ public final class UltraFastBootSequence {
                         "VarHandle integrity check failed");
             }
 
-            // ═══════════════════════════════════════════════════════════════
-            // FASE 2: TRANSICIÓN DE ESTADO (Lógica)
-            // ═══════════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // PHASE 2: STATE TRANSITION (Logic)
+            // -------------------------------------------------------------------------
 
             if (!controlRegister.transitionToRunning()) {
                 long elapsed = System.nanoTime() - startTime;
@@ -243,26 +232,30 @@ public final class UltraFastBootSequence {
                         "State transition failed");
             }
 
-            // ═══════════════════════════════════════════════════════════════
-            // BOOT EXITOSO - SELLAR MOTOR CON INTEGRIDAD (AAA++)
-            // ═══════════════════════════════════════════════════════════════
+            // -------------------------------------------------------------------------
+            // SUCCESSFUL BOOT - SEAL ENGINE WITH INTEGRITY (AAA++)
+            // -------------------------------------------------------------------------
 
-            // Sellar motor con firma de integridad
-            // sv.dark.security.IntrinsicIntegrity.seal(); // TEMPORAL: Comentado hasta
-            // implementar seguridad
+            // Seal engine with integrity signature
+            // sv.dark.security.IntrinsicIntegrity.seal(); // TEMPORARY: Commented until
+            // security is implemented
             long elapsed = System.nanoTime() - startTime;
-            System.out.println("[BOOT] Security seal deferred (pre-security phase)");
             return BootResult.success(elapsed);
 
         } catch (Exception e) {
             long elapsed = System.nanoTime() - startTime;
             return BootResult.failure(elapsed,
-                    "Excepción durante boot: " + e.getMessage());
+                    "Exception during boot: " + e.getMessage());
         }
     }
 
     /**
-     * Ejecuta boot con DarkRingBus.
+     * Executes boot with DarkRingBus.
+     * 
+     * @param controlRegister Kernel control register
+     * @param memoryVault     Off-heap memory vault
+     * @param buses           Buses to validate
+     * @return Boot result
      */
     public static BootResult executeWithRingBus(
             KernelControlRegister controlRegister,
@@ -272,32 +265,32 @@ public final class UltraFastBootSequence {
         long startTime = System.nanoTime();
 
         try {
-            // Fase 1: Validar estado
+            // Phase 1: Validate state
             if (!controlRegister.isBooting()) {
                 long elapsed = System.nanoTime() - startTime;
                 return BootResult.failure(elapsed,
-                        "Estado inicial inválido: " + controlRegister.getState());
+                        "Invalid initial state: " + controlRegister.getState());
             }
 
-            // Fase 2: Validar memoria
+            // Phase 2: Validate memory
             if (!memoryVault.isPageAligned()) {
                 long elapsed = System.nanoTime() - startTime;
                 return BootResult.failure(elapsed,
-                        "Memoria no alineada a 4KB");
+                        "Memory not aligned to 4KB");
             }
 
-            // Fase 3: Validar buses
+            // Phase 3: Validate buses
             if (!BusSymmetryValidator.validateAllRing(buses)) {
                 long elapsed = System.nanoTime() - startTime;
                 return BootResult.failure(elapsed,
-                        "Validación de RingBus falló");
+                        "RingBus validation failed");
             }
 
-            // Fase 4: Transición
+            // Phase 4: Transition
             if (!controlRegister.transitionToRunning()) {
                 long elapsed = System.nanoTime() - startTime;
                 return BootResult.failure(elapsed,
-                        "Transición a RUNNING falló");
+                        "Transition to RUNNING failed");
             }
 
             long elapsed = System.nanoTime() - startTime;
@@ -306,45 +299,47 @@ public final class UltraFastBootSequence {
         } catch (Exception e) {
             long elapsed = System.nanoTime() - startTime;
             return BootResult.failure(elapsed,
-                    "Excepción: " + e.getMessage());
+                    "Exception: " + e.getMessage());
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // UTILIDADES
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // UTILITIES
+    // -------------------------------------------------------------------------
 
     /**
-     * Verifica si el boot fue exitoso y dentro del objetivo (<1ms).
+     * Verifies if the boot was successful and within the target (<1ms).
      * 
-     * @param result Resultado del boot
-     * @return true si boot exitoso y <1ms
+     * @param result Boot result
+     * @return true if successful and <1ms
      */
     public static boolean meetsAAATarget(BootResult result) {
         return result.success && result.bootTimeNs < 1_000_000;
     }
 
     /**
-     * Imprime estadísticas de boot.
+     * Prints boot statistics.
+     * 
+     * @param result Boot result
      */
     public static void printBootStats(BootResult result) {
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("  DARK ENGINE - BOOT SEQUENCE");
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("  Status: " + (result.success ? "SUCCESS ✓" : "FAILURE ✗"));
-        System.out.println("  Time:   " + String.format("%.3f ms", result.bootTimeNs / 1_000_000.0));
-        System.out.println("  Target: < 1.000 ms (AAA+)");
+        DarkLogger.info("BOOT", "-------------------------------------------------------");
+        DarkLogger.info("BOOT", "  DARK ENGINE - BOOT SEQUENCE");
+        DarkLogger.info("BOOT", "-------------------------------------------------------");
+        DarkLogger.info("BOOT", "  Status: " + (result.success ? "SUCCESS [OK]" : "FAILURE [FAILED]"));
+        DarkLogger.info("BOOT", "  Time:   " + String.format("%.3f ms", result.bootTimeNs / 1_000_000.0));
+        DarkLogger.info("BOOT", "  Target: < 1.000 ms (AAA+)");
 
         if (result.success) {
             if (meetsAAATarget(result)) {
-                System.out.println("  Result: AAA+ TARGET MET ✓");
+                DarkLogger.info("BOOT", "  Result: AAA+ TARGET MET [OK]");
             } else {
-                System.out.println("  Result: BOOT OK, but slower than target");
+                DarkLogger.warning("BOOT", "  Result: BOOT OK, but slower than target");
             }
         } else {
-            System.out.println("  Error:  " + result.errorMessage);
+            DarkLogger.error("BOOT", "  Error:  " + result.errorMessage);
         }
 
-        System.out.println("═══════════════════════════════════════════════════════");
+        DarkLogger.info("BOOT", "-------------------------------------------------------");
     }
 }

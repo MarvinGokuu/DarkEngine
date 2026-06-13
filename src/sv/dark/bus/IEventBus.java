@@ -1,100 +1,104 @@
 // Reading Order: 00000011
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.bus;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Dark
- * RESPONSABILIDAD: Contrato de comunicación para buses de eventos.
- * GARANTÍAS: Abstracción pura, permite múltiples implementaciones (Ring, LMAX,
- * JCTools).
- * PROHIBICIONES: Prohibido crear objetos en hot-path; solo primitivos.
- * DOMINIO CRÍTICO: Concurrencia / Abstracción
- * 
- * PATRÓN: Strategy Pattern + Interface Segregation
- * CONCEPTO: Dependency Inversion Principle
- * ROL: Contract Definition
- * 
- * @author MarvinDev
- * @version 2.0
- * @since 2026-01-04
+ * Standard communication contract for zero-allocation event buses.
+ *
+ * <p>Enforces a primitive-only (64-bit long) API to prevent object allocation
+ * on the hot path. Implementations may utilize ring buffers, atomic arrays,
+ * or LMAX-style architectures behind this abstraction.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 2.0
  */
+@AAACertified(
+    date         = "2026-01-04",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment    = 64,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Interface contract — primitive only to avoid GC pressure"
+)
 public interface IEventBus {
 
     /**
-     * Intenta insertar un evento en el bus.
-     * Operación no bloqueante.
+     * Attempts to insert an event into the bus without blocking.
      * 
-     * @param event Evento codificado como long (64 o 128 bits)
-     * @return true si el evento fue aceptado, false si el buffer está saturado
+     * @param event The encoded event payload (64 bits).
+     * @return {@code true} if accepted, {@code false} if the buffer is saturated.
      */
     boolean offer(long event);
 
     /**
-     * Consume el siguiente evento del bus.
-     * Operación destructiva: el evento se elimina del bus.
+     * Consumes and removes the next event from the bus.
      * 
-     * @return El evento (long) o -1 si el bus está vacío
+     * @return The next event, or {@code -1L} if the bus is empty.
      */
     long poll();
 
     /**
-     * Lee el siguiente evento sin consumirlo.
-     * Operación no destructiva: el evento permanece en el bus.
+     * Reads the next event without consuming it.
      * 
-     * @return El evento (long) o -1 si el bus está vacío
+     * @return The next event, or {@code -1L} if the bus is empty.
      */
     long peek();
 
     /**
-     * Retorna el número de eventos pendientes en el bus.
+     * Retrieves the current number of pending events.
      * 
-     * @return Cantidad de eventos disponibles para consumir
+     * @return Total events available for consumption.
      */
     int size();
 
     /**
-     * Retorna la capacidad total del bus.
+     * Retrieves the maximum physical capacity of the bus.
      * 
-     * @return Número máximo de eventos que puede almacenar
+     * @return Maximum number of events the bus can store.
      */
     int capacity();
 
     /**
-     * Retorna la capacidad restante del bus.
+     * Calculates the remaining available capacity.
      * 
-     * @return Número de eventos que aún pueden ser insertados
+     * @return Number of events that can still be offered.
      */
     default int remainingCapacity() {
         return capacity() - size();
     }
 
     /**
-     * Limpia todos los eventos del bus.
-     * Operación destructiva: todos los eventos se descartan.
+     * Flushes all pending events from the bus destructively.
      */
     void clear();
 
     /**
-     * Verifica si el bus está vacío.
+     * Checks if the bus contains no pending events.
      * 
-     * @return true si no hay eventos pendientes
+     * @return {@code true} if empty.
      */
     default boolean isEmpty() {
         return size() == 0;
     }
 
     /**
-     * Verifica si el bus está lleno.
+     * Checks if the bus has reached its maximum capacity.
      * 
-     * @return true si no se pueden insertar más eventos
+     * @return {@code true} if no more events can be offered.
      */
     default boolean isFull() {
         return remainingCapacity() == 0;
     }
 
     /**
-     * Retorna la latencia de la última transacción en nanosegundos.
+     * Retrieves the hardware latency of the last transaction.
      * 
-     * @return Latencia en nanosegundos (0 por defecto)
+     * @return Latency in nanoseconds. Defaults to 0L if unsupported.
      */
     default long getLastLatencyNs() {
         return 0L;

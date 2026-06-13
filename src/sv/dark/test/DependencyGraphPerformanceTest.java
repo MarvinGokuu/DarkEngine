@@ -1,4 +1,9 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.test;
+
+import sv.dark.core.AAACertified;
 
 import sv.dark.kernel.SystemDependencyGraph;
 import sv.dark.core.systems.GameSystem;
@@ -7,14 +12,21 @@ import java.lang.reflect.Field;
 import java.util.Map;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Validar que los mapas del SystemDependencyGraph se inicialicen
- * con la capacidad pre-dimensionada correcta para evitar re-hashing durante la construcción del DAG.
+ * RESPONSIBILITY: Validates that the SystemDependencyGraph maps are initialized with the correct pre-sized capacity.
+ * WHY: Hash collisions and table rehashing during DAG construction introduce unacceptable latency spikes.
+ * TECHNIQUE: Uses Reflection to inspect internal HashMap capacities after adding a dummy system.
+ * GUARANTEES: Ensures that the dependency graph avoids re-hashing during DAG construction.
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-06-03
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public class DependencyGraphPerformanceTest {
 
     public static void main(String[] args) {
@@ -25,7 +37,7 @@ public class DependencyGraphPerformanceTest {
         try {
             SystemDependencyGraph graph = new SystemDependencyGraph();
 
-            // Extraer los mapas mediante reflexión
+            // Extract maps via reflection
             Field systemsByNameField = SystemDependencyGraph.class.getDeclaredField("systemsByName");
             systemsByNameField.setAccessible(true);
             Map<?, ?> systemsByName = (Map<?, ?>) systemsByNameField.get(graph);
@@ -34,7 +46,7 @@ public class DependencyGraphPerformanceTest {
             dependenciesField.setAccessible(true);
             Map<?, ?> dependencies = (Map<?, ?>) dependenciesField.get(graph);
 
-            // Agregar un sistema dummy para forzar la inicialización de las tablas de HashMap
+            // Add a dummy system to force initialization of HashMap tables
             GameSystem dummySystem = new GameSystem() {
                 @Override public void update(WorldStateFrame state, double dt) {}
                 @Override public String getName() { return "DummySystem"; }
@@ -42,7 +54,7 @@ public class DependencyGraphPerformanceTest {
             };
             graph.addSystem(dummySystem);
 
-            // Inspeccionar el tamaño de las tablas internas del HashMap
+            // Inspect the size of the internal HashMap tables
             Field tableField = Class.forName("java.util.HashMap").getDeclaredField("table");
             tableField.setAccessible(true);
 

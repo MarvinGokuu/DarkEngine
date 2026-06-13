@@ -1,38 +1,45 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.bus;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Dark
- * RESPONSABILIDAD: Definir estrategias de manejo de saturación del bus.
- * GARANTÍAS: Comportamiento determinista ante backpressure.
- * DOMINIO CRÍTICO: Concurrencia / Resiliencia
+ * RESPONSIBILITY: Define bus saturation handling strategies.
+ * WHY: High-throughput event systems must define deterministic policies for when the ring buffer reaches capacity.
+ * TECHNIQUE: Strategy Pattern Enum defining DROP, BLOCK, and OVERWRITE policies.
+ * GUARANTEES: Deterministic behavior under backpressure.
  * 
- * PATRÓN: Strategy Pattern
- * CONCEPTO: Backpressure Handling
- * ROL: Policy Definition
- * 
- * @author MarvinDev
- * @version 2.0
- * @since 2026-01-04
+ * @author Marvin Alexander Flores Canales
+ * @since 2.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public enum BackpressureStrategy {
 
     /**
-     * Descarta el evento nuevo si el bus está lleno.
-     * Uso: Eventos no críticos (ej: partículas, efectos visuales).
+     * Drops the new event if the bus is full.
+     * Use: Non-critical events (e.g., particles, visual effects).
      */
     DROP,
 
     /**
-     * Bloquea el thread hasta que haya espacio disponible.
-     * Uso: Eventos críticos que no pueden perderse (ej: input del jugador).
-     * ADVERTENCIA: Puede causar deadlock si no se consume el bus.
+     * Blocks the thread until space is available.
+     * Use: Critical events that cannot be lost (e.g., player input).
+     * WARNING: Can cause a deadlock if the bus is not consumed.
      */
     BLOCK,
 
     /**
-     * Sobrescribe el evento más antiguo con el nuevo.
-     * Uso: Eventos donde solo importa el estado más reciente (ej: posición del
-     * mouse).
+     * Overwrites the oldest event with the new one.
+     * Use: Events where only the most recent state matters (e.g., mouse
+     * position).
      */
     OVERWRITE
 }

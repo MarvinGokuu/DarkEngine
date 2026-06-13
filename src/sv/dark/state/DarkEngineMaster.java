@@ -1,49 +1,51 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.state;
 
 import sv.dark.admin.AdminController;
 import sv.dark.bus.DarkEventDispatcher;
 import sv.dark.config.DarkEngineConfig;
 import sv.dark.core.AAACertified;
+import sv.dark.core.DarkLogger;
 import sv.dark.kernel.EngineKernel;
 import sv.dark.memory.SectorMemoryVault;
 import sv.dark.ui.AsyncLogWriter;
 import sv.dark.ui.DarkEngineWindow;
+import sv.dark.core.systems.DarkInputSystem;
+import sv.dark.core.systems.DarkAudioSystem;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Global Runtime Orchestration and Entry Point.
- * DEPENDENCIAS: EngineKernel, SectorMemoryVault, DarkEventDispatcher
- * MÉTRICAS: Tiempo de arranque <200ms
- * 
- * Single entry point (Main). Initializes off-heap memory vaults,
- * configures multi-lane architecture and transfers authority to the
- * Engine Kernel.
- * 
- * @author Marvin-Dev
- * @version 2.0 (AAA+ Refactor)
- * @since 2026-01-08
+ * RESPONSIBILITY: Global Runtime Orchestration and Entry Point.
+ * WHY: The engine requires a strict chronological bootstrap sequence to initialize native memory, the event bus, the visual window, and the background kernel thread safely.
+ * TECHNIQUE: Single entry point (Main). Redirects I/O to async loggers, initializes off-heap memory vaults, configures multi-lane architecture, and pins the Kernel to a MAX_PRIORITY background thread.
+ * GUARANTEES: Clean and predictable bootstrap sequence, isolating the kernel hot-path from AWT/OS thread interruptions.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 @AAACertified(date = "2026-01-08", maxLatencyNs = 200_000_000, notes = "Engine Bootstrapper - Infrastructure Orchestrator")
 public final class DarkEngineMaster {
 
     public static void main(String[] args) throws java.io.IOException {
 
-        // ─── STEP 0: Redirigir stdout/stderr → darkengine.log (antes de cualquier
-        // output) ───
-        // Sin esto: cada System.out.println() en el hot-path del kernel = I/O
-        // bloqueante.
-        // Con esto: println() → ring buffer en memoria (nanosegundos), flush en daemon
-        // thread.
+        // -------------------------------------------------------------------------
+        // STEP 0: Redirect stdout/stderr -> darkengine.log (before any output)
+        // -------------------------------------------------------------------------
+        // Without this: every System.out.println() in the kernel hot-path = blocking I/O.
+        // With this: println() -> in-memory ring buffer (nanoseconds), flushed in daemon thread.
         AsyncLogWriter logWriter = new AsyncLogWriter("darkengine.log");
         System.setOut(logWriter.createPrintStream(System.out));
         System.setErr(logWriter.createPrintStream(System.err));
 
-        // ─── STEP 1: Ventana visual — aparece inmediatamente, antes del boot del
-        // kernel ────
+        // -------------------------------------------------------------------------
+        // STEP 1: Visual Window - appears immediately, before kernel boot
+        // -------------------------------------------------------------------------
         DarkEngineWindow.launch();
 
-        // ─── STEP 2: Init original (sin cambios)
-        // ────────────────────────────────────────────
+        // -------------------------------------------------------------------------
+        // STEP 2: Original Init (unchanged)
+        // -------------------------------------------------------------------------
         // Force DarkEngineConfig class loading to trigger static block
         // initialization.
         // The static block prints the configuration banner and loads all config
@@ -52,9 +54,8 @@ public final class DarkEngineMaster {
         @SuppressWarnings("unused")
         String profile = DarkEngineConfig.getProfile();
 
-        System.out.println("DarkEngine v2.0");
-        System.out.println("=================");
-        System.out.println();
+        DarkLogger.info("ENGINE", "DarkEngine v2.0");
+        DarkLogger.info("ENGINE", "=================");
 
         // [NEURONA_048 STEP 1] SECTOR MEMORY VAULT (Off-Heap Memory)
         SectorMemoryVault memoryVault = new SectorMemoryVault(1024);
@@ -63,43 +64,47 @@ public final class DarkEngineMaster {
         DarkEventDispatcher dispatcher = DarkEventDispatcher.createDefault(14);
 
         // [NEURONA_048 STEP 3] MAIN KERNEL (Central Processor)
-        System.out.println("[ENGINE] Starting kernel...");
+        DarkLogger.info("ENGINE", "Starting kernel...");
         EngineKernel kernel = new EngineKernel(dispatcher, memoryVault);
 
         // [NEURONA_048 STEP 4] ADMIN CONTROLLER (Control Plane)
-        // Iniciar el Control Plane (HTTP Server + Admin Consumer)
-        // Esto NO bloquea el hot-path, corre en threads separados
-        AdminController.startControlPlane(kernel);
+        // Start the Control Plane (HTTP Server + Admin Consumer)
+        // This DOES NOT block the hot-path, it runs in separate threads
+        AdminController.startControlPlane(kernel, memoryVault);
 
         // [NEURONA_048 STEP 5] CONFIGURE SYSTEMS
-        configureSystems(kernel);
+        configureSystems(kernel, memoryVault);
 
-        // ─── STEP 3: Kernel en thread dedicado MAX_PRIORITY — preserva simpatía
-        // mecánica ────
-        // kernel.start() llama internamente a ThreadPinning.pinToCore(1).
-        // Al correr en su propio thread MAX_PRIORITY, el OS lo favorece sobre el UI
-        // thread
-        // (NORM_PRIORITY - 1) y no comparte el ForkJoinPool con WorkStealingProcessor.
+        // -------------------------------------------------------------------------
+        // STEP 3: Kernel in dedicated MAX_PRIORITY thread - preserves mechanical sympathy
+        // -------------------------------------------------------------------------
+        // kernel.start() internally calls ThreadPinning.pinToCore(1).
+        // By running in its own MAX_PRIORITY thread, the OS favors it over the UI thread
+        // (NORM_PRIORITY - 1) and does not share the ForkJoinPool with WorkStealingProcessor.
         Thread kernelThread = new Thread(() -> {
             try {
                 kernel.start();
             } catch (Throwable t) {
-                System.err.println("[MASTER] Kernel fatal: " + t.getMessage());
+                DarkLogger.fatal("MASTER", "Fatal Kernel Error", t);
             }
         }, "dark-engine-kernel");
         kernelThread.setPriority(Thread.MAX_PRIORITY);
-        kernelThread.setDaemon(false); // JVM no termina mientras el kernel corre
+        kernelThread.setDaemon(false); // JVM does not terminate while the kernel runs
         kernelThread.start();
     }
 
-    private static void configureSystems(EngineKernel kernel) {
-        System.out.println("[ENGINE] Configuring User Systems...");
+    private static void configureSystems(EngineKernel kernel, SectorMemoryVault memoryVault) {
+        DarkLogger.info("ENGINE", "Configuring User Systems...");
         var registry = kernel.getSystemRegistry();
 
         // Register Test Systems for Parallel Execution Validation
         registry.registerGameSystem(new sv.dark.test.SystemExecutionTest());
         registry.registerGameSystem(new sv.dark.test.SystemDependencyTest());
         registry.registerGameSystem(new sv.dark.test.SystemParallelismTest());
+        
+        // Register Core Phase 2 Systems
+        registry.registerGameSystem(new DarkInputSystem(memoryVault));
+        registry.registerGameSystem(new DarkAudioSystem(memoryVault));
 
         // Finalize Dependency Graph
         registry.buildDependencyGraph();

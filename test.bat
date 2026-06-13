@@ -1,88 +1,112 @@
 @echo off
+cd /d "%~dp0"
 setlocal
 
-echo.
-echo DarkEngine Test Suite
-echo ========================
+set LOG_FILE=aaa_test_report.log
+set TMP_LOG=test_temp.log
+
+echo ==============================================
+echo  DARK ENGINE - AAA+ TEST SUITE EXECUTOR
+echo ==============================================
 echo.
 
-if not exist bin (
-    echo Error: Project not compiled. Run build.bat first.
+echo [TEST] Compiling dependencies...
+call build.bat
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] Build failed. Cannot run tests.
+    type compile.log
     exit /b 1
 )
 
-echo Running tests...
+echo ============================================== > %LOG_FILE%
+echo  DARK ENGINE - AAA+ TEST SUITE EXECUTOR >> %LOG_FILE%
+echo ============================================== >> %LOG_FILE%
+echo. >> %LOG_FILE%
+
+echo.
+echo [TEST] Running tests...
 echo.
 
-:: Bus tests
-echo [1/10] Bus Benchmark...
-java -cp bin sv.dark.bus.BusBenchmarkTest
+set JAVA_CMD=java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector
+
+call :run_test "1/15" "Bus Benchmark" "sv.dark.bus.BusBenchmarkTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "2/15" "Bus Coordination" "sv.dark.bus.BusCoordinationTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "3/15" "Bus Hardware" "sv.dark.bus.BusHardwareTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "4/15" "Ultra Fast Boot" "sv.dark.test.UltraFastBootTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "5/15" "Graceful Shutdown" "sv.dark.test.GracefulShutdownTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "6/15" "Power Saving" "sv.dark.test.PowerSavingTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "7/15" "Governor Telemetry Validation" "sv.dark.test.GovernorTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "8/15" "Particle System Determinism" "sv.dark.test.ParticleSystemDeterminismTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "9/15" "System Registry Capacity" "sv.dark.test.SystemRegistryCapacityTest" "--add-opens java.base/java.util=ALL-UNNAMED"
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "10/15" "Dependency Graph Performance" "sv.dark.test.DependencyGraphPerformanceTest" "--add-opens java.base/java.util=ALL-UNNAMED"
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "11/15" "Metrics Aggregation" "sv.dark.test.MetricsAggregationTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "12/15" "System State Manager" "sv.dark.test.SystemStateManagerTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "13/15" "Bus Benchmark (Final Validation)" "sv.dark.bus.BusBenchmarkTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "14/15" "SIMD Data Accelerator Throughput" "sv.dark.core.DarkDataAccelerator" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "15/15" "SIMD Physics Engine Throughput" "sv.dark.test.SimdPhysicsDemoTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
-echo [2/10] Bus Coordination...
-java -cp bin sv.dark.bus.BusCoordinationTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
+echo ==============================================
+echo  ALL AAA+ TESTS PASSED SUCCESSFULLY!
+echo ==============================================
 
 echo.
-echo [3/10] Bus Hardware...
-java -cp bin sv.dark.bus.BusHardwareTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
+%JAVA_CMD% -cp bin sv.dark.test.SummaryGenerator
 
-:: System tests
-echo.
-echo [4/10] Ultra Fast Boot...
-java -cp bin sv.dark.test.UltraFastBootTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [5/10] Graceful Shutdown...
-java -cp bin sv.dark.test.GracefulShutdownTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [6/10] Power Saving...
-java -cp bin sv.dark.test.PowerSavingTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [7/10] Particle System Determinism (Audit Fix)...
-java -cp bin sv.dark.test.ParticleSystemDeterminismTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [8/10] System Registry Capacity (Audit Fix)...
-java --add-opens java.base/java.util=ALL-UNNAMED -cp bin sv.dark.test.SystemRegistryCapacityTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [9/10] Dependency Graph Performance (Audit Fix)...
-java --add-opens java.base/java.util=ALL-UNNAMED -cp bin sv.dark.test.DependencyGraphPerformanceTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [10/11] Bus Benchmark (final)...
-java -cp bin sv.dark.bus.BusBenchmarkTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo [11/11] Metrics Aggregation (Phase 0)...
-java -cp bin sv.dark.test.MetricsAggregationTest
-if %ERRORLEVEL% NEQ 0 goto :test_failed
-
-echo.
-echo ========================
-echo All tests passed.
-echo ========================
-echo.
-endlocal
+if exist %TMP_LOG% del /q %TMP_LOG%
 exit /b 0
+
+:run_test
+<nul set /p="[%~1] %~2... "
+echo. >> %LOG_FILE%
+echo [%~1] %~2 >> %LOG_FILE%
+
+%JAVA_CMD% %~4 -cp bin %~3 > %TMP_LOG% 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [OK] 0 errors
+    type %TMP_LOG% >> %LOG_FILE%
+    exit /b 0
+) else (
+    echo [FAIL]
+    echo.
+    type %TMP_LOG%
+    type %TMP_LOG% >> %LOG_FILE%
+    exit /b 1
+)
 
 :test_failed
 echo.
-echo ========================
-echo Test failed.
-echo ========================
-echo.
-endlocal
+echo ==============================================
+echo  [ERROR] AAA+ TEST SUITE FAILED
+echo ==============================================
+if exist %TMP_LOG% del /q %TMP_LOG%
 exit /b 1

@@ -1,94 +1,116 @@
-package sv.dark.core; // Sincronizado con la ruta física real
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+package sv.dark.core;
+
+import sv.dark.core.AAACertified;
 
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Motor de Paralelismo Work-Stealing (Divide & Conquer).
- * DEPENDENCIAS: java.util.concurrent.ForkJoinPool, MemorySegment
- * MÉTRICAS: 100% Core Utilization, Recursive Task Splitting
+ * RESPONSIBILITY: Work-Stealing Parallelism Engine (Divide & Conquer).
+ * WHY: Traditional thread pools suffer from contention and lock overhead. We need recursive parallelism that dynamically balances workload.
+ * TECHNIQUE: Implementation of recursive parallelism for entity processing using ForkJoinPool and a pre-allocated reusable task tree.
+ * GUARANTEES: 100% Core Utilization. Zero GC allocations on execution by reusing and reinitializing the SectorTask tree.
  * 
- * Implementación de paralelismo recursivo para procesamiento de entidades.
- * Divide dinámicamente la carga de trabajo entre núcleos usando el algoritmo
- * work-stealing.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+@AAACertified(date = "2026-06-12", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Zero-GC Work-Stealing Processor with cached reusable task tree")
 public final class WorkStealingProcessor {
 
     private final ForkJoinPool pool;
+    private SectorTask rootTask = null;
+    private int cachedLength = -1;
 
     public WorkStealingProcessor(int parallelism) {
-        // [CONFIGURACIÓN]: Modo Async optimizado para flujos de baja latencia.
-        // El factory predeterminado es suficiente mientras no se requiera afinidad de
-        // núcleo.
+        // [CONFIGURATION]: Async mode optimized for low-latency flows.
         this.pool = new ForkJoinPool(parallelism,
                 ForkJoinPool.defaultForkJoinWorkerThreadFactory,
                 null, true);
     }
 
     /**
-     * Inicia el procesamiento paralelo del frame actual.
-     * Divide los sectores entre los hilos disponibles según demanda.
+     * Starts parallel processing of the current frame.
+     * Divides sectors among available threads based on demand.
      */
     public void execute(MemorySegment[] sectors, double dt) {
         if (sectors == null || sectors.length == 0)
             return;
-        pool.invoke(new SectorTask(sectors, 0, sectors.length, dt));
+            
+        // Lazily build or rebuild the task tree if array size changes
+        if (rootTask == null || sectors.length != cachedLength) {
+            this.rootTask = new SectorTask(sectors, 0, sectors.length);
+            this.cachedLength = sectors.length;
+        }
+        
+        // Re-inject arguments and reinitialize all tasks in the tree (Zero-Allocation)
+        rootTask.prepare(sectors, dt);
+        pool.invoke(rootTask);
     }
 
     /**
-     * Tarea recursiva que aplica el protocolo Divide & Conquer.
-     * Permite que hilos ociosos "roben" sectores de hilos sobrecargados.
+     * Recursive task that applies the Divide & Conquer protocol.
+     * Reuses instances and utilizes ForkJoinTask.reinitialize() for zero-allocation runs.
      */
-    //@SuppressWarnings("serial")
     private static class SectorTask extends RecursiveAction {
-        private final MemorySegment[] sectors;
+        private MemorySegment[] sectors;
         private final int start, end;
-        private final double dt;
+        private double dt;
+        
+        private SectorTask left;
+        private SectorTask right;
 
-        SectorTask(MemorySegment[] sectors, int start, int end, double dt) {
+        SectorTask(MemorySegment[] sectors, int start, int end) {
             this.sectors = sectors;
             this.start = start;
             this.end = end;
+            
+            int length = end - start;
+            if (length > 1) {
+                int mid = start + length / 2;
+                this.left = new SectorTask(sectors, start, mid);
+                this.right = new SectorTask(sectors, mid, end);
+            }
+        }
+
+        /**
+         * Recursively sets execution variables and resets ForkJoin task state.
+         */
+        void prepare(MemorySegment[] sectors, double dt) {
+            this.sectors = sectors;
             this.dt = dt;
+            this.reinitialize(); // Reset task bookkeeping state for reuse
+            
+            if (left != null) {
+                left.prepare(sectors, dt);
+            }
+            if (right != null) {
+                right.prepare(sectors, dt);
+            }
         }
 
         @Override
         protected void compute() {
             int length = end - start;
 
-            // Unidad mínima de trabajo: Un sector completo (Preserva la localidad de
-            // caché).
+            // Minimum work unit: One complete sector (Preserves cache locality).
             if (length <= 1) {
                 processSector(sectors[start], dt);
                 return;
             }
 
-            // División binaria de la carga de sectores.
-            int mid = start + length / 2;
-            SectorTask left = new SectorTask(sectors, start, mid, dt);
-            SectorTask right = new SectorTask(sectors, mid, end, dt);
-
-            // [HITO 4.5]: Bifurcación asíncrona.
-            // 'left' se ejecuta localmente mientras 'right' queda disponible para ser
-            // robado.
+            // Execute the pre-allocated child branches
             invokeAll(left, right);
         }
 
         /**
-         * Punto de inyección de lógica de sistemas sobre la memoria nativa.
-         * Aquí el CPU opera a velocidad de registro sobre el segmento de memoria.
+         * Injection point for systems logic over native memory.
          */
         private void processSector(MemorySegment sector, double dt) {
-            // [SISTEMAS]: Aquí se invocan MovementSystem.process(sector, dt)
-            // Se garantiza que este hilo es el único con acceso exclusivo sobre este
-            // segmento en
-            // este instante.
+            // [SYSTEMS]: MovementSystem.process(sector, dt) would be executed here
         }
     }
 
@@ -96,5 +118,3 @@ public final class WorkStealingProcessor {
         pool.shutdown();
     }
 }
-// actualizado3/1/26
- 
