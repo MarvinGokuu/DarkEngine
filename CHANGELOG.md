@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.0.0] - 2026-06-13
+
+### Added
+- **Native FFI Linkers (Zero-Overhead)**:
+  - Built `DarkGraphicsLinker` to bind C++ `glfw3.dll` for native Window management completely bypassing AWT/Swing overhead.
+  - Built `DarkAudioLinker` to bind C++ `soft_oal.dll` for OpenAL spatial audio handling directly from native memory.
+- **Web-Based Control Plane (Telemetry & Control Daemon)**:
+  - Deployed `DarkMetricsServer` as an embedded `jdk.httpserver` to expose engine memory variables over HTTP/WebSockets.
+  - Built a decoupled HTML5 visual editor (`editor.html` & `index.html`) serving as the developer dashboard.
+- **Native App Packaging (Distribution)**:
+  - Rewrote `exe.bat` to leverage GraalVM `jpackage`, generating a zero-dependency portable Windows `.exe` (`Dark-Engine.exe`) bundled with ZGC and the native DLLs.
+
+### Changed
+- Replaced the internal Java rendering engine with the groundwork for raw Vulkan/OpenGL bindings.
+- Switched the architecture to a "Decoupled Server-Client" model (Engine Kernel runs headless/native, Developer Tools run via Web Interface).
+
+---
+
 ## [2.2.0] - 2026-06-08
 
 ### Added
