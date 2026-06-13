@@ -1,14 +1,29 @@
+// Reading Order: 00010010
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
+import sv.dark.core.AAACertified;
+
 /**
- * TECHNICAL SPECIFICATION
- *
- * CONTEXT:
- * - immutable snapshot structure capturing the hardware and OS-level execution state.
- *
- * MEMORY SEMANTICS:
- * - Thread-confined heap properties. Snapshot variables are final and immutable.
+ * RESPONSIBILITY: Immutable snapshot structure capturing the hardware and OS-level execution state.
+ * WHY: Post-mortem analysis and OS state cleanup require exact telemetry of the machine state prior to running the engine.
+ * TECHNIQUE: Captures Thread Affinity, Power Scheme GUIDs, and Power Source strings in a final, immutable class.
+ * GUARANTEES: Thread-confined heap properties. Snapshot variables are final and immutable. Deterministic tracing.
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+@AAACertified(
+    date         = "2026-01-08",
+    maxLatencyNs = 100,
+    minThroughput = 0,
+    alignment    = 0,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Immutable telemetry record for execution state"
+)
 public final class SystemSnapshot {
 
     public final long threadAffinityMask;
@@ -25,15 +40,12 @@ public final class SystemSnapshot {
         this.timestamp = System.nanoTime();
     }
 
-    public void print() {
-        System.out.println("═══════════════════════════════════════════════════════════════");
-        System.out.println("SYSTEM STATE SNAPSHOT");
-        System.out.println("═══════════════════════════════════════════════════════════════");
-        System.out.printf("  Thread Affinity Mask: 0x%X%n", threadAffinityMask);
-        System.out.printf("  Power Scheme GUID:    %s%n", powerSchemeGuid);
-        System.out.printf("  Power Scheme Name:    %s%n", powerSchemeName);
-        System.out.printf("  Power Source:         %s%n", powerSource);
-        System.out.printf("  Timestamp:            %,d ns%n", timestamp);
-        System.out.println("═══════════════════════════════════════════════════════════════");
+    /**
+     * Formats the telemetry data without blocking I/O.
+     * @return Formatted snapshot string.
+     */
+    public String formatTelemetryData() {
+        return String.format("SNAPSHOT | ThreadMask: 0x%X | PowerGuid: %s | PowerName: %s | PowerSrc: %s | Timestamp: %,d ns",
+                threadAffinityMask, powerSchemeGuid, powerSchemeName, powerSource, timestamp);
     }
 }

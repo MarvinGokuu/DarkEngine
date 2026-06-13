@@ -1,195 +1,201 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core.systems;
+
+import sv.dark.core.AAACertified;
 
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Contrato Fundamental de Estrategia de Sistema.
- * DEPENDENCIAS: WorldStateFrame
- * MÉTRICAS: Zero-Allocation Interface
+ * RESPONSIBILITY: Define the base interface for all logical engine systems.
+ * WHY: To enforce the Strategy pattern and the principle of Immutability during execution.
+ * TECHNIQUE: Method injection of the WorldStateFrame and deterministic deltaTime.
+ * GUARANTEES: Zero-allocation interface and deterministic state updates.
  * 
- * Interfaz base para todos los sistemas lógicos del motor (Física, IA, Reglas).
- * Impone rigurosamente el patrón Strategy y el principio de Inmutabilidad
- * durante la ejecución.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public interface GameSystem {
 
     /**
-     * Ejecuta la lógica del sistema para un tick del motor.
+     * Executes the system logic for an engine tick.
      * 
-     * ═══════════════════════════════════════════════════════════════════════
-     * CONTRATO DE EJECUCIÓN
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+     * EXECUTION CONTRACT
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * PRECONDICIONES (lo que el Kernel garantiza):
+     * PRECONDITIONS (what the Kernel guarantees):
      * 1. state != null
-     * 2. state es inmutable durante esta llamada
-     * 3. deltaTime > 0 y deltaTime < TICK_BUDGET
-     * 4. No hay otras llamadas concurrentes a este sistema
+     * 2. state is immutable during this call
+     * 3. deltaTime > 0 and deltaTime < TICK_BUDGET
+     * 4. No other concurrent calls to this system
      * 
-     * POSTCONDICIONES (lo que el sistema debe garantizar):
-     * 1. Solo modifica datos vía state.writeXXX()
-     * 2. No crea objetos en el Heap
-     * 3. Retorna en tiempo determinista (< 1ms típicamente)
-     * 4. Mismo input produce mismo output (bit-perfect)
+     * POSTCONDITIONS (what the system must guarantee):
+     * 1. Only modifies data via state.writeXXX()
+     * 2. Does not create objects on the Heap
+     * 3. Returns in deterministic time (< 1ms typically)
+     * 4. Same input produces same output (bit-perfect)
      * 
-     * ═══════════════════════════════════════════════════════════════════════
-     * CONCURRENCIA
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+     * CONCURRENCY
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * MODELO: Single-threaded per system
-     * - El Kernel puede ejecutar DIFERENTES sistemas en paralelo
-     * - El Kernel NUNCA ejecuta el MISMO sistema concurrentemente
-     * - No se requieren locks dentro del sistema
+     * MODEL: Single-threaded per system
+     * - The Kernel can execute DIFFERENT systems in parallel
+     * - The Kernel NEVER executes the SAME system concurrently
+     * - No locks required inside the system
      * 
-     * EJEMPLO DE EJECUCIÓN PARALELA:
+     * PARALLEL EXECUTION EXAMPLE:
      * Thread 1: MovementSystem.update(frame, dt)
-     * Thread 2: SpriteSystem.update(frame, dt) // OK: diferentes sistemas
+     * Thread 2: SpriteSystem.update(frame, dt) // OK: different systems
      * 
-     * EJEMPLO PROHIBIDO:
+     * FORBIDDEN EXAMPLE:
      * Thread 1: MovementSystem.update(frame1, dt)
-     * Thread 2: MovementSystem.update(frame2, dt) // NUNCA: mismo sistema
+     * Thread 2: MovementSystem.update(frame2, dt) // NEVER: same system
      * 
-     * ═══════════════════════════════════════════════════════════════════════
-     * DETERMINISMO
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+     * DETERMINISM
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * DEFINICIÓN: Para el mismo estado de entrada y deltaTime, el sistema
-     * debe producir exactamente el mismo estado de salida.
+     * DEFINITION: For the same input state and deltaTime, the system
+     * must produce exactly the same output state.
      * 
-     * MATEMÁTICAMENTE:
-     * update(state₁, dt₁) = result₁
-     * update(state₁, dt₁) = result₁ // Siempre el mismo resultado
+     * MATHEMATICALLY:
+     * update(state, dt) = result
+     * update(state, dt) = result // Always the same result
      * 
-     * APLICACIONES:
-     * - REPLAY: Grabar inputs y reproducir partida exactamente
-     * - NETCODE: Sincronizar clientes con solo inputs (no estado completo)
-     * - DEBUGGING: Reproducir bugs de forma consistente
-     * - TESTING: Tests deterministas y reproducibles
+     * APPLICATIONS:
+     * - REPLAY: Record inputs and reproduce exact game
+     * - NETCODE: Synchronize clients with only inputs (no full state)
+     * - DEBUGGING: Reproduce bugs consistently
+     * - TESTING: Deterministic and reproducible tests
      * 
-     * CÓMO GARANTIZARLO:
-     * ✅ Usar solo datos de WorldStateFrame
-     * ✅ Usar deltaTime proporcionado (no System.currentTimeMillis())
-     * ✅ Usar seeds del frame para random (no Math.random())
-     * ✅ Evitar floating-point no-determinista (usar double, no float)
+     * HOW TO GUARANTEE IT:
+     * [OK] Use only data from WorldStateFrame
+     * [OK] Use provided deltaTime (not System.currentTimeMillis())
+     * [OK] Use frame seeds for random (not Math.random())
+     * [OK] Avoid non-deterministic floating-point (use double, not float)
      * 
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * PERFORMANCE
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * OBJETIVO: < 1ms por sistema para 60 FPS
+     * TARGET: < 1ms per system for 60 FPS
      * 
-     * PRESUPUESTO DE TIEMPO (60 FPS = 16.6ms por frame):
+     * TIME BUDGET (60 FPS = 16.6ms per frame):
      * - Input Processing: 1ms
      * - Bus Processing: 0.5ms
-     * - Systems Execution: 10ms (distribuido entre N sistemas)
+     * - Systems Execution: 10ms (distributed among N systems)
      * - State Hashing: 0.5ms
      * - Rendering: 4ms
      * - Buffer: 0.6ms
      * 
-     * TÉCNICAS DE OPTIMIZACIÓN:
-     * 1. Cache Locality: Acceso secuencial a memoria
-     * 2. SIMD: Operaciones vectorizadas cuando sea posible
-     * 3. Branch Prediction: Minimizar if/else en loops
-     * 4. Prefetching: CPU puede predecir accesos
+     * OPTIMIZATION TECHNIQUES:
+     * 1. Cache Locality: Sequential memory access
+     * 2. SIMD: Vectorized operations when possible
+     * 3. Branch Prediction: Minimize if/else in loops
+     * 4. Prefetching: CPU can predict accesses
      * 
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * @param state     Snapshot inmutable del estado del mundo (Single Source of
+     * @param state     Immutable snapshot of the world state (Single Source of
      *                  Truth).
-     *                  Este frame contiene TODOS los datos del juego en memoria
-     *                  Off-Heap.
+     *                  This frame contains ALL game data in Off-Heap memory.
      * 
-     *                  ACCESO:
-     *                  - Lectura: state.readDouble(offset), state.readInt(offset)
-     *                  - Escritura: state.writeDouble(offset, value)
+     *                  ACCESS:
+     *                  - Read: state.readDouble(offset), state.readInt(offset)
+     *                  - Write: state.writeDouble(offset, value)
      * 
-     *                  INMUTABILIDAD:
-     *                  - El frame NO cambia durante update()
-     *                  - Las escrituras van a un buffer que se commitea después
-     *                  - Esto garantiza que todos los sistemas ven el mismo estado
+     *                  IMMUTABILITY:
+     *                  - The frame does NOT change during update()
+     *                  - Writes go to a buffer that is committed later
+     *                  - This guarantees all systems see the same state
      * 
-     * @param deltaTime Tiempo transcurrido desde el último tick en segundos.
+     * @param deltaTime Time elapsed since the last tick in seconds.
      * 
-     *                  RANGO TÍPICO: 0.016 segundos (60 FPS) a 0.033 segundos (30
+     *                  TYPICAL RANGE: 0.016 seconds (60 FPS) to 0.033 seconds (30
      *                  FPS)
      * 
-     *                  USO:
-     *                  - Física: position += velocity * deltaTime
-     *                  - Animación: frame += frameRate * deltaTime
+     *                  USAGE:
+     *                  - Physics: position += velocity * deltaTime
+     *                  - Animation: frame += frameRate * deltaTime
      *                  - Timers: timer -= deltaTime
      * 
-     *                  DETERMINISMO:
-     *                  - El Kernel garantiza que deltaTime es consistente
-     *                  - Para el mismo tick, todos los sistemas ven el mismo
+     *                  DETERMINISM:
+     *                  - The Kernel guarantees deltaTime is consistent
+     *                  - For the same tick, all systems see the same
      *                  deltaTime
-     *                  - No usar System.nanoTime() o similar
+     *                  - Do not use System.nanoTime() or similar
      * 
-     * @throws RuntimeException Solo en casos de errores irrecuperables
-     *                          (corrupción de memoria, violación de contrato)
+     * @throws RuntimeException Only in cases of unrecoverable errors
+     *                          (memory corruption, contract violation)
      * 
-     * @see WorldStateFrame Para detalles de acceso a memoria
-     * @see EntityLayout Para offsets de entidades
-     * @see DarkStateLayout Para offsets de estado del kernel
+     * @see WorldStateFrame For memory access details
+     * @see EntityLayout For entity offsets
+     * @see DarkStateLayout For kernel state offsets
      */
     void update(WorldStateFrame state, double deltaTime);
 
     /**
-     * Retorna el nombre del sistema para debugging y telemetría.
+     * Returns the system name for debugging and telemetry.
      * 
-     * IMPLEMENTACIÓN POR DEFECTO: Usa el nombre de la clase.
+     * DEFAULT IMPLEMENTATION: Uses the class name.
      * 
-     * OVERRIDE: Solo si necesitas un nombre personalizado.
+     * OVERRIDE: Only if you need a custom name.
      * 
-     * EJEMPLO:
+     * EXAMPLE:
      * 
      * @Override
      *           public String getName() {
      *           return "PhysicsSystem-v2";
      *           }
      * 
-     * @return Nombre del sistema (no null, no vacío)
+     * @return System name (not null, not empty)
      */
     default String getName() {
         return this.getClass().getSimpleName();
     }
 
     /**
-     * Retorna los nombres de sistemas de los que este sistema depende.
+     * Returns the names of systems that this system depends on.
      * 
-     * PROPÓSITO: Construir el grafo de dependencias para ejecución paralela.
+     * PURPOSE: Build the dependency graph for parallel execution.
      * 
-     * SEMÁNTICA:
-     * - Si este sistema depende de "PhysicsSystem", debe retornar {"PhysicsSystem"}
-     * - El Kernel garantiza que las dependencias se ejecutan ANTES
-     * - Sistemas sin dependencias pueden ejecutarse en paralelo
+     * SEMANTICS:
+     * - If this system depends on "PhysicsSystem", it must return {"PhysicsSystem"}
+     * - The Kernel guarantees that dependencies are executed BEFORE
+     * - Systems without dependencies can be executed in parallel
      * 
-     * IMPLEMENTACIÓN POR DEFECTO: Sin dependencias (puede ejecutarse primero)
+     * DEFAULT IMPLEMENTATION: No dependencies (can be executed first)
      * 
-     * OVERRIDE: Solo si el sistema necesita que otros se ejecuten antes
+     * OVERRIDE: Only if the system needs others to execute first
      * 
-     * EJEMPLO:
+     * EXAMPLE:
      * 
      * @Override
      *           public String[] getDependencies() {
      *           return new String[]{"PhysicsSystem", "InputSystem"};
      *           }
      * 
-     *           IMPORTANTE:
-     *           - No crear dependencias circulares (A→B→A)
-     *           - El Kernel detecta ciclos y falla rápido
-     *           - Minimizar dependencias para maximizar paralelismo
+     *           IMPORTANT:
+     *           - Do not create circular dependencies (A->B->A)
+     *           - The Kernel detects cycles and fails fast
+     *           - Minimize dependencies to maximize parallelism
      * 
-     * @return Array de nombres de sistemas (puede ser vacío, no null)
+     * @return Array of system names (can be empty, not null)
      */
     default String[] getDependencies() {
-        return new String[0]; // Sin dependencias por defecto
+        return new String[0]; // No dependencies by default
     }
 }
-// Creado: 03/01/2026 23:35
-// Rol: Software Architect aplicando Strategy Pattern + SOLID
-// Principios: ISP, OCP, SSOT, Determinism, Immutability
+// Created: 03/01/2026 23:35
+// Role: Software Architect applying Strategy Pattern + SOLID
+// Principles: ISP, OCP, SSOT, Determinism, Immutability

@@ -1,41 +1,50 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core; // Sincronizado con la ruta src/sv/dark/core/
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Mapa de offsets (Layout) para entidades en memoria Off-Heap.
- * DEPENDENCIAS: Ninguna (Definición Estática)
- * MÉTRICAS: Alineación 64-byte (Cache Line), Access O(1)
+ * RESPONSIBILITY: Offsets Map (Layout) for entities in Off-Heap memory.
+ * WHY: Objects on the JVM heap suffer from scattered memory allocation, causing cache misses. We need a contiguous, predictable layout.
+ * TECHNIQUE: Defines the physical byte structure of an Entity in native memory using static constant offsets.
+ * GUARANTEES: 64-byte Alignment (Cache Line). Access O(1). Perfect alignment to prevent False Sharing and allow vectorized access (SIMD).
  * 
- * Define la estructura física de una Entidad en memoria nativa.
- * Garantiza alineación perfecta para prevenir False Sharing y permitir
- * acceso vectorizado (SIMD).
+ * <p>Metrics: 64-byte Alignment (Cache Line), Access O(1)
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class EntityLayout {
 
-    // Estructura de 64 bytes por entidad (Alineación perfecta con L1 Cache Line)
+    // 64-byte structure per entity (Perfect alignment with L1 Cache Line)
     public static final long STRIDE = 64L;
 
-    // Posición (8 bytes cada uno - double/long)
+    // Position (8 bytes each - double/long)
     public static final long X_OFFSET = 0L;
     public static final long Y_OFFSET = 8L;
 
-    // Velocidad (Requerido por MovementSystem)
+    // Velocity (Required by MovementSystem)
     public static final long VX_OFFSET = 16L;
     public static final long VY_OFFSET = 24L;
 
-    // Metadatos y Visualización
+    // Metadata and Visualization
     public static final long ID_OFFSET = 32L;
     public static final long STATE_FLAGS = 40L;
-    public static final long GLOW_ALPHA = 48L; // Requerido por SpriteSystem
+    public static final long GLOW_ALPHA = 48L; // Required by SpriteSystem
 
     // Spatial Management (Bytes 56-64)
-    public static final long SECTOR_ID_OFFSET = 56L; // Requerido por DarkSectorManager
+    public static final long SECTOR_ID_OFFSET = 56L; // Required by DarkSectorManager
 
     private EntityLayout() {
-    } // Sellado: Solo constantes de direccionamiento.
+    } // Sealed: Only addressing constants.
 }
-// actualizado3/1/26
+// updated 3/1/26

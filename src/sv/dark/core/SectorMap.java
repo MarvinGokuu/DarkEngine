@@ -1,60 +1,34 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core;
 
 import java.util.Arrays;
 import java.util.concurrent.locks.StampedLock;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Mapa Hash Primitivo (Long -> Object) Zero-Allocation.
- * DEPENDENCIAS: StampedLock (Java 8+)
- * MÉTRICAS: Zero-GC, Open Addressing, Linear Probing
+ * RESPONSIBILITY: Primitive Hash Map (Long -> Object) Zero-Allocation.
+ * WHY: Total elimination of Garbage Collection at runtime (Zero-Allocation). Direct replacement for ConcurrentHashMap<Long, V> to avoid boxing.
+ * TECHNIQUE: Structure of Arrays (SoA) with primitive long[] keys. Open Addressing with Linear Probing for maximum cache locality. Cache Line Padding (64 bytes) to prevent False Sharing.
+ * GUARANTEES: Read latency < 200ns (Optimistic Read). Throughput > 5M ops/s. Minimal memory overhead.
  * 
- * Implementación "Soberana" de un mapa de alto rendimiento para eliminar
- * el boxing de claves Long (autoboxing) que ocurre en ConcurrentHashMap.
- * 
- * DISEÑO:
- * - Claves: long[] (primitivo)
- * - Valores: Object[] (generic wrapper)
- * - Concurrencia: StampedLock (Optimistic Reads)
- * - Resolución de Colisiones: Linear Probing
- * 
- * @author Marvin-Dev
- * @version 1.0 (AAA+ Certified)
- * @since 2026-01-08
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0 (AAA+ Certified)
  */
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - CORE MEMORY (SECTOR MAP)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// PORQUÉ:
-// - Eliminación total de Garbage Collection en runtime (Zero-Allocation).
-// - Reemplazo directo de ConcurrentHashMap<Long, V> para evitar boxing.
-// - Optimizado para lectura masiva (Read-Heavy) con StampedLock.
-//
-// TÉCNICA:
-// - Estructura de Arrays (SoA) con claves primitivas long[].
-// - Open Addressing con Linear Probing para máxima localidad de caché.
-// - Cache Line Padding (64 bytes) para prevenir False Sharing en contadores.
-//
-// GARANTÍA:
-// - Latencia de lectura < 200ns (Optimistic Read).
-// - Throughput > 5M ops/s.
-// - Overhead de memoria mínimo (vs Nodos de HashMap).
-//
 @AAACertified(date = "2026-01-08", maxLatencyNs = 200, minThroughput = 5_000_000, alignment = 64, lockFree = false, offHeap = false, notes = "Hybrid StampedLock with Primitive Open Addressing")
 public final class SectorMap<V> {
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // CONFIGURACIÓN CONSTANTE
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // CONSTANT CONFIGURATION
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     private static final int DEFAULT_CAPACITY = 1024;
     private static final float LOAD_FACTOR = 0.7f;
-    private static final long EMPTY_KEY = Long.MIN_VALUE; // Centinela de vacío
+    private static final long EMPTY_KEY = Long.MIN_VALUE; // Empty sentinel
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     // CACHE LINE PADDING - HEAD SHIELD
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // Prevención de False Sharing para el inicio de la estructura arrays
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // Prevention of False Sharing for the beginning of the arrays structure
     private long headShield_L1_slot1;
     private long headShield_L1_slot2;
     private long headShield_L1_slot3;
@@ -63,16 +37,16 @@ public final class SectorMap<V> {
     private long headShield_L1_slot6;
     private long headShield_L1_slot7;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     // ESTRUCTURA DE DATOS (SoA - Structure of Arrays)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    private long[] keys; // Claves primitivas (No Boxing)
-    private Object[] values; // Valores genéricos (Cast V)
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    private long[] keys; // Primitive keys (No Boxing)
+    private Object[] values; // Generic values (Cast V)
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     // ISOLATION BRIDGE
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // Separación entre datos de lectura (arrays) y contadores de escritura
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // Separation between read data (arrays) and write counters
     private long isolationBridge_slot1;
     private long isolationBridge_slot2;
     private long isolationBridge_slot3;
@@ -81,17 +55,17 @@ public final class SectorMap<V> {
     private long isolationBridge_slot6;
     private long isolationBridge_slot7;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     // HOT MUTABLE DATA (Write-Heavy)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     private int size;
     private int capacity;
     private int threshold;
 
-    // Concurrencia (Primitives Optimistic/Pessimistic)
+    // Concurrency (Primitives Optimistic/Pessimistic)
     private final StampedLock lock = new StampedLock();
 
-    // TAIL SHIELD: Protección final
+    // TAIL SHIELD: Final protection
     private long tailShield_L1_slot1;
     private long tailShield_L1_slot2;
     private long tailShield_L1_slot3;
@@ -101,9 +75,8 @@ public final class SectorMap<V> {
     private long tailShield_L1_slot7;
 
     /**
-     * Valida la integridad de la alineación de memoria (AAA+ Requirement).
-     * Evita que el compilador elimine las variables de padding (Dead Code
-     * Elimination).
+     * Validates memory alignment integrity (AAA+ Requirement).
+     * Prevents compiler from eliminating padding variables (Dead Code Elimination).
      */
     public long getPaddingChecksum() {
         long sum = 0;
@@ -123,36 +96,35 @@ public final class SectorMap<V> {
     }
 
     public SectorMap(int initialCapacity) {
-        // Garantizar potencia de 2
+        // Guarantee power of 2
         this.capacity = tableSizeFor(initialCapacity);
         this.threshold = (int) (capacity * LOAD_FACTOR);
         this.keys = new long[capacity];
         this.values = new Object[capacity];
         this.size = 0;
 
-        // Inicializar claves con centinela
+        // Initialize keys with sentinel
         Arrays.fill(keys, EMPTY_KEY);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES DE LECTURA (Optimistic Concurrency)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // READ OPERATIONS (Optimistic Concurrency)
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Recupera un valor asociado a una clave primitiva (Hot-Path).
+     * Retrieves a value associated with a primitive key (Hot-Path).
      * 
-     * MECÁNICA (Optimistic Lock):
-     * - Intenta lectura sin bloqueo (tryOptimisticRead) para máxima velocidad.
-     * - Valida consistencia post-lectura (validate stamp).
-     * - Fallback: Escala a bloqueo de lectura real si detecta escritura
-     * concurrente.
+     * MECHANICS (Optimistic Lock):
+     * - Attempts lock-free read (tryOptimisticRead) for maximum speed.
+     * - Validates post-read consistency (validate stamp).
+     * - Fallback: Escalates to actual read lock if concurrent write is detected.
      * 
-     * GARANTÍA:
-     * - Zero-Allocation: Uso de primitivos puros.
-     * - Latencia < 200ns en escenario sin contención.
+     * GUARANTEE:
+     * - Zero-Allocation: Use of pure primitives.
+     * - Latency < 200ns in uncontended scenarios.
      * 
-     * @param key Clave primitiva (long)
-     * @return Valor asociado o null si no existe
+     * @param key Primitive key (long)
+     * @return Associated value or null if it doesn't exist
      */
     // @SuppressWarnings("unchecked")
     public V get(long key) {
@@ -160,14 +132,14 @@ public final class SectorMap<V> {
             return null;
         }
 
-        // FASE 1: Optimistic Read (Sin bloqueo, solo barrera de memoria)
+        // PHASE 1: Optimistic Read (Lock-free, only memory barrier)
         long stamp = lock.tryOptimisticRead();
         V value = getInternal(key, stamp);
 
-        // FASE 2: Validación de Integridad
-        // Si otro thread escribió durante la lectura, el stamp es inválido.
+        // PHASE 2: Integrity Validation
+        // If another thread wrote during reading, the stamp is invalid.
         if (!lock.validate(stamp)) {
-            // FASE 3: Pessimistic Read (Fallback seguro)
+            // PHASE 3: Pessimistic Read (Safe fallback)
             stamp = lock.readLock();
             try {
                 value = getInternal(key, stamp);
@@ -178,7 +150,7 @@ public final class SectorMap<V> {
         return value;
     }
 
-    // Lógica interna de búsqueda (Linear Probing Realization)
+    // Internal search logic (Linear Probing Realization)
     @SuppressWarnings("unchecked")
     private V getInternal(long key, long stamp) {
         int mask = keys.length - 1;
@@ -191,30 +163,30 @@ public final class SectorMap<V> {
                 return (V) values[index];
             }
             if (currentKey == EMPTY_KEY) {
-                return null; // Slot vacío indica fin de cadena
+                return null; // Empty slot indicates end of chain
             }
-            // Colisión: Linear Probe (Siguiente slot circular)
+            // Collision: Linear Probe (Next circular slot)
             index = (index + 1) & mask;
             attempts++;
         }
         return null;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES DE ESCRITURA (Pessimistic Exclusive)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // WRITE OPERATIONS (Pessimistic Exclusive)
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Inserta un valor de forma atómica si la clave no existe.
+     * Atomically inserts a value if the key does not exist.
      * 
-     * MECÁNICA:
-     * - Adquiere bloqueo de escritura exclusivo (WriteLock).
-     * - Verifica existencia (Linear Probing).
-     * - Si encuentra slot vacío: Inserta y valida factor de carga.
+     * MECHANICS:
+     * - Acquires exclusive write lock (WriteLock).
+     * - Checks existence (Linear Probing).
+     * - If empty slot found: Inserts and validates load factor.
      * 
-     * @param key   Clave primitiva
-     * @param value Valor a insertar (No null)
-     * @return El valor existente si había conflicto, o null si insertó con éxito
+     * @param key   Primitive key
+     * @param value Value to insert (Not null)
+     * @return The existing value if there was a conflict, or null if successfully inserted
      */
     @SuppressWarnings("unchecked")
     public V putIfAbsent(long key, V value) {
@@ -225,17 +197,17 @@ public final class SectorMap<V> {
 
         long stamp = lock.writeLock();
         try {
-            // Reimplementación de Linear Probe bajo Lock Exclusivo
+            // Linear Probe Reimplementation under Exclusive Lock
             int mask = keys.length - 1;
             int index = hash(key) & mask;
 
             while (true) {
                 long currentKey = keys[index];
                 if (currentKey == key) {
-                    return (V) values[index]; // Clave existente
+                    return (V) values[index]; // Existing key
                 }
                 if (currentKey == EMPTY_KEY) {
-                    // Inserción en Slot Vacío
+                    // Insertion in Empty Slot
                     keys[index] = key;
                     values[index] = value;
                     size++;
@@ -243,9 +215,9 @@ public final class SectorMap<V> {
                     if (size >= threshold) {
                         resize();
                     }
-                    return null; // Éxito: No existía
+                    return null; // Success: Did not exist
                 }
-                // Colisión: Avanzar
+                // Collision: Advance
                 index = (index + 1) & mask;
             }
         } finally {
@@ -254,14 +226,14 @@ public final class SectorMap<V> {
     }
 
     /**
-     * Elimina una entrada del mapa de forma atómica.
+     * Atomically removes an entry from the map.
      * 
-     * TÉCNICA:
-     * - Backward Shift Removal: Mantiene la integridad de la cadena de colisiones
-     * moviendo elementos hacia atrás en lugar de usar "Tombstones".
-     * - Evita degradación de rendimiento por acumulación de basura (deleted slots).
+     * TECHNIQUE:
+     * - Backward Shift Removal: Maintains collision chain integrity
+     * by moving elements backwards instead of using "Tombstones".
+     * - Prevents performance degradation due to garbage accumulation (deleted slots).
      * 
-     * @param key Clave a eliminar
+     * @param key Key to remove
      */
     public void remove(long key) {
         long stamp = lock.writeLock();
@@ -272,13 +244,13 @@ public final class SectorMap<V> {
             while (true) {
                 long currentKey = keys[index];
                 if (currentKey == key) {
-                    // Encontrado: Ejecutar eliminación con desplazamiento
+                    // Found: Execute removal with shift
                     removeAndShift(index);
                     size--;
                     return;
                 }
                 if (currentKey == EMPTY_KEY) {
-                    return; // No encontrado, terminamos
+                    return; // Not found, terminate
                 }
                 index = (index + 1) & mask;
             }
@@ -287,39 +259,39 @@ public final class SectorMap<V> {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
     // INTERNAL MECHANICS (Private Implementation Details)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
 
     /**
-     * Mantiene la integridad de la cadena de colisión al eliminar.
+     * Maintains collision chain integrity upon removal.
      * 
-     * ALGORITMO:
-     * - Shift Back Removal: Mueve elementos subsiguientes hacia atrás si pertenecen
-     * al cluster de colisión afectado.
-     * - Cache Locality: Superior a Tombstones o Rehashing completo.
+     * ALGORITHM:
+     * - Shift Back Removal: Moves subsequent elements backward if they belong
+     * to the affected collision cluster.
+     * - Cache Locality: Superior to Tombstones or full Rehashing.
      */
     private void removeAndShift(int slotToRemove) {
         int mask = keys.length - 1;
         int curr = slotToRemove;
 
-        // Paso 1: Limpiar slot actual
+        // Step 1: Clear current slot
         keys[curr] = EMPTY_KEY;
         values[curr] = null;
 
-        // Paso 2: Escanear cadena de colisión
+        // Step 2: Scan collision chain
         int next = (curr + 1) & mask;
         while (keys[next] != EMPTY_KEY) {
             long keyToShift = keys[next];
             int idealSlot = hash(keyToShift) & mask;
 
-            // Verificar si el slot vacío (curr) puede acomodar el elemento Shift
+            // Check if the empty slot (curr) can accommodate the Shift element
             if (isInBetween(idealSlot, curr, next)) {
-                // Mover elemento al hueco
+                // Move element to the hole
                 keys[curr] = keyToShift;
                 values[curr] = values[next];
 
-                // El hueco se mueve a la posición liberada
+                // The hole moves to the freed position
                 keys[next] = EMPTY_KEY;
                 values[next] = null;
                 curr = next;
@@ -328,7 +300,7 @@ public final class SectorMap<V> {
         }
     }
 
-    // Validación circular de rango
+    // Circular range validation
     private boolean isInBetween(int start, int hole, int end) {
         if (start <= end) {
             return start <= hole && hole < end;
@@ -339,10 +311,10 @@ public final class SectorMap<V> {
     }
 
     /**
-     * Redimensiona la tabla duplicando su capacidad (Stop-The-World).
+     * Resizes the table by doubling its capacity (Stop-The-World).
      * 
-     * COSTO: O(N) de copia de memoria.
-     * FRECUENCIA: Rara (Solo al exceder Load Factor 0.7).
+     * COST: O(N) memory copy.
+     * FREQUENCY: Rare (Only upon exceeding Load Factor 0.7).
      */
     private void resize() {
         int newCapacity = capacity << 1;
@@ -352,8 +324,8 @@ public final class SectorMap<V> {
 
         int mask = newCapacity - 1;
 
-        // Rehash de todos los elementos vivos
-        for (int i = 0; i < capacity; i++) {
+        // Rehash of all live elements
+        for (int i= 0; i< capacity; i++) {
             if (keys[i] != EMPTY_KEY) {
                 long key = keys[i];
                 Object val = values[i];
@@ -373,13 +345,13 @@ public final class SectorMap<V> {
         this.threshold = (int) (capacity * LOAD_FACTOR);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
     // MATH & HASHING (Avalanche Optimization)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
 
     /**
-     * Función de mezcla de bits (Avalanche Mixer).
-     * Basado en MurmurHash3 Finalizer para máxima dispersión.
+     * Bit mixing function (Avalanche Mixer).
+     * Based on MurmurHash3 Finalizer for maximum dispersion.
      */
     private static int hash(long key) {
         key ^= (key >>> 33);
@@ -390,7 +362,7 @@ public final class SectorMap<V> {
         return (int) key;
     }
 
-    // Cálculo de potencia de 2 siguiente
+    // Calculation of next power of 2
     private static int tableSizeFor(int cap) {
         int n = cap - 1;
         n |= n >>> 1;

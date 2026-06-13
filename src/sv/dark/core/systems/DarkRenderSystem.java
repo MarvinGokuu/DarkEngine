@@ -1,62 +1,68 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core.systems;
+
+import sv.dark.core.AAACertified;
 
 import java.awt.Graphics2D;
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Contrato Fundamental de Sistema de Renderizado.
- * DEPENDENCIAS: WorldStateFrame, java.awt.Graphics2D
- * MÉTRICAS: Zero-Allocation Render Loop
+ * RESPONSIBILITY: Define the base interface for all visual rendering systems.
+ * WHY: To strictly separate game logic from presentation, ensuring rendering is read-only.
+ * TECHNIQUE: Method injection of the WorldStateFrame and Graphics2D context.
+ * GUARANTEES: Zero-allocation render loop and read-only memory access.
  * 
- * Interfaz base para sistemas de visualización. Separa estrictamente la lógica
- * (GameSystem)
- * de la presentación (DarkRenderSystem), garantizando que el renderizado sea
- * de solo lectura.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public interface DarkRenderSystem {
 
     /**
-     * Renderiza el estado del mundo a la pantalla.
+     * Renders the world state to the screen.
      * 
-     * ═══════════════════════════════════════════════════════════════════════
-     * CONTRATO DE RENDERIZADO
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+     * RENDERING CONTRACT
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * PRECONDICIONES (lo que el Kernel garantiza):
-     * 1. g2d != null y está configurado para el frame actual
-     * 2. state != null y es consistente (no cambia durante render)
-     * 3. Se llama desde el thread de AWT/Swing
-     * 4. El estado ya fue actualizado por todos los GameSystems
+     * PRECONDITIONS (what the Kernel guarantees):
+     * 1. g2d != null and is configured for the current frame
+     * 2. state != null and is consistent (does not change during render)
+     * 3. Called from the AWT/Swing thread
+     * 4. State was already updated by all GameSystems
      * 
-     * POSTCONDICIONES (lo que el sistema debe garantizar):
-     * 1. Solo LEE datos del state (no modifica)
-     * 2. Dibuja usando g2d (proyección a pantalla)
-     * 3. Retorna rápido (< 5ms idealmente para 60 FPS)
-     * 4. No crea objetos innecesarios (minimizar GC)
+     * POSTCONDITIONS (what the system must guarantee):
+     * 1. Only READS data from the state (does not modify)
+     * 2. Draws using g2d (screen projection)
+     * 3. Returns fast (< 5ms ideally for 60 FPS)
+     * 4. Does not create unnecessary objects (minimize GC)
      * 
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * PERFORMANCE
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * PRESUPUESTO DE TIEMPO (60 FPS = 16.6ms por frame):
-     * - Lógica de juego: 10ms
-     * - Renderizado: 4-5ms (ESTE MÉTODO)
+     * TIME BUDGET (60 FPS = 16.6ms per frame):
+     * - Game Logic: 10ms
+     * - Rendering: 4-5ms (THIS METHOD)
      * - Buffer swap: 1-2ms
      * 
-     * TÉCNICAS DE OPTIMIZACIÓN:
-     * 1. Batching: Agrupar draw calls similares
-     * 2. Culling: No dibujar lo que está fuera de pantalla
-     * 3. Sprite Atlas: Una sola textura para múltiples sprites
-     * 4. Object Pooling: Reusar objetos de dibujo
+     * OPTIMIZATION TECHNIQUES:
+     * 1. Batching: Group similar draw calls
+     * 2. Culling: Do not draw what is outside the screen
+     * 3. Sprite Atlas: A single texture for multiple sprites
+     * 4. Object Pooling: Reuse drawing objects
      * 
-     * ═══════════════════════════════════════════════════════════════════════
-     * EJEMPLO DE USO
-     * ═══════════════════════════════════════════════════════════════════════
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+     * USAGE EXAMPLE
+     * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
      * ```java
      * public class SpriteSystem implements DarkRenderSystem {
@@ -65,56 +71,56 @@ public interface DarkRenderSystem {
      *           public void render(Graphics2D g2d, WorldStateFrame state) {
      *           int entityCount = state.readInt(DarkStateLayout.ENTITY_COUNT);
      * 
-     *           for (int i = 0; i < entityCount; i++) {
-     *           long base = i * EntityLayout.STRIDE;
+     *           for (int i= 0; i< entityCount; i++) {
+     *           long base = i* EntityLayout.STRIDE;
      *           double x = state.readDouble(base + EntityLayout.X_OFFSET);
      *           double y = state.readDouble(base + EntityLayout.Y_OFFSET);
      * 
-     *           // Dibujar sprite en (x, y)
+     *           // Draw sprite at (x, y)
      *           g2d.drawImage(sprite, (int)x, (int)y, null);
      *           }
      *           }
      *           }
      *           ```
      * 
-     *           ═══════════════════════════════════════════════════════════════════════
+     *           = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * @param g2d   Contexto gráfico de Java2D para dibujar.
-     *              Configurado con transformaciones, clipping, y compositing.
+     * @param g2d   Java2D graphic context for drawing.
+     *              Configured with transformations, clipping, and compositing.
      * 
-     *              OPERACIONES COMUNES:
-     *              - g2d.drawImage(): Dibujar texturas
-     *              - g2d.fillRect(): Dibujar rectángulos sólidos
-     *              - g2d.drawString(): Dibujar texto
-     *              - g2d.setColor(): Cambiar color de dibujo
+     *              COMMON OPERATIONS:
+     *              - g2d.drawImage(): Draw textures
+     *              - g2d.fillRect(): Draw solid rectangles
+     *              - g2d.drawString(): Draw text
+     *              - g2d.setColor(): Change drawing color
      * 
-     * @param state Snapshot inmutable del estado del mundo (Read-Only).
-     *              Contiene TODOS los datos del juego en memoria Off-Heap.
+     * @param state Immutable snapshot of the world state (Read-Only).
+     *              Contains ALL game data in Off-Heap memory.
      * 
-     *              ACCESO (SOLO LECTURA):
-     *              - state.readDouble(offset): Leer coordenadas, etc.
-     *              - state.readInt(offset): Leer contadores, flags, etc.
+     *              ACCESS (READ-ONLY):
+     *              - state.readDouble(offset): Read coordinates, etc.
+     *              - state.readInt(offset): Read counters, flags, etc.
      * 
-     *              PROHIBIDO:
-     *              - state.writeXXX(): NO modificar el estado
+     *              FORBIDDEN:
+     *              - state.writeXXX(): DO NOT modify the state
      * 
-     * @see WorldStateFrame Para detalles de acceso a memoria
-     * @see EntityLayout Para offsets de entidades
-     * @see GameSystem Para sistemas de lógica de juego
+     * @see WorldStateFrame For details on memory access
+     * @see EntityLayout For entity offsets
+     * @see GameSystem For game logic systems
      */
     void render(Graphics2D g2d, WorldStateFrame state);
 
     /**
-     * Retorna el nombre del sistema de renderizado para debugging.
+     * Returns the name of the rendering system for debugging.
      * 
-     * IMPLEMENTACIÓN POR DEFECTO: Usa el nombre de la clase.
+     * DEFAULT IMPLEMENTATION: Uses the class name.
      * 
-     * @return Nombre del sistema (no null, no vacío)
+     * @return System name (not null, not empty)
      */
     default String getName() {
         return this.getClass().getSimpleName();
     }
 }
-// Creado: 03/01/2026 23:40
-// Rol: Software Architect aplicando ISP + Separation of Concerns
-// Principios: ISP, SoC, Observer Pattern (implícito)
+// Created: 03/01/2026 23:40
+// Role: Software Architect applying ISP + Separation of Concerns
+// Principles: ISP, SoC, Observer Pattern (implicit)

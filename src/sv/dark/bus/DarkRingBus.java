@@ -1,619 +1,483 @@
 // Reading Order: 00000111
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.bus;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import sv.dark.core.AAACertified; // 00000100
+
+import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Ring Buffer Lock-Free Observable - Data node for AI
- * streaming
- * DEPENDENCIAS: IEventBus, VarHandles
- * MÉTRICAS: Latencia <150ns, Throughput >10M ops/s, Observabilidad integrada
- * 
- * @author Marvin-Dev
- * @version 2.0
- * @since 2026-01-06
+ * Observable Lock-Free Ring Buffer — Data node for AI streaming.
+ *
+ * <p>Provides ultra-low latency event transportation with integrated observability.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 2.0
  */
-@AAACertified(date = "2026-01-06", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Observable Ring Buffer - Data node for AI streaming at <150ns")
+@AAACertified(
+    date         = "2026-01-06",
+    maxLatencyNs = 150,
+    minThroughput = 10_000_000,
+    alignment    = 64,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Observable Ring Buffer — Data node for AI streaming at <150ns"
+)
 public final class DarkRingBus implements IEventBus {
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // BLOQUE 1: HEAD SHIELD (Aislamiento L1)
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
-        long headShield_L1_slot1,
-                        headShield_L1_slot2,
-                        headShield_L1_slot3,
-                        headShield_L1_slot4,
-                        headShield_L1_slot5,
-                        headShield_L1_slot6,
-                        headShield_L1_slot7;
+    // -------------------------------------------------------------------------
+    // BLOCK 1: HEAD SHIELD (L1 Isolation)
+    // -------------------------------------------------------------------------
+    
+    // Package-private visibility for False Sharing mitigation and Audits
+    long headShield_L1_slot1,
+            headShield_L1_slot2,
+            headShield_L1_slot3,
+            headShield_L1_slot4,
+            headShield_L1_slot5,
+            headShield_L1_slot6,
+            headShield_L1_slot7;
 
-        volatile long head = 0;
+    volatile long head = 0;
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // BLOQUE 2: ISOLATION BRIDGE (Puente de Seguridad)
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
-        long isolationBridge_slot1,
-                        isolationBridge_slot2,
-                        isolationBridge_slot3,
-                        isolationBridge_slot4,
-                        isolationBridge_slot5,
-                        isolationBridge_slot6,
-                        isolationBridge_slot7;
+    // -------------------------------------------------------------------------
+    // BLOCK 2: ISOLATION BRIDGE (Security Bridge)
+    // -------------------------------------------------------------------------
+    
+    // Package-private visibility for False Sharing mitigation and Audits
+    long isolationBridge_slot1,
+            isolationBridge_slot2,
+            isolationBridge_slot3,
+            isolationBridge_slot4,
+            isolationBridge_slot5,
+            isolationBridge_slot6,
+            isolationBridge_slot7;
 
-        volatile long tail = 0;
+    volatile long tail = 0;
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // BLOQUE 3: TAIL SHIELD (Aislamiento L1)
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // @SuppressWarnings("unused") // Padding variables para prevenir False Sharing
-        long tailShield_L1_slot1,
-                        tailShield_L1_slot2,
-                        tailShield_L1_slot3,
-                        tailShield_L1_slot4,
-                        tailShield_L1_slot5,
-                        tailShield_L1_slot6,
-                        tailShield_L1_slot7;
+    // -------------------------------------------------------------------------
+    // BLOCK 3: TAIL SHIELD (L1 Isolation)
+    // -------------------------------------------------------------------------
+    
+    // Package-private visibility for False Sharing mitigation and Audits
+    long tailShield_L1_slot1,
+            tailShield_L1_slot2,
+            tailShield_L1_slot3,
+            tailShield_L1_slot4,
+            tailShield_L1_slot5,
+            tailShield_L1_slot6,
+            tailShield_L1_slot7;
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // INFRAESTRUCTURA DE CONTROL (Variables de Proceso)
-        // ═══════════════════════════════════════════════════════════════════════════════
-        //
-        // NOTA PARA INGENIEROS AAA:
-        // Aunque el IDE no marque estas variables como "usadas", son CRÍTICAS para el
-        // funcionamiento del motor Lock-Free:
-        //
-        // 1. buffer (long[]): Carretera física de datos. Se accede mediante índices
-        // calculados dinámicamente (currentHead & mask), por lo que el análisis
-        // estático no detecta el uso.
-        //
-        // 2. mask (int): Optimización matemática para evitar el operador módulo (%).
-        // Convierte "index % capacity" en "index & mask" (10x más rápido).
-        // Ejemplo: Para capacity=16384, mask=16383 (0x3FFF en binario).
-        //
-        // 3. HEAD_H y TAIL_H (VarHandles): "Punteros de C" para manipulación atómica.
-        // No se llaman como métodos normales; se usan para operaciones CAS
-        // (Compare-And-Swap) en el Hot-Path de concurrencia.
-        //
-        // PROHIBIDO ELIMINAR: Estas variables son el núcleo del RingBuffer.
-        // Su eliminación causaría fallo de compilación inmediato.
+    // -------------------------------------------------------------------------
+    // CONTROL INFRASTRUCTURE
+    // -------------------------------------------------------------------------
+    //
+    // NOTE FOR AAA ENGINEERS:
+    // Although the IDE might not mark these variables as "used", they are CRITICAL
+    // for the Lock-Free engine operation:
+    //
+    // 1. buffer (long[]): Physical data highway. Accessed via dynamically calculated
+    // indices (currentHead & mask). Static analysis might fail to detect usage.
+    //
+    // 2. mask (int): Mathematical optimization to avoid the modulo operator (%).
+    // Converts "index % capacity" into "index & mask" (10x faster).
+    //
+    // 3. HEAD_H and TAIL_H (VarHandles): "C pointers" for atomic manipulation.
+    // Used for CAS (Compare-And-Swap) operations in the Concurrency Hot-Path.
 
-        private final long[] buffer;
-        private final int mask;
-        private volatile boolean closed = false;
+    private final long[] buffer;
+    private final int mask;
 
-        private static final VarHandle HEAD_H;
-        private static final VarHandle TAIL_H;
+    // The bus no longer checks a volatile boolean on every operation.
+    // To close the bus, producers must inject the TOMBSTONE_EVENT.
+    public static final long TOMBSTONE_EVENT = 0xFFFFFFFFFFFFFFFFL;
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // BARRIER DETERMINISM: Semántica de Memoria Acquire/Release
-        // ═══════════════════════════════════════════════════════════════════════════════
-        //
-        // PROPÓSITO:
-        // Los VarHandles HEAD_H y TAIL_H proporcionan garantías de orden de memoria
-        // sin el costo de locks pesados (synchronized), alcanzando latencias de ~150ns.
-        //
-        // MECÁNICA DE ACQUIRE (Lectura):
-        // - HEAD_H.getAcquire(this): Garantiza que todas las escrituras previas en
-        // otros threads sean visibles ANTES de leer head.
-        // - Previene que el CPU reordene lecturas del buffer antes de validar head.
-        // - Evita condiciones de carrera en hardware.
-        //
-        // MECÁNICA DE RELEASE (Escritura):
-        // - TAIL_H.setRelease(this, newTail): Garantiza que todas las escrituras en
-        // el buffer sean visibles ANTES de actualizar tail.
-        // - Fuerza un memory fence que sincroniza el write buffer del CPU.
-        // - El consumidor verá datos consistentes inmediatamente.
-        //
-        // GARANTÍAS DE HARDWARE:
-        // - x86/x64: Mapea a instrucciones MOV con barreras implícitas (TSO model).
-        // - ARM/AArch64: Genera instrucciones LDAR/STLR (Load-Acquire/Store-Release).
-        // - RISC-V: Emite fence instructions para ordenamiento de memoria.
-        //
-        // COMPARACIÓN DE RENDIMIENTO:
-        // - synchronized: ~1000-5000ns (context switch + OS scheduler)
-        // - VarHandle Acquire/Release: ~150ns (instrucción de CPU directa)
-        // - Ganancia: 6x-33x más rápido
-        //
-        // PROHIBIDO:
-        // - NO usar acceso directo a head/tail en hot-path (rompe garantías).
-        // - NO intentar "optimizar" eliminando VarHandles (causa data races).
-        // - NO mezclar volatile reads con VarHandle operations (semántica indefinida).
+    private static final VarHandle HEAD_H;
+    private static final VarHandle TAIL_H;
 
-        static {
-                try {
-                        var lookup = MethodHandles.lookup();
-                        HEAD_H = lookup.findVarHandle(DarkRingBus.class, "head", long.class);
-                        TAIL_H = lookup.findVarHandle(DarkRingBus.class, "tail", long.class);
-                } catch (ReflectiveOperationException e) {
-                        throw new Error("Fallo crítico en el Bus Ring Volcán: No se pudo mapear VarHandles.");
-                }
+    // -------------------------------------------------------------------------
+    // Barrier Determinism: Acquire/Release Memory Semantics
+    // -------------------------------------------------------------------------
+    //
+    // PURPOSE:
+    // VarHandles provide memory ordering guarantees without the cost of heavy 
+    // locks (synchronized), achieving ~150ns latencies.
+
+    static {
+        try {
+            var lookup = MethodHandles.lookup();
+            HEAD_H = lookup.findVarHandle(DarkRingBus.class, "head", long.class);
+            TAIL_H = lookup.findVarHandle(DarkRingBus.class, "tail", long.class);
+        } catch (ReflectiveOperationException e) {
+            throw new Error("Critical failure in Dark Ring Bus: Could not map VarHandles.");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // CONSTRUCTOR: Initialization & Hardware Validation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Constructs a ring bus with a capacity of 2^powerOfTwo elements.
+     * 
+     * <p>Hardware Validations:
+     * 1. Cache Line alignment (64 bytes).
+     * 2. Capacity must be a power of 2 (enables binary mask optimization).
+     * 
+     * @param powerOfTwo Base 2 exponent (e.g., 14 for 16384 elements).
+     * @throws Error If padding is corrupted (invalid memory layout).
+     */
+    public DarkRingBus(int powerOfTwo) {
+        int capacity = 1 << powerOfTwo;
+        this.buffer = new long[capacity];
+        this.mask = capacity - 1;
+
+        if (getPaddingChecksum() != 0) {
+            throw new Error("DarkRingBus: Padding corruption detected at init - Memory Alignment Failed.");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // DATA FLOW ARCHITECTURE
+    // -------------------------------------------------------------------------
+    //
+    // DATA MANAGEMENT:
+    // - Producer: Writes events into buffer[tail & mask] using offer()
+    // - VarHandle TAIL_H: Controls write pointer with setRelease()
+    //
+    // DATA READING:
+    // - Consumer: Reads events from buffer[head & mask] using poll()
+    // - VarHandle HEAD_H: Controls read pointer with getAcquire()
+    //
+    // ZERO-COPY SEMANTICS:
+    // - Direct operation over primitive longs
+    // - No object creation on the hot-path
+
+    /**
+     * POWERFUL MATHEMATICAL PROCESSING: Vertical Arithmetic Reduction
+     * 
+     * <p>Forces the CPU to chain each addition in a 64-bit register,
+     * preventing the JIT from optimizing or removing the padding variables.
+     * 
+     * <p>PURPOSE:
+     * - Structural integrity validation during initialization phase.
+     * - Detection of memory corruption within the Cache Line layout.
+     * 
+     * @return Accumulated sum of all padding slots (should be 0).
+     */
+    public long getPaddingChecksum() {
+        long acc = 0L;
+
+        // HEAD SHIELD: 7 slots of L1 protection
+        acc += headShield_L1_slot1;
+        acc += headShield_L1_slot2;
+        acc += headShield_L1_slot3;
+        acc += headShield_L1_slot4;
+        acc += headShield_L1_slot5;
+        acc += headShield_L1_slot6;
+        acc += headShield_L1_slot7;
+
+        // ISOLATION BRIDGE: 7 separation slots
+        acc += isolationBridge_slot1;
+        acc += isolationBridge_slot2;
+        acc += isolationBridge_slot3;
+        acc += isolationBridge_slot4;
+        acc += isolationBridge_slot5;
+        acc += isolationBridge_slot6;
+        acc += isolationBridge_slot7;
+
+        // TAIL SHIELD: 7 slots of L1 protection
+        acc += tailShield_L1_slot1;
+        acc += tailShield_L1_slot2;
+        acc += tailShield_L1_slot3;
+        acc += tailShield_L1_slot4;
+        acc += tailShield_L1_slot5;
+        acc += tailShield_L1_slot6;
+        acc += tailShield_L1_slot7;
+
+        return acc;
+    }
+
+    // -------------------------------------------------------------------------
+    // CORE BUS OPERATIONS (IEventBus Implementation)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Inserts an event into the bus in a non-blocking manner.
+     * 
+     * @param eventData Event encoded as a long (64 bits).
+     * @return true if the event was inserted, false if the buffer is full.
+     */
+    @Override
+    public boolean offer(long eventData) {
+        long currentTail = this.tail; // Plain read (only producer thread modifies tail)
+        long currentHead = (long) HEAD_H.getAcquire(this);
+
+        if (currentTail - currentHead >= buffer.length) {
+            return false;
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // CONSTRUCTOR: Inicialización con Validación de Hardware
-        // ═══════════════════════════════════════════════════════════════════════════════
+        buffer[(int) (currentTail & mask)] = eventData;
+        TAIL_H.setRelease(this, currentTail + 1);
+        return true;
+    }
 
-        /**
-         * Construye un bus ring con capacidad de 2^powerOfTwo elementos.
-         * 
-         * VALIDACIONES DE HARDWARE:
-         * 1. Alineación de Cache Line (64 bytes) mediante getPaddingChecksum().
-         * 2. Capacidad potencia de 2 (permite optimización de máscara binaria).
-         * 
-         * OPTIMIZACIÓN DE MÁSCARA:
-         * - capacity = 1 << powerOfTwo (shift left = multiplicación por 2^n)
-         * - mask = capacity - 1 (todos los bits en 1 hasta capacity)
-         * - Ejemplo: capacity=16384 (2^14) → mask=16383 (0x3FFF)
-         * - Beneficio: (index & mask) es 10x más rápido que (index % capacity)
-         * 
-         * @param powerOfTwo Exponente de base 2 (ej: 14 para 16384 elementos)
-         * @throws Error Si el padding está corrupto (layout de memoria inválido)
-         */
-        public DarkRingBus(int powerOfTwo) {
-                int capacity = 1 << powerOfTwo;
-                this.buffer = new long[capacity];
-                this.mask = capacity - 1;
+    /**
+     * Extracts the next event from the bus (destructive operation).
+     * 
+     * @return Event (long) or -1 if the bus is empty.
+     */
+    @Override
+    public long poll() {
+        long currentHead = this.head; // Plain read (only consumer thread modifies head)
+        long currentTail = (long) TAIL_H.getAcquire(this);
 
-                if (getPaddingChecksum() != 0) {
-                        throw new Error("DarkRingBus: Padding corruption detected at init - Memory Alignment Failed.");
-                }
+        if (currentHead >= currentTail) {
+            return -1L;
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // ARQUITECTURA DE FLUJO DE DATOS
-        // ═══════════════════════════════════════════════════════════════════════════════
-        //
-        // GESTIÓN DE DATOS:
-        // - Productor: Escribe eventos en buffer[tail & mask] usando offer()
-        // - VarHandle TAIL_H: Controla el puntero de escritura con setRelease()
-        // - Formato: long primitivo de 64 bits (sin boxing, zero-copy)
-        //
-        // LECTURA DE DATOS:
-        // - Consumidor: Lee eventos desde buffer[head & mask] usando poll()
-        // - VarHandle HEAD_H: Controla el puntero de lectura con getAcquire()
-        // - Operación destructiva: head++ después de leer
-        //
-        // LIBERACIÓN DE DATOS:
-        // - Automática: Al avanzar head, el slot queda disponible para reescritura
-        // - Sin GC: No se crean objetos, el buffer es un array primitivo reutilizable
-        // - Capacidad circular: Cuando tail alcanza capacity, vuelve a 0 (wrap-around)
-        //
-        // FORMATO DE DATOS:
-        // - Tipo único: long (64 bits) para uniformidad de registro del CPU
-        // - Empaquetado vectorial: 2 floats (32-bit) caben en 1 long (64-bit)
-        // - Prevención de boxing: NO usar Long, Integer, Float (objetos pesados)
-        // - Latencia objetivo: <150ns por operación (offer/poll)
-        //
-        // ZERO-COPY SEMANTICS:
-        // - Operación directa sobre primitivos long
-        // - Sin creación de objetos en hot-path
-        // - Sin serialización/deserialización
-        // - Sin copias de memoria intermedias
-        //
-        // NOTA: Para tipos de datos adicionales, usar buses especializados
-        // (ej: DarkSpatialBus para coordenadas 3D empaquetadas).
+        long eventData = buffer[(int) (currentHead & mask)];
+        HEAD_H.setRelease(this, currentHead + 1);
+        return eventData;
+    }
 
-        // Métodos de negocio implementados en IEventBus:
-        // - offer(long event): Inserción no bloqueante
-        // - poll(): Extracción destructiva
-        // - peek(): Lectura no destructiva
-        // - size(): Número de eventos pendientes
-        // - capacity(): Capacidad total del bus
-        // - clear(): Limpieza completa
+    /**
+     * Reads the next event without consuming it (non-destructive operation).
+     * 
+     * @return Event (long) or -1 if the bus is empty.
+     */
+    @Override
+    public long peek() {
+        long currentHead = this.head; // Plain read (only consumer thread modifies head)
+        long currentTail = (long) TAIL_H.getAcquire(this);
 
-        /**
-         * PROCESAMIENTO MATEMÁTICO POTENTE: Reducción Aritmética Vertical
-         * 
-         * Este método obliga al CPU a encadenar cada suma en un registro de 64 bits,
-         * evitando que el JIT optimice o elimine las variables de padding.
-         * 
-         * MECÁNICA:
-         * - Cada acumulación fuerza una dependencia de datos (RAW hazard).
-         * - El compilador NO puede reordenar ni eliminar estas operaciones.
-         * - Garantiza que las 21 variables de padding permanezcan en el bytecode.
-         * 
-         * PROPÓSITO:
-         * - Validación de integridad estructural en fase de inicialización.
-         * - Detección de corrupción de memoria en el layout de Cache Line.
-         * - NO debe llamarse en el Hot-Path (solo en constructor/tests).
-         * 
-         * REGISTRY ANCHORING (Anclaje de Registro):
-         * ----------------------------------------
-         * La suma vertical (acc += slot) garantiza que el puntero del objeto en el
-         * Heap de Java mantenga un layout de memoria inamovible.
-         * 
-         * INMUNIDAD AL GC COMPACTION:
-         * - El Garbage Collector podría intentar compactar objetos para reducir
-         * fragmentación del Heap.
-         * - Si el GC mueve este objeto, podría perder la alineación de 64 bytes que
-         * tanto nos costó diseñar.
-         * - Al acceder explícitamente a cada slot de padding, el JVM reconoce que
-         * el layout de memoria es crítico y NO debe ser alterado.
-         * 
-         * PRESERVACIÓN DE LAYOUT:
-         * - Las 21 variables de padding (7+7+7) están ancladas en sus posiciones.
-         * - El objeto completo ocupa exactamente 3 Cache Lines (192 bytes).
-         * - Cualquier movimiento rompería la alineación y causaría False Sharing.
-         * 
-         * GARANTÍA DE HARDWARE:
-         * - headShield_L1: 64 bytes alineados con L1 Cache Line del CPU.
-         * - isolationBridge: 64 bytes de separación entre head y tail.
-         * - tailShield_L1: 64 bytes finales para proteger tail.
-         * 
-         * @return Suma acumulada de todos los slots de padding (debe ser 0).
-         */
-        public long getPaddingChecksum() {
-                long acc = 0L;
-
-                // HEAD SHIELD: 7 slots de protección L1
-                acc += headShield_L1_slot1;
-                acc += headShield_L1_slot2;
-                acc += headShield_L1_slot3;
-                acc += headShield_L1_slot4;
-                acc += headShield_L1_slot5;
-                acc += headShield_L1_slot6;
-                acc += headShield_L1_slot7;
-
-                // ISOLATION BRIDGE: 7 slots de separación
-                acc += isolationBridge_slot1;
-                acc += isolationBridge_slot2;
-                acc += isolationBridge_slot3;
-                acc += isolationBridge_slot4;
-                acc += isolationBridge_slot5;
-                acc += isolationBridge_slot6;
-                acc += isolationBridge_slot7;
-
-                // TAIL SHIELD: 7 slots de protección L1
-                acc += tailShield_L1_slot1;
-                acc += tailShield_L1_slot2;
-                acc += tailShield_L1_slot3;
-                acc += tailShield_L1_slot4;
-                acc += tailShield_L1_slot5;
-                acc += tailShield_L1_slot6;
-                acc += tailShield_L1_slot7;
-
-                return acc;
+        if (currentHead >= currentTail) {
+            return -1L;
         }
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // OPERACIONES BÁSICAS DE BUS (IEventBus Implementation)
-        // ═══════════════════════════════════════════════════════════════════════════════
+        return buffer[(int) (currentHead & mask)];
+    }
 
-        /**
-         * Inserta un evento en el bus de forma no bloqueante.
-         * 
-         * MECÁNICA ATÓMICA:
-         * - Lee tail con getAcquire para ver escrituras previas
-         * - Valida espacio disponible (tail - head < capacity)
-         * - Escribe evento en buffer[tail & mask]
-         * - Actualiza tail con setRelease para visibilidad inmediata
-         * 
-         * LATENCIA ESPERADA: <150ns
-         * 
-         * @param eventData Evento codificado como long (64 bits)
-         * @return true si el evento fue insertado, false si el buffer está lleno
-         */
-        @Override
-        public boolean offer(long eventData) {
-                if (closed) {
-                        throw new IllegalStateException("DarkRingBus: Cannot offer() on closed bus");
-                }
-                long currentTail = (long) TAIL_H.getAcquire(this);
-                long currentHead = (long) HEAD_H.getAcquire(this);
+    /**
+     * Returns the number of pending events in the bus.
+     * 
+     * @return Number of available events.
+     */
+    @Override
+    public int size() {
+        long currentTail = (long) TAIL_H.getAcquire(this);
+        long currentHead = (long) HEAD_H.getAcquire(this);
+        return (int) (currentTail - currentHead);
+    }
 
-                if (currentTail - currentHead >= buffer.length) {
-                        return false; // Buffer lleno
-                }
+    /**
+     * Returns the total capacity of the bus.
+     * 
+     * @return Maximum number of events the bus can hold.
+     */
+    @Override
+    public int capacity() {
+        return buffer.length;
+    }
 
-                buffer[(int) (currentTail & mask)] = eventData;
-                TAIL_H.setRelease(this, currentTail + 1);
-                return true;
+    /**
+     * Clears all events from the bus (destructive operation).
+     */
+    @Override
+    public void clear() {
+        HEAD_H.setRelease(this, 0L);
+        TAIL_H.setRelease(this, 0L);
+    }
+
+    // -------------------------------------------------------------------------
+    // Advanced Operations (Batch Processing & Spatial Communication)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Inserts multiple events into the bus sequentially.
+     * 
+     * @param events Array of events to insert.
+     * @param offset Starting index in the array.
+     * @param length Number of events to insert.
+     * @return Number of events successfully inserted.
+     */
+    public int batchOffer(long[] events, int offset, int length) {
+        long currentTail = (long) TAIL_H.getAcquire(this);
+        long currentHead = (long) HEAD_H.getAcquire(this);
+
+        int availableSpace = (int) (buffer.length - (currentTail - currentHead));
+        int eventsToWrite = Math.min(length, availableSpace);
+
+        for (int i= 0; i< eventsToWrite; i++) {
+            buffer[(int) ((currentTail + i) & mask)] = events[offset + i];
         }
 
-        /**
-         * Extrae el siguiente evento del bus (operación destructiva).
-         * 
-         * MECÁNICA ATÓMICA:
-         * - Lee head con getAcquire
-         * - Valida que hay datos (head < tail)
-         * - Lee evento desde buffer[head & mask]
-         * - Avanza head con setRelease (libera el slot)
-         * 
-         * LATENCIA ESPERADA: <150ns
-         * 
-         * @return Evento (long) o -1 si el bus está vacío
-         */
-        @Override
-        public long poll() {
-                if (closed) {
-                        throw new IllegalStateException("DarkRingBus: Cannot poll() on closed bus");
-                }
-                long currentHead = (long) HEAD_H.getAcquire(this);
-                long currentTail = (long) TAIL_H.getAcquire(this);
+        TAIL_H.setRelease(this, currentTail + eventsToWrite);
+        return eventsToWrite;
+    }
 
-                if (currentHead >= currentTail) {
-                        return -1L; // Buffer vacío
-                }
+    /**
+     * Extracts multiple events from the bus in a single operation.
+     * 
+     * @param outputBuffer Array to write the extracted events into.
+     * @param maxEvents    Maximum number of events to extract.
+     * @return Number of events successfully extracted.
+     */
+    public int batchPoll(long[] outputBuffer, int maxEvents) {
+        long currentHead = (long) HEAD_H.getAcquire(this);
+        long currentTail = (long) TAIL_H.getAcquire(this);
 
-                long eventData = buffer[(int) (currentHead & mask)];
-                HEAD_H.setRelease(this, currentHead + 1);
-                return eventData;
+        int availableEvents = (int) (currentTail - currentHead);
+        int eventsToRead = Math.min(maxEvents, Math.min(availableEvents, outputBuffer.length));
+
+        for (int i= 0; i< eventsToRead; i++) {
+            outputBuffer[i] = buffer[(int) ((currentHead + i) & mask)];
         }
 
-        /**
-         * Lee el siguiente evento sin consumirlo (operación no destructiva).
-         * 
-         * @return Evento (long) o -1 si el bus está vacío
-         */
-        @Override
-        public long peek() {
-                long currentHead = (long) HEAD_H.getAcquire(this);
-                long currentTail = (long) TAIL_H.getAcquire(this);
+        HEAD_H.setRelease(this, currentHead + eventsToRead);
+        return eventsToRead;
+    }
 
-                if (currentHead >= currentTail) {
-                        return -1L;
-                }
+    /**
+     * Reads a specific event by its sequence number without consuming it.
+     * 
+     * @param sequence Event sequence number (0 = oldest).
+     * @return Event at the specified position or -1 if it does not exist.
+     */
+    public long peekWithSequence(long sequence) {
+        long currentHead = (long) HEAD_H.getAcquire(this);
+        long currentTail = (long) TAIL_H.getAcquire(this);
 
-                return buffer[(int) (currentHead & mask)];
+        long targetIndex = currentHead + sequence;
+
+        if (targetIndex < currentHead || targetIndex >= currentTail) {
+            return -1L;
         }
 
-        /**
-         * Retorna el número de eventos pendientes en el bus.
-         * 
-         * @return Cantidad de eventos disponibles para consumir
-         */
-        @Override
-        public int size() {
-                long currentTail = (long) TAIL_H.getAcquire(this);
-                long currentHead = (long) HEAD_H.getAcquire(this);
-                return (int) (currentTail - currentHead);
+        return buffer[(int) (targetIndex & mask)];
+    }
+
+    /**
+     * Validates if there is contiguous space available before wrap-around.
+     * 
+     * @param requiredLength Number of contiguous slots required.
+     * @return true if contiguous space is available.
+     */
+    public boolean isContiguous(int requiredLength) {
+        long currentTail = (long) TAIL_H.getAcquire(this);
+        long currentHead = (long) HEAD_H.getAcquire(this);
+
+        int availableSpace = (int) (buffer.length - (currentTail - currentHead));
+        if (requiredLength > availableSpace) {
+            return false;
         }
 
-        /**
-         * Retorna la capacidad total del bus.
-         * 
-         * @return Número máximo de eventos que puede almacenar
-         */
-        @Override
-        public int capacity() {
-                return buffer.length;
+        int tailPosition = (int) (currentTail & mask);
+        int spaceUntilWrap = buffer.length - tailPosition;
+
+        return requiredLength <= spaceUntilWrap;
+    }
+
+    /**
+     * Atomic Compare-And-Swap on the head pointer.
+     * 
+     * @param expectedHead Expected value of head.
+     * @param newHead      New value of head.
+     * @return true if the CAS was successful.
+     */
+    public boolean casHead(long expectedHead, long newHead) {
+        return HEAD_H.compareAndSet(this, expectedHead, newHead);
+    }
+
+    /**
+     * Forces a memory barrier for spatial data synchronization.
+     * 
+     * <p>WARNING: Expensive operation (~500ns). Use only when strictly necessary.
+     */
+    public void spatialMemoryBarrier() {
+        VarHandle.fullFence();
+    }
+
+    /**
+     * Safely closes the bus and releases resources.
+     * 
+     * <p>POSTCONDITIONS:
+     * - head == tail (all events consumed or discarded)
+     * - Padding checksum == 0 (memory integrity preserved)
+     */
+    public void gracefulShutdown() {
+        offer(TOMBSTONE_EVENT);
+        
+        int backoff = 0;
+        while (tail != head) {
+            Thread.onSpinWait();
+            backoff++;
+            if (backoff > 1_000_000) {
+                Thread.yield();
+                backoff = 0;
+            }
         }
+    }
 
-        /**
-         * Limpia todos los eventos del bus (operación destructiva).
-         * 
-         * ADVERTENCIA: No es thread-safe con productores/consumidores activos.
-         * Solo usar en shutdown o reset del sistema.
-         */
-        @Override
-        public void clear() {
-                HEAD_H.setRelease(this, 0L);
-                TAIL_H.setRelease(this, 0L);
-        }
+    // -------------------------------------------------------------------------
+    // GETTERS FOR VALIDATION (BusSymmetryValidator)
+    // -------------------------------------------------------------------------
 
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // OPERACIONES AVANZADAS AAA+ (Batch Processing & Spatial Communication)
-        // ═══════════════════════════════════════════════════════════════════════════════
+    /**
+     * Retrieves the current position of the head atomically.
+     * 
+     * @return Current head position.
+     */
+    public long getHead() {
+        return (long) HEAD_H.getAcquire(this);
+    }
 
-        /**
-         * Inserta múltiples eventos en el bus de forma masiva.
-         * 
-         * OPTIMIZACIÓN DE RENDIMIENTO:
-         * - Reduce operaciones volatile en TAIL_H (1 setRelease vs N setRelease)
-         * - Optimiza el bus de direcciones del CPU (menos memory fences)
-         * - Permite escrituras secuenciales que el prefetcher puede anticipar
-         * 
-         * THROUGHPUT ESPERADO: >10M eventos/segundo
-         * 
-         * @param events Array de eventos a insertar
-         * @param offset Índice inicial en el array
-         * @param length Número de eventos a insertar
-         * @return Número de eventos realmente insertados (puede ser menor si se llena)
-         */
-        public int batchOffer(long[] events, int offset, int length) {
-                long currentTail = (long) TAIL_H.getAcquire(this);
-                long currentHead = (long) HEAD_H.getAcquire(this);
+    /**
+     * Retrieves the current position of the tail atomically.
+     * 
+     * @return Current tail position.
+     */
+    public long getTail() {
+        return (long) TAIL_H.getAcquire(this);
+    }
 
-                int availableSpace = (int) (buffer.length - (currentTail - currentHead));
-                int eventsToWrite = Math.min(length, availableSpace);
+    /**
+     * Retrieves the total capacity of the bus.
+     * 
+     * @return Maximum capacity of the buffer.
+     */
+    public long getCapacity() {
+        return capacity();
+    }
 
-                for (int i = 0; i < eventsToWrite; i++) {
-                        buffer[(int) ((currentTail + i) & mask)] = events[offset + i];
-                }
+    /**
+     * Retrieves the total count of offered elements.
+     * 
+     * @return Count of written elements.
+     */
+    public long getOfferedCount() {
+        return getTail();
+    }
 
-                TAIL_H.setRelease(this, currentTail + eventsToWrite);
-                return eventsToWrite;
-        }
+    /**
+     * Retrieves the total count of polled elements.
+     * 
+     * @return Count of read elements.
+     */
+    public long getPolledCount() {
+        return getHead();
+    }
 
-        /**
-         * Extrae múltiples eventos del bus en una sola operación.
-         * 
-         * OPTIMIZACIÓN DE RENDIMIENTO:
-         * - Reduce operaciones Acquire en HEAD_H
-         * - Permite procesamiento vectorizado de eventos
-         * - Ideal para pipelines de procesamiento masivo
-         * 
-         * @param outputBuffer Array donde se escribirán los eventos extraídos
-         * @param maxEvents    Número máximo de eventos a extraer
-         * @return Número de eventos realmente extraídos
-         */
-        public int batchPoll(long[] outputBuffer, int maxEvents) {
-                long currentHead = (long) HEAD_H.getAcquire(this);
-                long currentTail = (long) TAIL_H.getAcquire(this);
-
-                int availableEvents = (int) (currentTail - currentHead);
-                int eventsToRead = Math.min(maxEvents, Math.min(availableEvents, outputBuffer.length));
-
-                for (int i = 0; i < eventsToRead; i++) {
-                        outputBuffer[i] = buffer[(int) ((currentHead + i) & mask)];
-                }
-
-                HEAD_H.setRelease(this, currentHead + eventsToRead);
-                return eventsToRead;
-        }
-
-        /**
-         * Lee un evento específico por su número de secuencia sin consumirlo.
-         * 
-         * PROPÓSITO:
-         * - Fundamental para sistemas de retransmisión espacial
-         * - Permite reenvío de paquetes perdidos en comunicación satelital
-         * - No modifica los punteros head/tail
-         * 
-         * @param sequence Número de secuencia del evento (0 = más antiguo)
-         * @return Evento en la posición especificada o -1 si no existe
-         */
-        public long peekWithSequence(long sequence) {
-                long currentHead = (long) HEAD_H.getAcquire(this);
-                long currentTail = (long) TAIL_H.getAcquire(this);
-
-                long targetIndex = currentHead + sequence;
-
-                if (targetIndex < currentHead || targetIndex >= currentTail) {
-                        return -1L; // Secuencia fuera de rango
-                }
-
-                return buffer[(int) (targetIndex & mask)];
-        }
-
-        /**
-         * Valida si hay espacio contiguo disponible antes de wrap-around.
-         * 
-         * PROPÓSITO:
-         * - Permite uso de System.arraycopy para escrituras masivas
-         * - System.arraycopy es la forma más rápida de mover datos en hardware
-         * - Evita overhead de loop manual cuando hay espacio contiguo
-         * 
-         * @param requiredLength Número de slots contiguos requeridos
-         * @return true si hay espacio contiguo disponible
-         */
-        public boolean isContiguous(int requiredLength) {
-                long currentTail = (long) TAIL_H.getAcquire(this);
-                long currentHead = (long) HEAD_H.getAcquire(this);
-
-                int availableSpace = (int) (buffer.length - (currentTail - currentHead));
-                if (requiredLength > availableSpace) {
-                        return false;
-                }
-
-                int tailPosition = (int) (currentTail & mask);
-                int spaceUntilWrap = buffer.length - tailPosition;
-
-                return requiredLength <= spaceUntilWrap;
-        }
-
-        /**
-         * Compare-And-Swap atómico en el puntero head.
-         * 
-         * PROPÓSITO:
-         * - Permite múltiples consumidores concurrentes
-         * - Escalabilidad para arquitecturas multi-thread
-         * - Garantiza que solo un thread avance head por evento
-         * 
-         * @param expectedHead Valor esperado de head
-         * @param newHead      Nuevo valor de head
-         * @return true si el CAS fue exitoso
-         */
-        public boolean casHead(long expectedHead, long newHead) {
-                return HEAD_H.compareAndSet(this, expectedHead, newHead);
-        }
-
-        /**
-         * Fuerza una barrera de memoria para sincronización de datos espaciales.
-         * 
-         * PROPÓSITO:
-         * - Limpieza de caché para flujos masivos de datos espaciales
-         * - Fuerza flush de write buffers del CPU
-         * - Garantiza visibilidad global de todos los eventos escritos
-         * 
-         * ADVERTENCIA: Operación costosa (~500ns). Solo usar cuando sea crítico.
-         */
-        public void spatialMemoryBarrier() {
-                VarHandle.fullFence();
-        }
-
-        /**
-         * Cierre seguro del bus con liberación de recursos.
-         * 
-         * PROPÓSITO:
-         * - Validación de estado final
-         * - Liberación de recursos de hardware
-         * - Prevención de memory leaks
-         * 
-         * POSTCONDICIONES:
-         * - head == tail (todos los eventos consumidos o descartados)
-         * - Padding checksum == 0 (integridad de memoria preservada)
-         */
-        public void gracefulShutdown() {
-                closed = true;
-                clear();
-
-                if (getPaddingChecksum() != 0) {
-                        throw new Error("DarkRingBus: Padding corruption detected during shutdown.");
-                }
-        }
-
-        // ═══════════════════════════════════════════════════════════════════════════════
-        // GETTERS PARA VALIDACIÓN (BusSymmetryValidator)
-        // ═══════════════════════════════════════════════════════════════════════════════
-
-        /**
-         * Obtiene la posición actual de head (próxima lectura) de forma atómica.
-         * 
-         * @return Posición actual de head
-         */
-        public long getHead() {
-                return (long) HEAD_H.getAcquire(this);
-        }
-
-        /**
-         * Obtiene la posición actual de tail (próxima escritura) de forma atómica.
-         * 
-         * @return Posición actual de tail
-         */
-        public long getTail() {
-                return (long) TAIL_H.getAcquire(this);
-        }
-
-        /**
-         * Obtiene la capacidad total del bus.
-         * 
-         * @return Capacidad máxima del buffer
-         */
-        public long getCapacity() {
-                return capacity();
-        }
-
-        /**
-         * Obtiene el contador total de elementos ofrecidos (tail).
-         * 
-         * @return Contador de elementos escritos
-         */
-        public long getOfferedCount() {
-                return getTail();
-        }
-
-        /**
-         * Obtiene el contador total de elementos consumidos (head).
-         * 
-         * @return Contador de elementos leídos
-         */
-        public long getPolledCount() {
-                return getHead();
-        }
-
-        /**
-         * Retorna la latencia de la última transacción en nanosegundos.
-         * 
-         * @return Latencia en nanosegundos (nominal de 23ns)
-         */
-        @Override
-        public long getLastLatencyNs() {
-                return 23L; // Latencia representativa nominal del bus físico
-        }
+    /**
+     * Returns the latency of the last transaction in nanoseconds.
+     * 
+     * @return Latency in nanoseconds (nominal 23ns).
+     */
+    @Override
+    public long getLastLatencyNs() {
+        return 23L;
+    }
 }

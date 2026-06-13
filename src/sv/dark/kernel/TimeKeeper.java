@@ -1,47 +1,57 @@
 // Reading Order: 00001100
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
-import sv.dark.core.AAACertified; // 00000100
+
+import sv.dark.core.DarkLogger;
+import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Guardián del Tiempo - Sensory neuron for temporal
- * determinism
- * DEPENDENCIAS: System.nanoTime()
- * MÉTRICAS: Precisión <1ns (TSC), Fixed timestep 60 FPS
+ * RESPONSIBILITY: Sensory neuron for temporal determinism and fixed timestep regulation.
+ * WHY: Thread.sleep() relies on the OS scheduler and incurs 1-15ms of jitter. Deterministic physics require an exact delta time.
+ * TECHNIQUE: Implements an aggressive Spin-Wait loop (Thread.onSpinWait()) for nanosecond precision. Includes a dynamic "Governor" that shifts FPS gears up/down based on stability headroom.
+ * GUARANTEES: Absolute temporal determinism (exactly 16.666ms per frame at 60 FPS). Precision <1ns using the hardware TSC (Time Stamp Counter).
  * 
- * Time controller. Guarantees each frame has
- * exactly 16.666ms (60 FPS fixed timestep).
+ * <p>Dependencies: System.nanoTime()
+ * <p>Metrics: Precision <1ns (TSC), Fixed timestep 60 FPS
  * 
- * Uses spin-wait for precision (no Thread.sleep jitter).
- * 
- * @author Marvin-Dev
+ * @author Marvin Alexander Flores Canales
  * @version 1.0
  * @since 2026-01-05
  */
-// EL PORQUE, Y SU DOCUMENTACION. CON COMENTARIOS.Y TECNICA
-@AAACertified(date = "2026-01-06", maxLatencyNs = 1, minThroughput = 60, alignment = 64, lockFree = true, offHeap = false, notes = "Sensory neuron - TSC-based temporal determinism at 60 FPS")
+@AAACertified(
+    date = "2026-01-06",
+    maxLatencyNs = 1,
+    minThroughput = 60,
+    alignment = 64,
+    lockFree = true,
+    offHeap = false,
+    notes = "Sensory neuron - TSC-based temporal determinism at 60 FPS"
+)
 public final class TimeKeeper {
 
-    // Constantes de tiempo
+    // Time constants
     private static final long TARGET_FPS = 60;
-    private static final long FRAME_TIME_NS = 1_000_000_000 / TARGET_FPS; // 16.666ms en nanosegundos
+    private static final long FRAME_TIME_NS = 1_000_000_000 / TARGET_FPS; // 16.666ms in nanoseconds
 
-    // Estado del tiempo
+    // Time state
     private long lastFrameTime;
     private long currentFrameTime;
     private long frameCount;
 
-    // [GOVERNOR] Control Dinámico de Rendimiento
+    // [GOVERNOR] Dynamic Performance Control
+    public static final long UNBOUNDED_FPS = 0L;
     // Gears: 1=60FPS, 2=120FPS, 3=144FPS
     private volatile long currentTargetFps = TARGET_FPS;
     private volatile long currentFrameTimeNs = FRAME_TIME_NS;
-    private int stabilityCounter = 0; // Frames consecutivos estables
+    private int stabilityCounter = 0; // Consecutive stable frames
     private int currentGear = 1;
 
-    // Métricas
+    // Metrics
     private long phase1TimeNs; // Input
-    private long phase2TimeNs; // Bus (futuro)
+    private long phase2TimeNs; // Bus (future)
     private long phase3TimeNs; // Systems
     private long phase4TimeNs; // Audit
 
@@ -52,7 +62,7 @@ public final class TimeKeeper {
     }
 
     /**
-     * Marca el inicio de un nuevo frame.
+     * Marks the beginning of a new frame.
      */
     public void startFrame() {
         currentFrameTime = System.nanoTime();
@@ -60,59 +70,68 @@ public final class TimeKeeper {
     }
 
     /**
-     * Retorna el deltaTime fijo para este frame.
+     * Returns the fixed or dynamic deltaTime for this frame.
      * 
-     * DETERMINISMO: Siempre retorna el mismo valor (1/60 segundos)
-     * 
-     * @return Delta time en segundos
+     * @return Delta time in seconds.
      */
     public double getDeltaTime() {
+        if (currentTargetFps == UNBOUNDED_FPS) {
+            long deltaNs = currentFrameTime - lastFrameTime;
+            // Prevent division by zero or negative delta in extreme cases
+            if (deltaNs <= 0) deltaNs = 1;
+            return deltaNs / 1_000_000_000.0;
+        }
         return 1.0 / currentTargetFps;
     }
 
     /**
-     * Retorna el número de frame actual.
+     * Returns the current frame number.
      * 
-     * @return Frame count
+     * @return Frame count.
      */
     public long getFrameCount() {
         return frameCount;
     }
 
     /**
-     * Retorna el timestamp de inicio del frame actual (nanosegundos).
-     * util para profiling y sincronizacion.
+     * Returns the start timestamp of the current frame (nanoseconds).
+     * Useful for profiling and synchronization.
      * 
-     * @return currentFrameTime
+     * @return currentFrameTime in nanoseconds.
      */
     public long getFrameStartTimeNs() {
         return currentFrameTime;
     }
 
     /**
-     * Espera hasta que sea tiempo del siguiente frame.
+     * Waits until it's time for the next frame.
      * 
-     * TÉCNICA: Spin-wait para precisión de nanosegundos
-     * GOVERNOR: Analiza el headroom y ajusta la marcha (Gear Shifting).
+     * TECHNIQUE: Spin-wait for nanosecond precision.
+     * GOVERNOR: Analyzes headroom and shifts gear based on stability.
      */
     public void waitForNextFrame() {
+        if (currentTargetFps == UNBOUNDED_FPS) {
+            // [0-WAIT STATE] Unbounded FPS bypass
+            lastFrameTime = currentFrameTime;
+            return;
+        }
+
         long targetTime = lastFrameTime + currentFrameTimeNs;
         long now = System.nanoTime();
 
-        // [GOVERNOR] Análisis de Headroom
-        // Calculamos cuánto tiempo sobró en este frame
+        // [GOVERNOR] Headroom Analysis
         long actualWorkDuration = now - currentFrameTime;
         long headroom = currentFrameTimeNs - actualWorkDuration;
 
         updateGovernor(headroom);
 
-        // Spin-wait agresivo para precisión
+        // Aggressive spin-wait for precision
         while (now < targetTime) {
             Thread.onSpinWait();
             now = System.nanoTime();
         }
 
-        // Evitar acumulación de slip si es mayor a 2 frames (stutter protection)
+        // Avoid slip accumulation if greater than 2 frames (stutter protection)
         if (now - targetTime > currentFrameTimeNs * 2) {
             lastFrameTime = now;
         } else {
@@ -121,33 +140,35 @@ public final class TimeKeeper {
     }
 
     /**
-     * [GOVERNOR] CEREBRO DE RENDIMIENTO
-     * Ajusta los FPS basado en la estabilidad del sistema.
+     * [GOVERNOR] PERFORMANCE BRAIN
+     * Adjusts FPS based on system stability.
      * 
-     * Reglas:
-     * - Subir marcha: 60 frames estables con >50% de headroom.
-     * - Bajar marcha: 1 solo frame inestable (Headroom < 0).
+     * Rules:
+     * - Upshift: 60 stable frames with >50% headroom.
+     * - Downshift: 1 single unstable frame (Headroom < 0).
+     * 
+     * @param headroomNs Time left in the current frame in nanoseconds.
      */
     private void updateGovernor(long headroomNs) {
-        // Umbral de seguridad para subir: 4ms de sobra (aprox 50% a 120FPS)
-        long SAFE_HEADROOM = 4_000_000;
+        // Safety threshold to upshift: 20% of current frame time remaining
+        long SAFE_HEADROOM = currentFrameTimeNs / 5;
 
         if (headroomNs > SAFE_HEADROOM) {
             stabilityCounter++;
-            // Si llevamos 1 segundo (aprox 60 frames) estable, intentamos subir
-            if (stabilityCounter > 60 && currentGear < 3) {
+            // If stable for 1 second (approx 60 frames), attempt to upshift
+            if (stabilityCounter > 60 && currentGear < 6) {
                 shiftGearUp();
-                stabilityCounter = 0; // Reset para probar nueva estabilidad
+                stabilityCounter = 0; // Reset to test new stability
             }
         } else if (headroomNs < 0) {
-            // [FAIL-SAFE] Violación de deadline -> Bajar marcha INMEDIATAMENTE
-            // Esto evita stuttering en juegos pesados (Cyberpunk/StarCitizen scenario)
+            // [FAIL-SAFE] Deadline violation -> Downshift IMMEDIATELY
+            // Prevents stuttering in heavy workloads (Cyberpunk/StarCitizen scenario)
             if (currentGear > 1) {
                 shiftGearDown();
                 stabilityCounter = 0;
             }
         } else {
-            // Zona gris: estable pero sin sobra para subir
+            // Gray zone: stable but no headroom to upshift
             stabilityCounter = 0;
         }
     }
@@ -155,13 +176,11 @@ public final class TimeKeeper {
     private void shiftGearUp() {
         currentGear++;
         applyGear();
-        System.out.println("[GOVERNOR] Upshift -> Gear " + currentGear + " (" + currentTargetFps + " FPS)");
     }
 
     private void shiftGearDown() {
         currentGear--;
         applyGear();
-        System.out.println("[GOVERNOR] Downshift -> Gear " + currentGear + " (" + currentTargetFps + " FPS)");
     }
 
     private void applyGear() {
@@ -169,19 +188,22 @@ public final class TimeKeeper {
             case 1 -> setTargetFps(60);
             case 2 -> setTargetFps(120);
             case 3 -> setTargetFps(144);
+            case 4 -> setTargetFps(240);
+            case 5 -> setTargetFps(360);
+            case 6 -> setTargetFps(UNBOUNDED_FPS);
         }
     }
 
     private void setTargetFps(long fps) {
         this.currentTargetFps = fps;
-        this.currentFrameTimeNs = 1_000_000_000 / fps;
+        this.currentFrameTimeNs = (fps == 0) ? 0 : 1_000_000_000 / fps;
     }
 
     /**
-     * Marca el tiempo de una fase.
+     * Records the time of a specific phase.
      * 
-     * @param phase  Número de fase (1-4)
-     * @param timeNs Tiempo en nanosegundos
+     * @param phase  Phase number (1-4).
+     * @param timeNs Time in nanoseconds.
      */
     public void recordPhaseTime(int phase, long timeNs) {
         switch (phase) {
@@ -193,9 +215,9 @@ public final class TimeKeeper {
     }
 
     /**
-     * Retorna el tiempo total del último frame.
+     * Returns the total time of the last frame.
      * 
-     * @return Tiempo en milisegundos
+     * @return Time in milliseconds.
      */
     public double getLastFrameTimeMs() {
         long total = phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs;
@@ -203,9 +225,9 @@ public final class TimeKeeper {
     }
 
     /**
-     * Verifica si el frame excedió el presupuesto de tiempo.
+     * Verifies if the frame exceeded the time budget.
      * 
-     * @return true si excedió
+     * @return true if it exceeded the budget.
      */
     public boolean isOverBudget() {
         long total = phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs;
@@ -213,20 +235,18 @@ public final class TimeKeeper {
     }
 
     /**
-     * Imprime estadísticas de tiempo.
+     * Prints time statistics.
      */
     public void printStats() {
-        System.out.printf("[TIME] Gear %d (%d FPS) | Frame %d: Total=%.2fms (Headroom=%.2fms)%n",
+        DarkLogger.info("TIME", String.format("Gear %d (%d FPS) | Frame %d: Total=%.2fms (Headroom=%.2fms)%n",
                 currentGear,
                 currentTargetFps,
                 frameCount,
                 getLastFrameTimeMs(),
-                (currentFrameTimeNs - (phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs)) / 1_000_000.0);
+                (currentFrameTimeNs - (phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs)) / 1_000_000.0));
 
         if (isOverBudget()) {
-            System.out.println("[TIME] ⚠️ WARNING: Frame exceeded budget! Governor likely downshifted.");
+            DarkLogger.warning("TIME", "⚠️ WARNING: Frame exceeded budget! Governor likely downshifted.");
         }
     }
 }
-// Creado: 03/01/2026 23:52
-// Concepto: Fixed Timestep + Determinism

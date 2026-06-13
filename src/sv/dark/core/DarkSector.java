@@ -1,20 +1,19 @@
 // Reading Order: 00010010
-package sv.dark.core; // Sincronizado con la ruta física src/sv/dark/core/systems/
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+package sv.dark.core; // Sincronizado con la ruta f­sica src/sv/dark/core/systems/
 
 import java.lang.foreign.MemorySegment;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Abstracción Espacial de Memoria (Sliver).
- * DEPENDENCIAS: MemorySegment
- * MÉTRICAS: Zero-Copy, Reference Only
+ * Spatial Memory Abstraction (Sliver).
  * 
- * Representa un sector físico del mundo mapeado a un segmento de memoria.
- * No posee la memoria, solo la referencia (View) para operaciones espaciales.
+ * <p>Represents a physical sector of the world mapped to a memory segment.
+ * It does not own the memory, only the reference (View) for spatial operations.
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 @AAACertified(date = "2026-01-10", maxLatencyNs = 10, minThroughput = 100_000_000, alignment = 0, lockFree = true, offHeap = true, notes = "Spatial memory abstraction (Zero-Copy View)")
 public final class DarkSector {
@@ -22,36 +21,35 @@ public final class DarkSector {
     private final long sectorHash;
     private final MemorySegment sectorMemory;
     private final int maxEntities;
-    private int activeCount;
+    private final AtomicInteger activeCount;
 
     /**
-     * El sector recibe una porción (Sliver) de la memoria nativa total del Vault.
-     * [MECHANICAL SYMPATHY]: No se reserva nueva memoria, se mapea una referencia
-     * existente.
+     * The sector receives a portion (Sliver) of the total native memory of the Vault.
+     * [MECHANICAL SYMPATHY]: No new memory is allocated, an existing reference is mapped.
      */
     public DarkSector(long sectorHash, MemorySegment rawVaultSegment, int maxEntities) {
         this.sectorHash = sectorHash;
         this.maxEntities = maxEntities;
-        this.sectorMemory = rawVaultSegment; // Referencia al bloque de memoria dedicado (Zero-Copy)
-        this.activeCount = 0;
+        this.sectorMemory = rawVaultSegment; // Reference to the dedicated memory block (Zero-Copy)
+        this.activeCount = new AtomicInteger(0);
     }
 
     /**
-     * En el modelo core, "registrar" es simplemente incrementar el puntero
-     * de entidades activas dentro del segmento de memoria pre-asignado.
+     * In the core model, "registering" is simply incrementing the pointer
+     * of active entities within the pre-allocated memory segment.
      */
     public void registerEntity() {
-        if (activeCount < maxEntities) {
-            activeCount++;
+        if (activeCount.get() < maxEntities) {
+            activeCount.incrementAndGet();
         }
     }
 
     /**
-     * Decrementa el conteo de entidades activas al salir del sector.
+     * Decrements the count of active entities when leaving the sector.
      */
     public void unregisterEntity() {
-        if (activeCount > 0) {
-            activeCount--;
+        if (activeCount.get() > 0) {
+            activeCount.decrementAndGet();
         }
     }
 
@@ -60,11 +58,11 @@ public final class DarkSector {
     }
 
     public int getActiveCount() {
-        return activeCount;
+        return activeCount.get();
     }
 
     public long getSectorHash() {
         return sectorHash;
     }
 }
-// actualizado3/1/26
+// updated 3/1/26

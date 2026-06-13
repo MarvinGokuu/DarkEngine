@@ -1,53 +1,65 @@
-package sv.dark.core.memory; // Sincronizado con la ruta física
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+package sv.dark.core.memory; // Synchronized with physical path
+
+import sv.dark.core.AAACertified;
 
 import java.lang.foreign.MemorySegment;
 
 /**
- * AUTORIDAD: Sector
- * RESPONSABILIDAD: Segmentación de la bóveda en vistas (slices) alineadas a
- * caché.
- * GARANTÍAS: Zero-heap-allocation, alineación de 64-bytes (L1 Ready),
- * zero-copy.
- * PROHIBICIONES: Prohibido usar ArrayList o List, prohibido usar aritmética de
- * punto flotante,
- * prohibido generar basura en el Heap.
- * DOMINIO CRÍTICO: Memoria
+ * RESPONSIBILITY: Vault Segmentation into Cache-Aligned Views (Slices).
+ * WHY: Multi-threading requires isolated data segments to avoid lock contention and False Sharing.
+ * TECHNIQUE: Deterministic partitioning of a Vault into a flat array of MemorySegments (native pointers), bitwise aligned to 64 bytes.
+ * GUARANTEES: Zero-heap-allocation, 64-byte alignment (L1 Ready), zero-copy.
+ * 
+ * <p>CRITICAL DOMAIN: Memory
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class SectorMemoryPartitioner {
 
-    // Alineación para CPU (Cache Line) no para OS (Page)
+    // Alignment for CPU (Cache Line) not for OS (Page)
     private static final long CACHE_LINE = 64;
 
     private SectorMemoryPartitioner() {
     }
 
     /**
-     * Particionado determinista.
-     * Retorna un array plano de MemorySegment (punteros nativos).
+     * Deterministic partitioning.
+     * Returns a flat array of MemorySegments (native pointers).
      */
     public static MemorySegment[] partition(MemorySegment vault, long chunkSize) {
         if (vault == null || vault.byteSize() == 0)
             return new MemorySegment[0];
 
-        // [INGENIERÍA DURA]: Alineación Bitwise a 64 bytes (Evita False Sharing)
+        // [HARD ENGINEERING]: Bitwise Alignment to 64 bytes (Prevents False Sharing)
         long alignedChunk = (chunkSize + CACHE_LINE - 1) & ~(CACHE_LINE - 1);
 
-        // Cálculo de cantidad usando aritmética de enteros (Deterministic Calculation)
+        // Count calculation using integer arithmetic (Deterministic Calculation)
         int count = (int) ((vault.byteSize() + alignedChunk - 1) / alignedChunk);
 
-        // Array plano: Los punteros están contiguos en memoria
+        // Flat array: Pointers are contiguous in memory
         MemorySegment[] segments = new MemorySegment[count];
 
-        for (int i = 0; i < count; i++) {
-            long offset = i * alignedChunk;
+        for (int i= 0; i< count; i++) {
+            long offset = i* alignedChunk;
             long currentSize = Math.min(alignedChunk, vault.byteSize() - offset);
 
-            // [HITO 1.1]: asSlice es una vista sobre memoria nativa, no una copia.
-            // Costo operativo insignificante (Zero-Copy).
+            // [MILESTONE 1.1]: asSlice is a view over native memory, not a copy.
+            // Insignificant operational cost (Zero-Copy).
             segments[i] = vault.asSlice(offset, currentSize);
         }
 
         return segments;
     }
-    // actualizado3/1/26
+    // updated 3/1/26
 }

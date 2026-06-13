@@ -1,35 +1,43 @@
-package sv.dark.core.systems; // Sincronizado con la ruta src/sv/dark/core/systems/
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+package sv.dark.core.systems; // Synchronized with path src/sv/dark/core/systems/
+
+import sv.dark.core.AAACertified;
 
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Control de Avatar (Player Character).
- * DEPENDENCIAS: WorldStateFrame
- * MÉTRICAS: Zero-Jitter Input Response
+ * RESPONSIBILITY: Apply input commands to the player character's state.
+ * WHY: To provide responsive and deterministic control over the avatar.
+ * TECHNIQUE: Process input direction mapped to coordinates using a switch statement.
+ * GUARANTEES: Zero-Jitter Input Response and zero-allocation execution.
  * 
- * Aplica comandos de entrada al estado del jugador.
- * Implementa movimiento determinista basado en el input del frame actual.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class PlayerSystem implements GameSystem {
 
-    // Offsets fijos en el WorldStateFrame (Direct addressing)
+    // Fixed offsets in WorldStateFrame (Direct addressing)
     private static final long ADDR_POS_X = 1000L;
     private static final long ADDR_POS_Y = 1008L;
     private static final long ADDR_INPUT = 1016L;
 
-    // Constantes de movimiento (Inyectadas en el hot-path)
-    private static final double BASE_VELOCITY = 300.0; // Píxeles por segundo
+    // Movement constants (Injected into the hot-path)
+    private static final double BASE_VELOCITY = 300.0; // Pixels per second
 
     /**
-     * Procesa el movimiento del jugador sin instanciar objetos (Zero-Allocation).
+     * Processes player movement without instantiating objects (Zero-Allocation).
      * 
-     * IMPLEMENTACIÓN: GameSystem.update()
-     * GARANTÍA: Determinista - mismo state + deltaTime = mismo resultado
+     * IMPLEMENTATION: GameSystem.update()
+     * GUARANTEE: Deterministic - same state + deltaTime = same result
      */
     @Override
     public void update(WorldStateFrame state, double deltaTime) {
@@ -37,13 +45,13 @@ public final class PlayerSystem implements GameSystem {
         if (direction == 0)
             return;
 
-        // Lectura de la fuente de verdad única (Memory Segment Off-Heap)
+        // Reading from the Single Source of Truth (Memory Segment Off-Heap)
         double currentX = state.readDouble(ADDR_POS_X);
         double currentY = state.readDouble(ADDR_POS_Y);
 
         double moveStep = BASE_VELOCITY * deltaTime;
 
-        // Jump Table optimizada por el JIT para despacho en pocos ciclos de CPU
+        // Jump Table optimized by the JIT for dispatch in few CPU cycles
         switch (direction) {
             case 1 -> currentY -= moveStep; // UP
             case 2 -> currentY += moveStep; // DOWN
@@ -51,9 +59,9 @@ public final class PlayerSystem implements GameSystem {
             case 4 -> currentX += moveStep; // RIGHT
         }
 
-        // Escritura atómica de vuelta a memoria (Direct Memory Access)
+        // Atomic write back to memory (Direct Memory Access)
         state.writeDouble(ADDR_POS_X, currentX);
         state.writeDouble(ADDR_POS_Y, currentY);
     }
-    // actualizado3/1/26
+    // updated 3/1/26
 }

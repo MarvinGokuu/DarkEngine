@@ -1,3 +1,6 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.test;
 
 import sv.dark.kernel.UltraFastBootSequence;
@@ -9,66 +12,64 @@ import sv.dark.bus.DarkAtomicBus;
 import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Validar que el boot completo ocurra en < 1ms (AAA+
- * Standard).
- * MÉTRICAS: Pass/Fail basado en latencia hard-real-time.
+ * RESPONSIBILITY: Validates that the complete boot sequence occurs in < 1ms (AAA+ Standard).
+ * WHY: The Dark Engine must guarantee immediate startup without typical Java initialization sluggishness.
+ * TECHNIQUE: Executes real JIT warmup, triggers garbage collection, and then times the core boot sequence execution.
+ * GUARANTEES: Pass/Fail based on hard-real-time latency. Boot time is strictly < 1ms.
  * 
- * @author Marvin-Dev
- * @version 1.0 (Boot Validator)
- * @since 2026-01-11
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 @AAACertified(date = "2026-01-11", maxLatencyNs = 1_000_000, minThroughput = 1, alignment = 0, lockFree = true, offHeap = true, notes = "Critical Boot Validator (Hard Real-Time)")
 public class UltraFastBootTest {
 
     public static void main(String[] args) {
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("  AAA+ CERTIFICATION: ULTRA FAST BOOT (<1ms)");
-        System.out.println("═══════════════════════════════════════════════════════");
+        System.out.print("[TEST] Running Ultra Fast Boot Sequence Validation (<1ms)... ");
 
         try {
-            // 1. Setup Infrastructure (Pre-Boot overhead not counted in sequence)
-            System.out.println("[TEST] Initializing Hardware Simulation...");
-
             KernelControlRegister controlRegister = new KernelControlRegister();
             controlRegister.transition(KernelControlRegister.STATE_OFFLINE, KernelControlRegister.STATE_BOOTING);
 
-            SectorMemoryVault memoryVault = new SectorMemoryVault(1024); // 64MB
+            SectorMemoryVault memoryVault = new SectorMemoryVault(1024);
             DarkAtomicBus systemBus = new DarkAtomicBus(1024);
             DarkAtomicBus inputBus = new DarkAtomicBus(1024);
 
-            // 2. WARMUP (JIT Compilation)
-            System.out.println("[TEST] Warming up JVM (C2 Compiler)...");
-            for (int i = 0; i < 10000; i++) {
+            for (int i= 0; i< 10000; i++) {
                 runDummyBoot();
             }
 
-            // 3. REAL TEST
             System.gc();
-            Thread.sleep(100); // Quiescence
+            Thread.sleep(100);
 
-            System.out.println("[TEST] EXECUTING CRITICAL BOOT SEQUENCE...");
-
-            // Execute
             BootResult result = UltraFastBootSequence.execute(
                     controlRegister,
                     memoryVault,
                     systemBus,
                     inputBus);
 
-            // 4. Validate
-            UltraFastBootSequence.printBootStats(result);
-
+            System.out.println("DONE.");
+            
+            System.out.println("\n======================================================================");
+            System.out.println("                   ULTRA FAST BOOT PROTOCOL SUMMARY                   ");
+            System.out.println("======================================================================");
+            System.out.printf(" %-20s | %-20s%n", "METRIC", "VALUE");
+            System.out.println("----------------------------------------------------------------------");
+            System.out.printf(" %-20s | %-20.4f ms%n", "Execution Time", result.bootTimeNs / 1_000_000.0);
+            System.out.printf(" %-20s | %-20s%n", "Target Standard", "< 1.0000 ms (AAA+)");
+            System.out.println("----------------------------------------------------------------------");
+            
             if (result.success && result.bootTimeNs < 1_000_000) {
-                System.out.println("\n[PASSED] SYSTEM IS AAA+ COMPLIANT");
+                System.out.println(" BOOT STATUS: [OK] AAA+ COMPLIANT");
+                System.out.println("======================================================================\n");
                 System.exit(0);
             } else {
-                System.err.println("\n[FAILED] SYSTEM TOO SLOW OR BROKEN");
+                System.out.println(" BOOT STATUS: [FAILED] SYSTEM TOO SLOW OR BROKEN");
+                System.out.println("======================================================================\n");
                 System.exit(1);
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("FAILED: " + e.getMessage());
             System.exit(1);
         }
     }

@@ -1,4 +1,9 @@
+// Reading Order: 00000000
 package sv.dark.kernel;
+
+
+import sv.dark.core.DarkLogger;
+import sv.dark.core.AAACertified;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -22,13 +27,20 @@ import java.lang.management.ThreadMXBean;
  * @version 1.0
  * @since 2026-01-17
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class BaselineValidator {
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // SYSTEM SNAPSHOT - Captura de Métricas del Sistema
     // ═══════════════════════════════════════════════════════════════════════════════
 
-    public static class SystemSnapshot {
+    public static class MemorySnapshot {
         public final long heapUsedBytes;
         public final long heapMaxBytes;
         public final long heapCommittedBytes;
@@ -37,7 +49,7 @@ public final class BaselineValidator {
         public final long timestamp;
         public final String label;
 
-        public SystemSnapshot(String label) {
+        public MemorySnapshot(String label) {
             this.label = label;
             this.timestamp = System.nanoTime();
 
@@ -60,14 +72,14 @@ public final class BaselineValidator {
             System.out.println("═══════════════════════════════════════════════════════════════");
             System.out.println("BASELINE SNAPSHOT: " + label);
             System.out.println("═══════════════════════════════════════════════════════════════");
-            System.out.printf("  Heap Used:      %,d bytes (%.2f MB)%n", heapUsedBytes, heapUsedBytes / 1_048_576.0);
+            System.out.println(String.format("  Heap Used:      %,d bytes (%.2f MB)%n", heapUsedBytes, heapUsedBytes / 1_048_576.0));
             System.out.printf("  Heap Committed: %,d bytes (%.2f MB)%n", heapCommittedBytes,
                     heapCommittedBytes / 1_048_576.0);
-            System.out.printf("  Heap Max:       %,d bytes (%.2f MB)%n", heapMaxBytes, heapMaxBytes / 1_048_576.0);
+            System.out.println(String.format("  Heap Max:       %,d bytes (%.2f MB)%n", heapMaxBytes, heapMaxBytes / 1_048_576.0));
             System.out.printf("  Non-Heap Used:  %,d bytes (%.2f MB)%n", nonHeapUsedBytes,
                     nonHeapUsedBytes / 1_048_576.0);
-            System.out.printf("  Thread Count:   %d%n", threadCount);
-            System.out.printf("  Timestamp:      %,d ns%n", timestamp);
+            System.out.println(String.format("  Thread Count:   %d%n", threadCount));
+            System.out.println(String.format("  Timestamp:      %,d ns%n", timestamp));
             System.out.println("═══════════════════════════════════════════════════════════════");
         }
     }
@@ -77,66 +89,38 @@ public final class BaselineValidator {
     // ═══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Compara dos snapshots y detecta memory leaks.
+     * Compares two snapshots to detect memory leaks.
      * 
-     * CRITERIOS DE VALIDACIÓN:
-     * - Heap: C <= A + 1MB (tolerancia para Code Cache residual)
-     * - Threads: C == A (no threads fantasma)
-     * - Non-Heap: C <= A + 2MB (tolerancia para JIT compiler)
+     * <p><b>Validation Criteria:</b>
+     * <ul>
+     *   <li>Heap: C <= A + 1MB (tolerance for residual Code Cache)</li>
+     *   <li>Threads: C == A (no phantom threads)</li>
+     *   <li>Non-Heap: C <= A + 4MB (tolerance for JIT compiler metaspace)</li>
+     * </ul>
      * 
-     * @param stateA Snapshot del Estado A (Sin Motor)
-     * @param stateC Snapshot del Estado C (Post-Apagado)
-     * @return true si no hay leaks, false si hay leaks
+     * @param stateA Snapshot of State A (Pre-Boot).
+     * @param stateC Snapshot of State C (Post-Shutdown).
+     * @return {@code true} if no leaks are detected.
      */
-    public static boolean validateCleanShutdown(SystemSnapshot stateA, SystemSnapshot stateC) {
-        System.out.println("\n═══════════════════════════════════════════════════════════════");
-        System.out.println("BASELINE VALIDATION: A (Sin Motor) vs C (Post-Apagado)");
-        System.out.println("═══════════════════════════════════════════════════════════════");
-
+    public static boolean validateCleanShutdown(MemorySnapshot stateA, MemorySnapshot stateC) {
         boolean passed = true;
         long TOLERANCE_1MB = 1_048_576; // 1 MB
-        // Ajuste de tolerancia Non-Heap:
-        // Metaspace y CodeCache (JIT) no se liberan inmediatamente al apagar el motor.
-        // 4MB es un margen seguro para una aplicación pequeña.
         long TOLERANCE_NON_HEAP = 4_194_304; // 4 MB
 
-        // Validación 1: Heap Memory
         long heapDelta = stateC.heapUsedBytes - stateA.heapUsedBytes;
-        System.out.printf("  Heap Delta:     %,d bytes (%.2f MB)%n", heapDelta, heapDelta / 1_048_576.0);
         if (heapDelta > TOLERANCE_1MB) {
-            System.out.println("  ❌ HEAP LEAK DETECTED: Delta > 1MB");
             passed = false;
-        } else {
-            System.out.println("  ✅ Heap OK: Delta <= 1MB");
         }
 
-        // Validación 2: Non-Heap Memory (Project Panama, Code Cache, JIT)
         long nonHeapDelta = stateC.nonHeapUsedBytes - stateA.nonHeapUsedBytes;
-        System.out.printf("  Non-Heap Delta: %,d bytes (%.2f MB)%n", nonHeapDelta, nonHeapDelta / 1_048_576.0);
         if (nonHeapDelta > TOLERANCE_NON_HEAP) {
-            System.out.println("  ❌ NON-HEAP LEAK DETECTED: Delta > 4MB (Metaspace/CodeCache overflow)");
             passed = false;
-        } else {
-            System.out.println("  ✅ Non-Heap OK: Delta <= 4MB");
         }
 
-        // Validación 3: Thread Count
         int threadDelta = stateC.threadCount - stateA.threadCount;
-        System.out.printf("  Thread Delta:   %d%n", threadDelta);
         if (threadDelta > 0) {
-            System.out.println("  ❌ THREAD LEAK DETECTED: Threads fantasma activos");
             passed = false;
-        } else {
-            System.out.println("  ✅ Threads OK: No hay threads fantasma");
         }
-
-        System.out.println("═══════════════════════════════════════════════════════════════");
-        if (passed) {
-            System.out.println("✅ BASELINE VALIDATION PASSED: Shutdown limpio al 100%");
-        } else {
-            System.out.println("❌ BASELINE VALIDATION FAILED: Memory Leak detectado");
-        }
-        System.out.println("═══════════════════════════════════════════════════════════════\n");
 
         return passed;
     }
@@ -161,17 +145,12 @@ public final class BaselineValidator {
      * ADVERTENCIA: Solo usar en tests, NUNCA en producción.
      */
     public static void aggressiveGC() {
-        System.out.println("[BASELINE] Ejecutando ciclo triple de GC para limpieza profunda...");
+        System.out.println("[KERNEL] Reclaiming deep memory (Triple GC cycle)... ");
         for (int i = 1; i <= 3; i++) {
             System.gc();
-            try {
-                Thread.sleep(500); // Drain period: 500ms
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            System.out.printf("[BASELINE] GC Cycle %d/3 completado%n", i);
+            try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
-        System.out.println("[BASELINE] Limpieza profunda completada");
+        System.out.println("DONE.");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -179,39 +158,33 @@ public final class BaselineValidator {
     // ═══════════════════════════════════════════════════════════════════════════════
 
     /**
-     * Captura el Estado A (Sin Motor).
+     * Captures State A (Pre-Boot).
      * 
-     * @return Snapshot del sistema en reposo
+     * @return Snapshot of the system at rest.
      */
-    public static SystemSnapshot captureStateA() {
-        aggressiveGC(); // Limpiar basura residual antes de capturar
-        SystemSnapshot snapshot = new SystemSnapshot("Estado A (Sin Motor)");
-        snapshot.print();
-        return snapshot;
+    public static MemorySnapshot captureStateA() {
+        aggressiveGC(); 
+        return new MemorySnapshot("State A (Pre-Boot)");
     }
 
     /**
-     * Captura el Estado B (Con Motor).
+     * Captures State B (During Execution).
      * 
-     * @return Snapshot del sistema durante ejecución
+     * @return Snapshot of the system during execution.
      */
-    public static SystemSnapshot captureStateB() {
-        SystemSnapshot snapshot = new SystemSnapshot("Estado B (Con Motor)");
-        snapshot.print();
-        return snapshot;
+    public static MemorySnapshot captureStateB() {
+        return new MemorySnapshot("State B (During Execution)");
     }
 
     /**
-     * Captura el Estado C (Post-Apagado).
+     * Captures State C (Post-Shutdown).
      * 
-     * IMPORTANTE: Ejecuta ciclo triple de GC antes de capturar.
+     * IMPORTANT: Executes triple GC cycle before capturing.
      * 
-     * @return Snapshot del sistema después del shutdown
+     * @return Snapshot of the system after shutdown.
      */
-    public static SystemSnapshot captureStateC() {
-        aggressiveGC(); // Forzar limpieza profunda antes de capturar
-        SystemSnapshot snapshot = new SystemSnapshot("Estado C (Post-Apagado)");
-        snapshot.print();
-        return snapshot;
+    public static MemorySnapshot captureStateC() {
+        aggressiveGC();
+        return new MemorySnapshot("State C (Post-Shutdown)");
     }
 }

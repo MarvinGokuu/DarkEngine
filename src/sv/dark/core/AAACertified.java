@@ -1,88 +1,84 @@
 // Reading Order: 00000100
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.core;
 
-import java.lang.annotation.*;
+// JDK — Annotations
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Anotación de certificación AAA+ (Compile-Time Only)
- * DEPENDENCIAS: Ninguna
- * MÉTRICAS: Overhead = 0ns (eliminada en bytecode)
- * 
- * Marca un componente como certificado bajo el estándar AAA+ de baja latencia.
- * Esta anotación es SOLO para documentación y validación estática.
- * NO tiene overhead en runtime (RetentionPolicy.SOURCE).
- * 
- * GARANTÍAS:
- * - Overhead de compilación: <1ms
- * - Overhead de runtime: 0ns (eliminada después de javac)
- * - Memoria consumida: 0 bytes
- * 
- * PROHIBIDO:
- * - NO usar RetentionPolicy.RUNTIME (añadiría overhead)
- * - NO validar en hot-path (añadiría latencia)
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-06
+ * AAA+ hardware-level performance certification marker.
+ *
+ * <p>Documents and statically validates strict latency, throughput, and memory 
+ * alignment guarantees for critical engine components. 
+ *
+ * <p><b>Zero-Overhead Contract:</b> Must be discarded by the compiler 
+ * ({@code RetentionPolicy.SOURCE}). It is strictly forbidden to use runtime 
+ * retention, as reflective scanning would introduce unacceptable latency spikes 
+ * on the hot path.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-
-@Retention(RetentionPolicy.SOURCE) // ← CRÍTICO: Eliminada en bytecode (0ns overhead)
+@Retention(RetentionPolicy.SOURCE) // CRITICAL: Discarded in bytecode (0ns overhead)
 @Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
 @Documented
 public @interface AAACertified {
 
     /**
-     * Licencia del componente.
-     * Default: "AAA+ Certification (Propietaria)"
+     * Component license identifier.
+     * Defaults to LGPL-3.0-or-later for the DarkEngine project.
      */
-    String license() default "AAA+ Certification (Propietaria)";
+    String license() default "LGPL-3.0-or-later";
 
     /**
-     * Autor del componente certificado.
-     * Default: "Marvin-Dev"
+     * Author or owner of the certified component.
      */
-    String author() default "Marvin-Dev";
+    String author() default "Marvin Alexander Flores Canales";
 
     /**
-     * Fecha de certificación (formato: YYYY-MM-DD).
-     * Requerido para trazabilidad.
+     * Certification date (Format: YYYY-MM-DD).
+     * Required for audit traceability.
      */
     String date();
 
     /**
-     * Latencia máxima permitida en nanosegundos.
-     * Default: 150ns (estándar AAA+)
+     * Maximum permitted latency in nanoseconds.
+     * Default: 150ns (AAA+ standard).
      */
     long maxLatencyNs() default 150;
 
     /**
-     * Throughput mínimo en operaciones por segundo.
-     * Default: 10,000,000 (10M ops/s)
+     * Minimum required throughput in operations per second.
+     * Default: 10,000,000 (10M ops/s).
      */
     long minThroughput() default 10_000_000;
 
     /**
-     * Alineación de memoria requerida en bytes.
-     * Default: 64 (L1 Cache Line)
+     * Memory alignment requirement in bytes.
+     * Default: 64 (L1 Cache Line).
      */
     int alignment() default 64;
 
     /**
-     * Indica si el componente es lock-free.
-     * Default: true (estándar AAA+)
+     * Indicates whether the component guarantees lock-free execution.
+     * Default: true.
      */
     boolean lockFree() default true;
 
     /**
-     * Indica si el componente usa off-heap memory.
-     * Default: false (no todos los componentes lo requieren)
+     * Indicates whether the component utilizes off-heap memory mapping.
+     * Default: false.
      */
     boolean offHeap() default false;
 
     /**
-     * Notas adicionales sobre la certificación.
-     * Default: ""
+     * Additional notes regarding the certification guarantees or limitations.
      */
     String notes() default "";
 }
