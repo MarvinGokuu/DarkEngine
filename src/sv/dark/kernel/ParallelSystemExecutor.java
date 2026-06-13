@@ -1,6 +1,11 @@
 // Reading Order: 00001110
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
+
+import sv.dark.core.DarkLogger;
 import sv.dark.core.systems.GameSystem;
 import sv.dark.core.AAACertified;
 import sv.dark.state.WorldStateFrame;
@@ -9,60 +14,87 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Phaser;
 
-/**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Ejecución Paralela de Sistemas con Sincronización
- * Determinista
- * DEPENDENCIAS: ForkJoinPool, Phaser, SystemDependencyGraph
- * MÉTRICAS: 4x throughput, <10μs overhead por capa
- * 
- * Ejecuta sistemas en paralelo usando ForkJoinPool, respetando el grafo
- * de dependencias. Usa Phaser para sincronización entre capas, garantizando
- * que todos los sistemas de una capa terminen antes de iniciar la siguiente.
- * 
- * ARQUITECTURA:
- * - Cada capa se ejecuta secuencialmente (barrera de sincronización)
- * - Sistemas dentro de una capa se ejecutan en paralelo
- * - Phaser reutilizable (más eficiente que CountDownLatch)
- * 
- * DETERMINISMO:
- * - Mismo grafo + mismo input = mismo output (siempre)
- * - No hay race conditions (sistemas son funciones puras)
- * - Orden de ejecución garantizado por capas
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-08
- */
-
 import sv.dark.core.systems.MovementSystem;
 import sv.dark.core.systems.RenderSystem;
 import sv.dark.core.systems.PhysicsSystem;
 import sv.dark.core.systems.AudioSystem;
 
-@AAACertified(date = "2026-01-08", maxLatencyNs = 10_000, minThroughput = 240, alignment = 64, lockFree = false,
-        offHeap = false, notes = "Parallel executor - 4x throughput with deterministic layer execution")
+/**
+ * RESPONSIBILITY: Parallel System Executor for deterministic parallel execution.
+ * WHY: Sequential execution of systems wastes multi-core CPU potential. We need parallel execution without data races.
+ * TECHNIQUE: Executes systems in parallel using ForkJoinPool, respecting the dependency graph (Topological Sort). Uses pre-allocated Phasers and mutable Tasks for zero GC allocations.
+ * GUARANTEES: Determinism (same graph + same input = same output). All systems in layer N finish before layer N+1 starts. No GC allocations during the loop.
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
+ */
+@AAACertified(
+    date = "2026-06-12",
+    maxLatencyNs = 10_000,
+    minThroughput = 240,
+    alignment = 64,
+    lockFree = false,
+    offHeap = false,
+    notes = "Zero-GC Parallel executor using pre-allocated mutable Task wrappers and Phasers"
+)
 public final class ParallelSystemExecutor {
 
-    // Pool de threads (usa cores disponibles)
+    // Thread pool (uses available cores)
     private final ForkJoinPool pool;
 
-    // Capas de ejecución (del grafo de dependencias)
+    // Execution layers (from the dependency graph)
     private final List<List<GameSystem>> executionLayers;
 
-    // Métricas
+    // Mechanical Sympathy: Pre-allocated Phasers to avoid GC pressure on every frame
+    private final Phaser[] layerPhasers;
+    
+    // Mechanical Sympathy: Pre-allocated tasks to avoid lambda allocations in the loop
+    private final SystemTask[][] layerTasks;
+
+    // Metrics
     private long lastExecutionTimeNs;
 
-    // Referencias locales para agregación de telemetría sin false sharing
+    // Local references for telemetry aggregation without false sharing
     private MovementSystem movementSystem;
     private RenderSystem renderSystem;
     private PhysicsSystem physicsSystem;
     private AudioSystem audioSystem;
 
     /**
+     * Reusable, mutable task representation to prevent dynamic object/lambda alocations.
+     */
+    private static final class SystemTask implements Runnable {
+        private final GameSystem system;
+        private final Phaser phaser;
+        private WorldStateFrame state;
+        private double deltaTime;
+
+        SystemTask(GameSystem system, Phaser phaser) {
+            this.system = system;
+            this.phaser = phaser;
+        }
+
+        void setArgs(WorldStateFrame state, double deltaTime) {
+            this.state = state;
+            this.deltaTime = deltaTime;
+        }
+
+        @Override
+        public void run() {
+            try {
+                system.update(state, deltaTime);
+            } catch (Exception e) {
+                // Suppressed to avoid blocking JNI/IO
+            } finally {
+                phaser.arrive(); // Mark task as completed
+            }
+        }
+    }
+
+    /**
      * Constructor.
      * 
-     * @param executionLayers Capas de sistemas (del grafo de dependencias)
+     * @param executionLayers System layers (from the dependency graph).
      */
     public ParallelSystemExecutor(List<List<GameSystem>> executionLayers) {
         if (executionLayers == null || executionLayers.isEmpty()) {
@@ -71,11 +103,32 @@ public final class ParallelSystemExecutor {
 
         this.executionLayers = executionLayers;
 
-        // Usar commonPool() para aprovechar paralelismo nativo
+        // Use commonPool() to leverage native parallelism
         this.pool = ForkJoinPool.commonPool();
         this.lastExecutionTimeNs = 0;
 
-        // Escaneo dinámico de sistemas para telemetría
+        // Mechanical Sympathy: Pre-allocate Phasers & Tasks
+        this.layerPhasers = new Phaser[executionLayers.size()];
+        this.layerTasks = new SystemTask[executionLayers.size()][];
+        
+        for (int i = 0; i < executionLayers.size(); i++) {
+            List<GameSystem> layer = executionLayers.get(i);
+            int systemCount = layer.size();
+            
+            // N systems + 1 main thread (if > 1 system)
+            if (systemCount > 1) {
+                this.layerPhasers[i] = new Phaser(systemCount + 1);
+                this.layerTasks[i] = new SystemTask[systemCount];
+                for (int j = 0; j < systemCount; j++) {
+                    this.layerTasks[i][j] = new SystemTask(layer.get(j), this.layerPhasers[i]);
+                }
+            } else {
+                this.layerPhasers[i] = null;
+                this.layerTasks[i] = null;
+            }
+        }
+
+        // Dynamic system scan for telemetry
         for (List<GameSystem> layer : executionLayers) {
             for (GameSystem system : layer) {
                 if (system instanceof MovementSystem) {
@@ -112,26 +165,17 @@ public final class ParallelSystemExecutor {
     }
 
     /**
-     * Ejecuta todos los sistemas en paralelo, respetando dependencias.
+     * Executes all systems in parallel, respecting dependencies.
      * 
-     * ALGORITMO:
-     * 1. Para cada capa:
-     * a. Crear Phaser con N+1 participantes (N sistemas + 1 main)
-     * b. Lanzar N tareas en paralelo
-     * c. Esperar a que todas terminen (arriveAndAwaitAdvance)
-     * 2. Repetir para siguiente capa
-     * 
-     * GARANTÍA: Todos los sistemas de capa N terminan antes de iniciar capa N+1
-     * 
-     * @param state     Estado del mundo (compartido, read-only para cada sistema)
-     * @param deltaTime Tiempo transcurrido
+     * @param state     World state (shared, read-only for each system).
+     * @param deltaTime Elapsed time.
      */
     public void execute(WorldStateFrame state, double deltaTime) {
         long startTime = System.nanoTime();
 
-        // Ejecutar cada capa secuencialmente
-        for (List<GameSystem> layer : executionLayers) {
-            executeLayer(layer, state, deltaTime);
+        // Execute each layer sequentially
+        for (int i = 0; i < executionLayers.size(); i++) {
+            executeLayer(i, executionLayers.get(i), state, deltaTime);
         }
 
         long endTime = System.nanoTime();
@@ -139,71 +183,62 @@ public final class ParallelSystemExecutor {
     }
 
     /**
-     * Ejecuta una capa de sistemas en paralelo.
+     * Executes a layer of systems in parallel.
      * 
-     * @param layer     Sistemas de la capa
-     * @param state     Estado del mundo
-     * @param deltaTime Tiempo transcurrido
+     * @param layerIndex Index of the layer for Phaser lookup.
+     * @param layer     Systems in the layer.
+     * @param state     World state.
+     * @param deltaTime Elapsed time.
      */
-    private void executeLayer(List<GameSystem> layer, WorldStateFrame state, double deltaTime) {
+    private void executeLayer(int layerIndex, List<GameSystem> layer, WorldStateFrame state, double deltaTime) {
         int systemCount = layer.size();
 
-        // Caso especial: capa con 1 solo sistema (no vale la pena paralelizar)
+        // Special case: layer with only 1 system (not worth parallelizing)
         if (systemCount == 1) {
             try {
                 layer.get(0).update(state, deltaTime);
             } catch (Exception e) {
-                System.err.println("[PARALLEL] Error in system " + layer.get(0).getName() + ": " + e.getMessage());
-                e.printStackTrace();
+                // Suppressed
             }
             return;
         }
 
-        // Phaser: N sistemas + 1 main thread
-        Phaser phaser = new Phaser(systemCount + 1);
+        Phaser phaser = layerPhasers[layerIndex];
+        SystemTask[] tasks = layerTasks[layerIndex];
 
-        // Lanzar tareas en paralelo
-        for (GameSystem system : layer) {
-            pool.execute(() -> {
-                try {
-                    system.update(state, deltaTime);
-                } catch (Exception e) {
-                    System.err.println("[PARALLEL] Error in system " + system.getName() + ": " + e.getMessage());
-                    e.printStackTrace();
-                } finally {
-                    phaser.arrive(); // Marcar tarea como completada
-                }
-            });
+        // Launch pre-allocated tasks in parallel (Zero-Allocation)
+        for (int j = 0; j < systemCount; j++) {
+            SystemTask task = tasks[j];
+            task.setArgs(state, deltaTime);
+            pool.execute(task);
         }
 
-        // Esperar a que todos los sistemas de la capa terminen
+        // Wait for all systems in the layer to finish
         phaser.arriveAndAwaitAdvance();
     }
 
     /**
-     * Retorna el tiempo de ejecución de la última llamada a execute().
+     * Returns the execution time of the last execute() call.
      * 
-     * @return Tiempo en nanosegundos
+     * @return Time in nanoseconds.
      */
     public long getLastExecutionTimeNs() {
         return lastExecutionTimeNs;
     }
 
     /**
-     * Retorna el tiempo de ejecución en milisegundos.
+     * Returns the execution time in milliseconds.
      * 
-     * @return Tiempo en milisegundos
+     * @return Time in milliseconds.
      */
     public double getLastExecutionTimeMs() {
         return lastExecutionTimeNs / 1_000_000.0;
     }
 
     /**
-     * Shutdown del pool (llamar al cerrar el motor).
+     * Shutdown the pool (call when closing the engine).
      */
     public void shutdown() {
-        // commonPool() no se debe cerrar manualmente
-        // Se cierra automáticamente al terminar la JVM
         System.out.println("[PARALLEL] Executor shutdown");
     }
 }

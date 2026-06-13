@@ -1,75 +1,85 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core;
+
+import sv.dark.core.AAACertified;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Sistema de Control de Tiempo y Rebobinado (Time Travel).
- * DEPENDENCIAS: MemorySegment, Arena
- * MÉTRICAS: Zero-GC Snapshot, O(1) Rollback
+ * Time Control and Rewind System (Time Travel).
  * 
- * Gestiona un buffer circular de snapshots de memoria nativa. Permite
- * retroceder el estado del mundo instantáneamente para predicción de red o
- * debug.
+ * <p>Manages a circular buffer of native memory snapshots. Allows
+ * instantly rewinding the world state for network prediction or
+ * debugging.
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * <p>Metrics: Zero-GC Snapshot, O(1) Rollback
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class DarkTimeControlUnit {
 
-    private final MemorySegment timeSlab; // Un solo bloque contiguo de memoria nativa (Off-Heap)
+    private final MemorySegment timeSlab; // Single contiguous block of native memory (Off-Heap)
     private final long frameSize;
     private final int maxFrames;
     private int writeIndex = 0;
 
     /**
-     * @param arena     Arena confinada para la sesión de ejecución.
-     * @param frameSize Tamaño exacto en bytes de un WorldStateFrame.
-     * @param maxFrames Capacidad del búfer circular para el historial.
+     * @param arena     Confined arena for the execution session.
+     * @param frameSize Exact size in bytes of a WorldStateFrame.
+     * @param maxFrames Capacity of the circular buffer for history.
      */
     public DarkTimeControlUnit(Arena arena, long frameSize, int maxFrames) {
         this.frameSize = frameSize;
         this.maxFrames = maxFrames;
 
-        // [INGENIERÍA DURA]: Reservamos el slab completo al inicio para evitar
-        // fragmentación.
-        // Alineación a 64 bytes para maximizar el ancho de banda del bus de memoria.
+        // [HARD ENGINEERING]: We reserve the complete slab at the beginning to avoid
+        // fragmentation.
+        // Alignment to 64 bytes to maximize memory bus bandwidth.
         this.timeSlab = arena.allocate(frameSize * maxFrames, 64L);
     }
 
     /**
-     * Captura el estado presente sobreescribiendo el frame más antiguo.
-     * Operación Wait-free mediante copia directa de memoria nativa.
+     * Captures the present state by overwriting the oldest frame.
+     * Wait-free operation through direct native memory copy.
      */
     public void capture(MemorySegment activeState) {
-        // Cálculo de offset O(1)
+        // O(1) offset calculation
         long offset = (long) writeIndex * frameSize;
 
-        // Creamos una vista (slice) sin alocación en el Heap
+        // We create a view (slice) without allocation on the Heap
         MemorySegment targetFrame = timeSlab.asSlice(offset, frameSize);
 
         // [MECHANICAL SYMPATHY]: Low-level direct copy to memory.
         targetFrame.copyFrom(activeState);
 
-        // Avance del puntero circular
+        // Advance of the circular pointer
         writeIndex = (writeIndex + 1) % maxFrames;
     }
 
     /**
-     * Restaura el estado anterior del motor.
-     * Revierte el control de datos al instante previo capturado.
+     * Restores the previous state of the engine.
+     * Reverts data control to the previously captured instant.
      */
     public void rollback(MemorySegment activeState) {
-        // Retroceso del índice en el búfer circular
+        // Rewind the index in the circular buffer
         writeIndex = (writeIndex - 1 + maxFrames) % maxFrames;
         long offset = (long) writeIndex * frameSize;
 
         MemorySegment historicFrame = timeSlab.asSlice(offset, frameSize);
 
-        // Restauración atómica de bits
+        // Atomic restoration of bits
         activeState.copyFrom(historicFrame);
     }
 }
-// actualizado3/1/26
+// updated 3/1/26

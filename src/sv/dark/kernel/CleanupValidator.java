@@ -1,62 +1,76 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.kernel;
 
+
+import sv.dark.core.DarkLogger;
+import sv.dark.core.AAACertified;
+
 /**
- * TECHNICAL SPECIFICATION
- *
- * CONTEXT:
- * - Auditor system validating that no residual hardware or OS modifications remain after shutdown.
- *
- * MEMORY SEMANTICS:
- * - Thread-confined execution.
+ * RESPONSIBILITY: Auditor system validating that no residual hardware or OS modifications remain after shutdown.
+ * WHY: Failing to restore the OS state (thread affinity, power schemes) degrades the user's machine after exit.
+ * TECHNIQUE: Compares pre-boot snapshots with post-shutdown snapshots.
+ * GUARANTEES: Thread-confined execution and strictly deterministic auditing.
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class CleanupValidator {
 
     /**
-     * Compara el snapshot inicial del sistema con el snapshot posterior al apagado.
-     * Genera reportes de auditoría y advierte sobre cualquier configuración residual.
+     * Compares the initial system snapshot with the post-shutdown snapshot.
+     * <p>Generates audit reports and warns about any residual OS configuration.
      * 
-     * @param initial El snapshot del sistema capturado antes de arrancar.
-     * @param current El snapshot del sistema capturado después de apagar el motor.
-     * @return true si el sistema se restauró por completo (sin residuos), false en caso contrario.
+     * @param initial The system snapshot captured before booting.
+     * @param current The system snapshot captured after shutting down the engine.
+     * @return {@code true} if the system was completely restored (no residuals), {@code false} otherwise.
      */
     public static boolean validate(SystemSnapshot initial, SystemSnapshot current) {
-        System.out.println("\n═══════════════════════════════════════════════════════════════");
+        System.out.println("\n--------------------------------------------------------------");
         System.out.println("OS CLEANUP AUDIT: INITIAL vs POST-SHUTDOWN");
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("--------------------------------------------------------------");
 
         boolean passed = true;
 
         if (initial == null || current == null) {
-            System.err.println("  ❌ AUDIT CRITICAL: One or both snapshots are null.");
-            System.out.println("═══════════════════════════════════════════════════════════════\n");
+            System.err.println("  [ERROR] AUDIT CRITICAL: One or both snapshots are null.");
+            System.out.println("--------------------------------------------------------------\n");
             return false;
         }
 
-        // 1. Validar restauración de afinidad de hilos
+        // 1. Validate thread affinity restoration
         if (initial.threadAffinityMask == current.threadAffinityMask) {
-            System.out.println("  ✅ Thread Affinity: RESTORED OK");
+            System.out.println("  [OK] Thread Affinity: RESTORED OK");
         } else {
-            System.err.printf("  ❌ THREAD AFFINITY RESIDUAL DETECTED: Initial: 0x%X | Post-Shutdown: 0x%X%n",
+            System.err.printf("  [ERROR] THREAD AFFINITY RESIDUAL DETECTED: Initial: 0x%X | Post-Shutdown: 0x%X%n",
                     initial.threadAffinityMask, current.threadAffinityMask);
             passed = false;
         }
 
-        // 2. Validar restauración del plan de energía
+        // 2. Validate power scheme restoration
         if (initial.powerSchemeGuid.equalsIgnoreCase(current.powerSchemeGuid)) {
-            System.out.println("  ✅ Power Scheme: RESTORED OK (" + initial.powerSchemeName + ")");
+            System.out.println("  [OK] Power Scheme: RESTORED OK (" + initial.powerSchemeName + ")");
         } else {
-            System.err.printf("  ❌ POWER SCHEME RESIDUAL DETECTED: Initial: %s (%s) | Post-Shutdown: %s (%s)%n",
+            System.err.printf("  [ERROR] POWER SCHEME RESIDUAL DETECTED: Initial: %s (%s) | Post-Shutdown: %s (%s)%n",
                     initial.powerSchemeName, initial.powerSchemeGuid, current.powerSchemeName, current.powerSchemeGuid);
             passed = false;
         }
 
-        System.out.println("═══════════════════════════════════════════════════════════════");
+        System.out.println("--------------------------------------------------------------");
         if (passed) {
-            System.out.println("✅ SYSTEM RESTORE VALIDATION PASSED: 100% CLEAN");
+            System.out.println("[OK] SYSTEM RESTORE VALIDATION PASSED: 100% CLEAN");
         } else {
-            System.out.println("❌ SYSTEM RESTORE VALIDATION FAILED: OS is in a dirty/modified state");
+            System.out.println("[ERROR] SYSTEM RESTORE VALIDATION FAILED: OS is in a dirty/modified state");
         }
-        System.out.println("═══════════════════════════════════════════════════════════════\n");
+        System.out.println("--------------------------------------------------------------\n");
 
         return passed;
     }

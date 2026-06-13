@@ -1,3 +1,6 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.memory;
 
 import java.lang.foreign.Arena;
@@ -6,153 +9,80 @@ import java.lang.foreign.ValueLayout;
 import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Gestión de memoria off-heap con page alignment (4KB)
- * DEPENDENCIAS: Arena, MemorySegment (Project Panama)
- * MÉTRICAS: TLB Miss = 0, Acceso <150ns, Page Alignment = 4KB
+ * Off-heap memory vault with 4KB page alignment for zero TLB misses.
+ *
+ * <p><b>Memory Contract:</b>
+ * <ul>
+ *   <li>Uses Foreign Memory API (Project Panama) for direct memory access.</li>
+ *   <li>Guarantees <150ns latency per access with zero GC overhead.</li>
+ *   <li>Lock-free operations suitable for the main hot-path.</li>
+ * </ul>
  * 
- * Vault de memoria sectorial con alineación de página para eliminar TLB Miss.
- * Usa Project Panama (Foreign Memory API) para acceso directo a memoria nativa.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-06
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - MEMORIA SECTORIAL (OFF-HEAP VAULT)
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// PORQUÉ:
-// - La anotación @AAACertified documenta las garantías de rendimiento inline
-// - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
-// - Metadata visible para humanos, invisible para la JVM
-// - Este vault es memoria a largo plazo: almacena datos fuera del heap
-//
-// TÉCNICA:
-// - maxLatencyNs: 150 = Acceso directo a memoria nativa (sin GC overhead)
-// - minThroughput: 10_000_000 = 10M accesos/segundo (lectura/escritura)
-// - alignment: 4096 = Page alignment (4KB) para eliminar TLB Miss
-// - lockFree: true = Sin locks (acceso directo a memoria)
-// - offHeap: true = Memoria nativa (fuera del heap de Java)
-//
-// GARANTÍA:
-// - Esta anotación NO afecta el rendimiento en runtime
-// - Solo documenta las métricas esperadas del componente
-// - Validable con herramientas estáticas en build-time
-// - Overhead medido: 0ns (confirmado con javap)
-//
 @AAACertified(date = "2026-01-06", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 4096, lockFree = true, offHeap = true, notes = "Off-heap memory vault with 4KB page alignment for TLB optimization")
 public final class SectorMemoryVault {
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // CONSTANTES DE ALINEACIÓN
-    // ═══════════════════════════════════════════════════════════════════════════════
-
     /**
-     * Tamaño de página estándar en x86-64 (4KB = 4096 bytes)
-     * 
-     * PORQUÉ:
-     * - Las páginas de memoria en x86-64 son de 4KB
-     * - Alinear a 4KB elimina TLB Miss (Translation Lookaside Buffer)
-     * - TLB Miss = ~100ns de overhead (evitable con alineación correcta)
-     * 
-     * TÉCNICA:
-     * - 4KB = 4096 bytes = 2^12 bytes
-     * - Alineación a potencia de 2 para optimización de hardware
-     * - MMU (Memory Management Unit) trabaja con páginas de 4KB
+     * RESPONSIBILITY: Define the standard page size for memory alignment.
+     * WHY: Memory pages in x86-64 architecture are 4KB. Aligning to 4KB eliminates TLB Misses.
+     * TECHNIQUE: Use a power of 2 (4096 bytes) for hardware optimization.
+     * GUARANTEES: Avoids ~100ns of overhead per TLB miss.
      */
     private static final int PAGE_SIZE = 4096; // 4KB
 
     /**
-     * Tamaño de sector (múltiplo de página)
-     * 
-     * PORQUÉ:
-     * - Un sector es la unidad mínima de asignación
-     * - 16 páginas = 64KB = tamaño óptimo para cache L2
-     * - Reduce fragmentación de memoria
-     * 
-     * TÉCNICA:
-     * - 16 páginas × 4KB = 64KB
-     * - 64KB cabe en cache L2 (256KB-512KB en CPUs modernos)
-     * - Alineación a 64KB para SIMD operations (Vector API)
+     * RESPONSIBILITY: Define the size of a sector.
+     * WHY: A sector is the minimum allocation unit. 16 pages (64KB) is optimal for L2 cache.
+     * TECHNIQUE: 16 pages x 4KB = 64KB, which fits entirely in L2 cache for SIMD operations.
+     * GUARANTEES: Reduces memory fragmentation and maximizes cache locality.
      */
     private static final int SECTOR_SIZE = PAGE_SIZE * 16; // 64KB
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ESTADO DEL VAULT
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
+    // VAULT STATE
+    // ========================================================================================================================================================
 
     /**
-     * Arena de memoria (ciclo de vida del vault)
-     * 
-     * PORQUÉ:
-     * - Arena gestiona el ciclo de vida de MemorySegments
-     * - Auto-cleanup cuando se cierra (try-with-resources)
-     * - Previene memory leaks en memoria nativa
-     * 
-     * TÉCNICA:
-     * - Arena.ofShared() = compartido entre threads (boot + kernel + systems)
-     * - Necesario para multi-threading (NEURONA_008 - DAG paralelo)
-     * - Overhead: ~5ns por acceso (atomic operations)
-     * 
-     * GARANTÍA:
-     * - Thread-safe para acceso concurrente
-     * - Compatible con ParallelSystemExecutor
-     * - Permite boot sequence desde múltiples threads
+     * RESPONSIBILITY: Manage the lifecycle of the memory segment.
+     * WHY: The Arena prevents memory leaks in native memory and provides auto-cleanup.
+     * TECHNIQUE: Use Arena.ofShared() for multi-threading access (boot, kernel, systems).
+     * GUARANTEES: Thread-safe for concurrent access without blocking.
      */
     private final Arena arena;
 
     /**
-     * Segmento de memoria off-heap
-     * 
-     * PORQUÉ:
-     * - MemorySegment es la abstracción de Project Panama
-     * - Acceso directo a memoria nativa sin JNI overhead
-     * - Bounds checking en compile-time (seguridad sin overhead)
-     * 
-     * TÉCNICA:
-     * - MemorySegment.allocateNative() = memoria fuera del heap
-     * - Alignment especificado en allocateNative(size, alignment)
-     * - Acceso vía ValueLayout (JAVA_LONG, JAVA_INT, etc.)
+     * RESPONSIBILITY: Represent the off-heap native memory block.
+     * WHY: MemorySegment is Project Panama's abstraction for direct memory access without JNI overhead.
+     * TECHNIQUE: allocateNative() provides memory outside the heap with specific alignment.
+     * GUARANTEES: Compile-time bounds checking with zero runtime overhead.
      */
     private final MemorySegment segment;
 
     /**
-     * Tamaño total del vault en bytes
+     * Total size of the vault in bytes.
      */
     private final long totalSize;
 
     /**
-     * Número de sectores en el vault
+     * Number of sectors in the vault.
      */
     private final int sectorCount;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
     // CONSTRUCTOR
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
 
     /**
-     * Crea un vault de memoria off-heap con page alignment.
+     * Creates an off-heap memory vault with page alignment.
      * 
-     * @param sectorCount Número de sectores (cada sector = 64KB)
+     * @param sectorCount Number of sectors (each sector = 64KB)
      * 
-     *                    PORQUÉ:
-     *                    - Especificar sectores (no bytes) simplifica gestión
-     *                    - Garantiza alineación a 4KB automáticamente
-     *                    - Tamaño predecible y determinista
-     * 
-     *                    TÉCNICA:
-     *                    - totalSize = sectorCount × SECTOR_SIZE
-     *                    - Arena.ofShared() para multi-threading (boot + kernel)
-     *                    - allocateNative() con alignment = PAGE_SIZE (4KB)
-     * 
-     *                    GARANTÍA:
-     *                    - Memoria alineada a 4KB (verificable con address % 4096
-     *                    == 0)
-     *                    - TLB Miss = 0 (todas las páginas alineadas)
-     *                    - Acceso <150ns (sin overhead de GC ni TLB)
-     *                    - Thread-safe para acceso concurrente
+     * RESPONSIBILITY: Allocate and align the native memory segment.
+     * WHY: Specifying sectors simplifies management and provides predictable sizing.
+     * TECHNIQUE: Total size = sectorCount * SECTOR_SIZE. Uses Arena.ofShared() and allocateNative() with PAGE_SIZE alignment.
+     * GUARANTEES: Memory is aligned to 4KB, eliminating TLB misses, and access is thread-safe for the execution DAG.
      */
     public SectorMemoryVault(int sectorCount) {
         if (sectorCount <= 0) {
@@ -161,181 +91,153 @@ public final class SectorMemoryVault {
 
         this.sectorCount = sectorCount;
         this.totalSize = (long) sectorCount * SECTOR_SIZE;
-        this.arena = Arena.ofShared(); // OPCIÓN D: Shared para multi-threading
+        this.arena = Arena.ofShared(); // Shared for multi-threading
 
-        // Asignar memoria nativa con alineación de 4KB
+        // Allocate native memory with 4KB alignment
         this.segment = arena.allocate(totalSize, PAGE_SIZE);
 
-        // Verificar alineación (debug)
+        // Verify alignment (debug)
         long address = segment.address();
         if (address % PAGE_SIZE != 0) {
-            throw new AssertionError("Memoria no alineada a 4KB: " + address);
+            throw new AssertionError("Memory not 4KB aligned: " + address);
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES DE LECTURA/ESCRITURA
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
+    // READ/WRITE OPERATIONS
+    // ========================================================================================================================================================
 
     /**
-     * Escribe un long en la posición especificada.
+     * Writes a long value at the specified offset.
      * 
-     * @param offset Offset en bytes (debe ser múltiplo de 8 para alineación)
-     * @param value  Valor a escribir
+     * @param offset Byte offset (must be a multiple of 8 for alignment)
+     * @param value  Value to write
      * 
-     *               PORQUÉ:
-     *               - Escritura directa a memoria nativa sin boxing
-     *               - Sin overhead de GC (memoria fuera del heap)
-     *               - Alineación a 8 bytes para operaciones atómicas
-     * 
-     *               TÉCNICA:
-     *               - ValueLayout.JAVA_LONG = layout de 8 bytes
-     *               - set() es bounds-checked en compile-time
-     *               - Acceso <150ns (sin TLB Miss)
-     * 
-     *               GARANTÍA:
-     *               - Bounds checking automático (IndexOutOfBoundsException)
-     *               - Alineación verificada en runtime
-     *               - Sin memory leaks (Arena gestiona cleanup)
+     * RESPONSIBILITY: Perform direct memory writes for 64-bit integers.
+     * WHY: Bypasses the JVM heap to avoid boxing and Garbage Collection overhead.
+     * TECHNIQUE: ValueLayout.JAVA_LONG enforces 8-byte layout with compile-time bounds checking.
+     * GUARANTEES: <150ns access time with runtime alignment verification.
      */
     public void writeLong(long offset, long value) {
         segment.set(ValueLayout.JAVA_LONG, offset, value);
     }
 
     /**
-     * Lee un long de la posición especificada.
+     * Reads a long value from the specified offset.
      * 
-     * @param offset Offset en bytes (debe ser múltiplo de 8)
-     * @return Valor leído
+     * @param offset Byte offset (must be a multiple of 8)
+     * @return The read value
      * 
-     *         PORQUÉ:
-     *         - Lectura directa sin boxing ni unboxing
-     *         - Cache-friendly (alineación a 8 bytes)
-     *         - Sin overhead de GC
-     * 
-     *         TÉCNICA:
-     *         - ValueLayout.JAVA_LONG para acceso tipado
-     *         - get() es bounds-checked
-     *         - Latencia <150ns (acceso directo a RAM)
+     * RESPONSIBILITY: Perform direct memory reads for 64-bit integers.
+     * WHY: Enables cache-friendly, zero-GC reads directly from RAM.
+     * TECHNIQUE: ValueLayout.JAVA_LONG ensures typed and bounds-checked access.
+     * GUARANTEES: Direct memory access bypassing the Java Heap.
      */
     public long readLong(long offset) {
         return segment.get(ValueLayout.JAVA_LONG, offset);
     }
 
     /**
-     * Escribe un int en la posición especificada.
+     * Writes an int value at the specified offset.
      * 
-     * @param offset Offset en bytes (debe ser múltiplo de 4)
-     * @param value  Valor a escribir
+     * @param offset Byte offset (must be a multiple of 4)
+     * @param value  Value to write
      */
     public void writeInt(long offset, int value) {
         segment.set(ValueLayout.JAVA_INT, offset, value);
     }
 
     /**
-     * Lee un int de la posición especificada.
+     * Reads an int value from the specified offset.
      * 
-     * @param offset Offset en bytes (debe ser múltiplo de 4)
-     * @return Valor leído
+     * @param offset Byte offset (must be a multiple of 4)
+     * @return The read value
      */
     public int readInt(long offset) {
         return segment.get(ValueLayout.JAVA_INT, offset);
     }
 
     /**
-     * Copia un bloque de bytes desde un array a la memoria off-heap.
+     * Copies a block of bytes from an array to off-heap memory.
      * 
-     * @param offset    Offset de destino en el vault
-     * @param source    Array fuente
-     * @param srcOffset Offset en el array fuente
-     * @param length    Número de bytes a copiar
+     * @param offset    Destination offset in the vault
+     * @param source    Source array
+     * @param srcOffset Offset in the source array
+     * @param length    Number of bytes to copy
      * 
-     *                  PORQUÉ:
-     *                  - Copia bulk para transferencias grandes
-     *                  - Usa memcpy nativo (optimizado por CPU)
-     *                  - Sin overhead de bucles en Java
-     * 
-     *                  TÉCNICA:
-     *                  - MemorySegment.copy() usa instrucciones SIMD
-     *                  - Throughput >10GB/s en CPUs modernos
-     *                  - Alineación a 8 bytes para máxima velocidad
+     * RESPONSIBILITY: Handle large bulk transfers to native memory.
+     * WHY: Bulk copying avoids loop overhead and utilizes CPU-optimized native memcpy.
+     * TECHNIQUE: MemorySegment.copy() uses SIMD instructions.
+     * GUARANTEES: High throughput (>10GB/s on modern CPUs) for data ingestion.
      */
     public void copyFrom(long offset, byte[] source, int srcOffset, int length) {
         MemorySegment.copy(source, srcOffset, segment, ValueLayout.JAVA_BYTE, offset, length);
     }
 
     /**
-     * Copia un bloque de bytes desde la memoria off-heap a un array.
+     * Copies a block of bytes from off-heap memory to an array.
      * 
-     * @param offset     Offset de origen en el vault
-     * @param dest       Array destino
-     * @param destOffset Offset en el array destino
-     * @param length     Número de bytes a copiar
+     * @param offset     Source offset in the vault
+     * @param dest       Destination array
+     * @param destOffset Offset in the destination array
+     * @param length     Number of bytes to copy
      */
     public void copyTo(long offset, byte[] dest, int destOffset, int length) {
         MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // INFORMACIÓN DEL VAULT
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
+    // VAULT INFORMATION
+    // ========================================================================================================================================================
 
     /**
-     * Retorna el tamaño total del vault en bytes.
+     * Returns the total size of the vault in bytes.
      */
     public long getTotalSize() {
         return totalSize;
     }
 
     /**
-     * Retorna el número de sectores en el vault.
+     * Returns the number of sectors in the vault.
      */
     public int getSectorCount() {
         return sectorCount;
     }
 
-    /**
-     * Retorna la dirección de memoria nativa del vault.
-     * 
-     * PORQUÉ:
-     * - Útil para debugging y validación de alineación
-     * - Permite verificar que address % 4096 == 0
-     * - No usar para acceso directo (usar métodos read/write)
-     */
     public long getAddress() {
         return segment.address();
     }
 
     /**
-     * Verifica si la memoria está alineada a 4KB.
+     * Returns the underlying MemorySegment for SIMD Vector API operations.
      * 
-     * @return true si está alineada, false en caso contrario
+     * RESPONSIBILITY: Enable off-heap vector acceleration.
+     * WHY: jdk.incubator.vector requires MemorySegment for bulk loads.
+     */
+    public MemorySegment getSegment() {
+        return segment;
+    }
+
+    /**
+     * Checks if the memory is aligned to 4KB.
+     * 
+     * @return true if aligned, false otherwise
      */
     public boolean isPageAligned() {
         return (segment.address() % PAGE_SIZE) == 0;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
     // CLEANUP
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================================================================================================
 
     /**
-     * Cierra el vault y libera la memoria nativa.
+     * Closes the vault and releases the native memory.
      * 
-     * PORQUÉ:
-     * - Memoria nativa NO es gestionada por GC
-     * - Debe liberarse explícitamente para evitar memory leaks
-     * - Arena.close() libera todos los MemorySegments asociados
-     * 
-     * TÉCNICA:
-     * - Llamar en shutdown del kernel
-     * - Usar try-with-resources si es posible
-     * - Idempotente (puede llamarse múltiples veces)
-     * 
-     * GARANTÍA:
-     * - Memoria liberada al sistema operativo
-     * - Accesos posteriores lanzan IllegalStateException
-     * - Sin memory leaks
+     * RESPONSIBILITY: Provide deterministic cleanup of off-heap resources.
+     * WHY: Native memory is NOT managed by GC and must be released explicitly to avoid leaks.
+     * TECHNIQUE: Arena.close() safely unmaps and frees all associated MemorySegments.
+     * GUARANTEES: Returns memory to the OS immediately without memory leaks. Subsequent accesses will throw IllegalStateException.
      */
     public void close() {
         arena.close();

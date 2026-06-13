@@ -1,23 +1,32 @@
 // Reading Order: 00001000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.bus;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Orquestación y despacho de señales sin boxing.
- * DEPENDENCIAS: DarkAtomicBus, DarkSignalPacker
- * MÉTRICAS: Zero-GC, Latencia <150ns
- * 
- * Fachada de alto rendimiento para el acceso al bus atómico.
- * Garantiza integridad en el enrutamiento y cero asignaciones en el hot-path.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * High-performance facade for atomic bus access.
+ *
+ * <p>Orchestrates and dispatches signals without boxing.
+ * Guarantees routing integrity and zero allocations on the hot-path.
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-@sv.dark.core.AAACertified(date = "2026-01-05", maxLatencyNs = 150, minThroughput = 10_000_000, alignment = 0, lockFree = true, offHeap = false, notes = "High-performance facade for atomic bus access")
+@AAACertified(
+    date         = "2026-01-05",
+    maxLatencyNs = 150,
+    minThroughput = 10_000_000,
+    alignment    = 0,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "High-performance facade for atomic bus access"
+)
 public final class DarkSignalDispatcher {
 
-    // Fachada exclusiva para el Bus Atómico de alto rendimiento
+    // Exclusive facade for the high-performance Atomic Bus
     private final DarkAtomicBus bus;
     private static final int BUS_SIZE_POWER = 16; // 65536 Slots
 
@@ -25,51 +34,51 @@ public final class DarkSignalDispatcher {
         this.bus = new DarkAtomicBus(BUS_SIZE_POWER);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES BÁSICAS DE DISPATCH
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // CORE DISPATCH OPERATIONS
+    // -------------------------------------------------------------------------
 
     /**
-     * Propaga un evento al bus principal.
+     * Propagates an event to the main bus.
      * 
-     * CORRECCIÓN AAA+: Cambiado de push() a offer() para compatibilidad con
-     * la interfaz IEventBus implementada en DarkAtomicBus.
+     * <p>AAA+ FIX: Changed from push() to offer() for compatibility with
+     * the IEventBus interface implemented in DarkAtomicBus.
      * 
-     * LATENCIA ESPERADA: <150ns
+     * <p>EXPECTED LATENCY: &lt;150ns
      * 
-     * @param event Señal empaquetada (64 bits)
-     * @return true si el evento fue encolado exitosamente
+     * @param event Packed signal (64 bits).
+     * @return true if the event was queued successfully.
      */
     public boolean dispatch(long event) {
         return bus.offer(event);
     }
 
     /**
-     * Consume el siguiente evento del bus.
+     * Consumes the next event from the bus.
      * 
-     * LATENCIA ESPERADA: <150ns
+     * <p>EXPECTED LATENCY: &lt;150ns
      * 
-     * @return El evento (long) o -1 si el bus está vacío
+     * @return The event (long) or -1 if the bus is empty.
      */
     public long pollEvent() {
         return bus.poll();
     }
 
     /**
-     * Procesa todos los eventos disponibles en el bus.
+     * Processes all available events in the bus.
      * 
-     * OPTIMIZACIÓN AAA+: Usa SignalProcessor en lugar de LongConsumer para
-     * evitar boxing y permitir optimizaciones del JIT.
+     * <p>AAA+ OPTIMIZATION: Uses SignalProcessor instead of LongConsumer to
+     * avoid boxing and allow JIT optimizations.
      * 
-     * MECÁNICA:
-     * - Consume eventos hasta que el bus esté vacío
-     * - Aplica el procesador a cada evento
-     * - Sin allocations en hot-path
+     * <p>MECHANICS:
+     * - Consumes events until the bus is empty.
+     * - Applies the processor to each event.
+     * - Zero allocations on the hot-path.
      * 
-     * THROUGHPUT ESPERADO: >10M eventos/segundo
+     * <p>EXPECTED THROUGHPUT: &gt;10M events/second.
      * 
-     * @param processor Procesador de señales (sin boxing)
-     * @return Número de eventos procesados
+     * @param processor Signal processor (no boxing).
+     * @return Number of processed events.
      */
     public int processAllEvents(SignalProcessor processor) {
         int count = 0;
@@ -82,162 +91,164 @@ public final class DarkSignalDispatcher {
     }
 
     /**
-     * Verifica si hay eventos pendientes en el bus.
-     * CORRECCIÓN: Ahora usa size() en lugar de poll() para evitar consumir eventos.
+     * Checks if there are pending events in the bus.
      * 
-     * @return true si hay al menos un evento disponible
+     * <p>FIX: Now uses size() instead of poll() to avoid consuming events.
+     * 
+     * @return true if there is at least one event available.
      */
     public boolean hasEvents() {
         return bus.size() > 0;
     }
 
     /**
-     * Limpia todos los eventos del bus.
-     * Útil para reiniciar el estado entre tests o al reiniciar el kernel.
+     * Clears all events from the bus.
+     * 
+     * <p>Useful for resetting state between tests or upon kernel restart.
      */
     public void clear() {
         bus.clear();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES BATCH (Procesamiento Masivo)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // BATCH OPERATIONS (Mass Processing)
+    // -------------------------------------------------------------------------
 
     /**
-     * Despacha múltiples eventos en una sola operación.
+     * Dispatches multiple events in a single operation.
      * 
-     * OPTIMIZACIÓN AAA+:
-     * - Reduce operaciones volatile (1 setRelease vs N)
-     * - Optimiza bus de direcciones del CPU
-     * - Permite prefetching secuencial
+     * <p>AAA+ OPTIMIZATION:
+     * - Reduces volatile operations (1 setRelease vs N).
+     * - Optimizes CPU address bus.
+     * - Enables sequential prefetching.
      * 
-     * THROUGHPUT ESPERADO: >10M eventos/segundo
+     * <p>EXPECTED THROUGHPUT: &gt;10M events/second.
      * 
-     * @param events Array de eventos a despachar
-     * @param offset Índice inicial en el array
-     * @param length Número de eventos a despachar
-     * @return Número de eventos realmente despachados
+     * @param events Array of events to dispatch.
+     * @param offset Starting index in the array.
+     * @param length Number of events to dispatch.
+     * @return Number of actually dispatched events.
      */
     public int dispatchBatch(long[] events, int offset, int length) {
         return bus.batchOffer(events, offset, length);
     }
 
     /**
-     * Consume múltiples eventos en una sola operación.
+     * Consumes multiple events in a single operation.
      * 
-     * OPTIMIZACIÓN AAA+:
-     * - Reduce operaciones Acquire
-     * - Permite procesamiento vectorizado
-     * - Ideal para pipelines masivos
+     * <p>AAA+ OPTIMIZATION:
+     * - Reduces Acquire operations.
+     * - Allows vectorized processing.
+     * - Ideal for massive pipelines.
      * 
-     * @param outputBuffer Array donde se escribirán los eventos
-     * @param maxEvents    Número máximo de eventos a consumir
-     * @return Número de eventos realmente consumidos
+     * @param outputBuffer Array to write the events into.
+     * @param maxEvents    Maximum number of events to consume.
+     * @return Number of actually consumed events.
      */
     public int pollBatch(long[] outputBuffer, int maxEvents) {
         return bus.batchPoll(outputBuffer, maxEvents);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // DISPATCH DE DATOS ESPECIALIZADOS
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // SPECIALIZED DATA DISPATCH
+    // -------------------------------------------------------------------------
 
     /**
-     * Despacha un GUID (identificador único de 64 bits).
+     * Dispatches a GUID (64-bit unique identifier).
      * 
-     * PROPÓSITO:
-     * - Identificadores de entidades espaciales
-     * - Tracking de paquetes de red
-     * - Referencias a objetos masivos
+     * <p>PURPOSE:
+     * - Spatial entity identifiers.
+     * - Network packet tracking.
+     * - Massive object references.
      * 
-     * @param guid Identificador único (64 bits)
-     * @return true si fue despachado exitosamente
+     * @param guid Unique identifier (64 bits).
+     * @return true if successfully dispatched.
      */
     public boolean dispatchGUID(long guid) {
         return bus.offer(DarkSignalPacker.packGUID(guid));
     }
 
     /**
-     * Despacha un vector 2D (2 floats empaquetados en 1 long).
+     * Dispatches a 2D vector (2 floats packed into 1 long).
      * 
-     * PROPÓSITO:
-     * - Coordenadas de posición
-     * - Vectores de velocidad
-     * - Datos de física en tiempo real
+     * <p>PURPOSE:
+     * - Position coordinates.
+     * - Velocity vectors.
+     * - Real-time physics data.
      * 
-     * @param x Coordenada X (32-bit float)
-     * @param y Coordenada Y (32-bit float)
-     * @return true si fue despachado exitosamente
+     * @param x X coordinate (32-bit float).
+     * @param y Y coordinate (32-bit float).
+     * @return true if successfully dispatched.
      */
     public boolean dispatchVector2D(float x, float y) {
         return bus.offer(DarkSignalPacker.packFloats(x, y));
     }
 
     /**
-     * Despacha datos de telemetría espacial.
+     * Dispatches spatial telemetry data.
      * 
-     * PROPÓSITO:
-     * - Datos orbitales
-     * - Telemetría de satélites
-     * - Comunicación de larga distancia
+     * <p>PURPOSE:
+     * - Orbital data.
+     * - Satellite telemetry.
+     * - Long-distance communication.
      * 
-     * @param telemetryData Datos empaquetados (64 bits)
-     * @return true si fue despachado exitosamente
+     * @param telemetryData Packed data (64 bits).
+     * @return true if successfully dispatched.
      */
     public boolean dispatchSpatialData(long telemetryData) {
         return bus.offer(telemetryData);
     }
 
     /**
-     * Despacha un puntero a memoria off-heap.
+     * Dispatches a pointer to off-heap memory.
      * 
-     * PROPÓSITO:
-     * - Referencias a MemorySegment (Project Panama)
-     * - Punteros a datos masivos (mapas estelares)
-     * - Zero-copy desde fuentes externas
+     * <p>PURPOSE:
+     * - MemorySegment references (Project Panama).
+     * - Pointers to massive data (star maps).
+     * - Zero-copy from external sources.
      * 
-     * ADVERTENCIA: Solo válido en la misma sesión de JVM.
+     * <p>WARNING: Only valid within the same JVM session.
      * 
-     * @param memoryAddress Dirección de memoria (64 bits)
-     * @return true si fue despachado exitosamente
+     * @param memoryAddress Memory address (64 bits).
+     * @return true if successfully dispatched.
      */
     public boolean dispatchOffHeapPointer(long memoryAddress) {
         return bus.offer(DarkSignalPacker.packOffHeapPointer(memoryAddress));
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     // EDGE COMPUTING INTEGRATION
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
 
     /**
-     * Inyecta datos desde fuente externa con zero-copy.
+     * Injects data from an external source with zero-copy.
      * 
-     * MECÁNICA:
-     * - Datos llegan por satélite/red
-     * - Se escriben directamente en el buffer del bus
-     * - Sin copias intermedias
-     * - Preserva alineación de cache line
+     * <p>MECHANICS:
+     * - Data arrives via satellite/network.
+     * - Written directly to the bus buffer.
+     * - No intermediate copies.
+     * - Preserves cache line alignment.
      * 
-     * PROPÓSITO:
-     * - Telemetría de larga distancia
-     * - Edge computing
-     * - Latencia mínima
+     * <p>PURPOSE:
+     * - Long-distance telemetry.
+     * - Edge computing.
+     * - Minimum latency.
      * 
-     * @param externalBuffer Buffer externo (ya en formato long[])
-     * @param count          Número de señales a inyectar
-     * @return Número de señales inyectadas exitosamente
+     * @param externalBuffer External buffer (already in long[] format).
+     * @param count          Number of signals to inject.
+     * @return Number of successfully injected signals.
      */
     public int injectFromExternal(long[] externalBuffer, int count) {
         return bus.batchOffer(externalBuffer, 0, count);
     }
 
     /**
-     * Retorna referencia directa al bus para operaciones avanzadas.
+     * Returns a direct reference to the bus for advanced operations.
      * 
-     * ADVERTENCIA: Uso avanzado. Romper encapsulación solo cuando sea
-     * absolutamente necesario para optimizaciones de nivel kernel.
+     * <p>WARNING: Advanced use. Break encapsulation only when
+     * absolutely necessary for kernel-level optimizations.
      * 
-     * @return Referencia al bus atómico subyacente
+     * @return Reference to the underlying atomic bus.
      */
     public DarkAtomicBus getUnderlyingBus() {
         return bus;

@@ -1,61 +1,61 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.validation;
 
+import sv.dark.core.DarkLogger;
 import sv.dark.bus.DarkAtomicBus;
 import sv.dark.bus.DarkRingBus;
 import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Validación de simetría de buses (head/tail alignment)
- * DEPENDENCIAS: DarkAtomicBus, DarkRingBus
- * MÉTRICAS: Detección <1μs, Validación determinista
+ * RESPONSIBILITY: Bus Symmetry Validator (head/tail alignment).
+ * WHY: We need to detect head/tail corruption, overflows, and False Sharing in the bus without impacting runtime performance.
+ * TECHNIQUE: Atomic read of head and tail (VarHandles). Validation in <1us (3 comparisons). No modification of the bus (read only).
+ * GUARANTEES: Detection <1us, Deterministic validation. Thread-safe (reads only). No side-effects.
  * 
- * Validador de simetría para buses del motor. Verifica que head y tail
- * estén correctamente alineados y que no haya corrupción de memoria.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-06
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - VALIDADOR DE SIMETRÍA DE BUSES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// AAA+ CERTIFICATION - BUS SYMMETRY VALIDATOR
+// ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 //
-// PORQUÉ:
-// - La anotación @AAACertified documenta las garantías de rendimiento inline
-// - RetentionPolicy.SOURCE = 0ns overhead (eliminada en bytecode)
-// - Metadata visible para humanos, invisible para la JVM
-// - Este validador es el guardián: detecta corrupción antes de que cause
+// WHY:
+// - The @AAACertified annotation documents inline performance guarantees
+// - RetentionPolicy.SOURCE = 0ns overhead (removed in bytecode)
+// - Metadata visible to humans, invisible to JVM
+// - This validator is the guardian: detects corruption before it causes
 // crashes
 //
-// TÉCNICA:
-// - maxLatencyNs: 1000 = Validación completa en <1μs
-// - minThroughput: 1_000_000 = 1M validaciones/segundo
-// - alignment: 64 = Cache line alignment para acceso rápido
-// - lockFree: true = Sin locks (solo lecturas)
-// - offHeap: false = Validador vive en heap (pequeño, rápido)
+// TECHNIQUE:
+// - maxLatencyNs: 1000 = Complete validation in <1us
+// - minThroughput: 1_000_000 = 1M validations/second
+// - alignment: 64 = Cache line alignment for fast access
+// - lockFree: true = Lock-free (reads only)
+// - offHeap: false = Validator lives in heap (small, fast)
 //
-// GARANTÍA:
-// - Esta anotación NO afecta el rendimiento en runtime
-// - Solo documenta las métricas esperadas del componente
-// - Validable con herramientas estáticas en build-time
-// - Overhead medido: 0ns (confirmado con javap)
+// GUARANTEE:
+// - This annotation DOES NOT affect runtime performance
+// - Only documents the expected component metrics
+// - Validable with static tools at build-time
+// - Measured overhead: 0ns (confirmed with javap)
 //
-@AAACertified(date = "2026-01-11", maxLatencyNs = 1000, minThroughput = 1_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Bus symmetry validator with <1μs corruption detection")
+@AAACertified(date = "2026-01-11", maxLatencyNs = 1000, minThroughput = 1_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Bus symmetry validator with <1us corruption detection")
 public final class BusSymmetryValidator {
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // RESULTADOS DE VALIDACIÓN
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // VALIDATION RESULTS
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Resultado de validación de un bus.
+     * Validation result of a bus.
      * 
-     * PORQUÉ:
-     * - Encapsula resultado + detalles de error
-     * - Inmutable para thread-safety
-     * - Auto-descriptivo para debugging
+     * WHY:
+     * - Encapsulates result + error details
+     * - Immutable for thread-safety
+     * - Self-descriptive for debugging
      */
     public static final class ValidationResult {
         public final boolean isValid;
@@ -93,152 +93,152 @@ public final class BusSymmetryValidator {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // VALIDACIÓN DE DARKATOMICBUS
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // DARKATOMICBUS VALIDATION
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Valida la simetría de un DarkAtomicBus.
+     * Validates the symmetry of a DarkAtomicBus.
      * 
-     * @param bus Bus a validar
-     * @return Resultado de validación
+     * @param bus Bus to validate
+     * @return Validation result
      * 
-     *         PORQUÉ:
-     *         - Detecta corrupción de head/tail
-     *         - Verifica que tail >= head (invariante)
-     *         - Detecta overflow (tail - head > capacity)
+     *         WHY:
+     *         - Detects head/tail corruption
+     *         - Verifies that tail >= head (invariant)
+     *         - Detects overflow (tail - head > capacity)
      * 
-     *         TÉCNICA:
-     *         - Lectura atómica de head y tail (VarHandles)
-     *         - Validación en <1μs (3 comparaciones)
-     *         - Sin modificación del bus (solo lectura)
+     *         TECHNIQUE:
+     *         - Atomic read of head and tail (VarHandles)
+     *         - Validation in <1us (3 comparisons)
+     *         - No modification of the bus (read only)
      * 
-     *         GARANTÍA:
-     *         - Thread-safe (solo lecturas)
-     *         - Sin side-effects
-     *         - Latencia <1μs
+     *         GUARANTEE:
+     *         - Thread-safe (reads only)
+     *         - No side-effects
+     *         - Latency <1us
      */
     public static ValidationResult validate(DarkAtomicBus bus) {
-        // Leer head y tail atómicamente
+        // Read head and tail atomically
         long head = bus.getHead();
         long tail = bus.getTail();
         long capacity = bus.getCapacity();
 
-        // Validación 1: tail >= head (invariante básico)
+        // Validation 1: tail >= head (basic invariant)
         if (tail < head) {
             return ValidationResult.invalid(
-                    "Tail < Head (corrupción detectada)",
+                    "Tail < Head (corruption detected)",
                     head, tail, capacity);
         }
 
-        // Validación 2: (tail - head) <= capacity (no overflow)
+        // Validation 2: (tail - head) <= capacity (no overflow)
         long size = tail - head;
         if (size > capacity) {
             return ValidationResult.invalid(
-                    "Size > Capacity (overflow detectado)",
+                    "Size > Capacity (overflow detected)",
                     head, tail, capacity);
         }
 
-        // Validación 3: Padding checksum (detecta corrupción de cache line)
+        // Validation 3: Padding checksum (detects cache line corruption)
         long paddingChecksum = bus.getPaddingChecksum();
         if (paddingChecksum != 0) {
             return ValidationResult.invalid(
-                    "Padding corrupto (False Sharing detectado)",
+                    "Corrupted padding (False Sharing detected)",
                     head, tail, capacity);
         }
 
-        // Todo OK
+        // All OK
         return ValidationResult.valid(head, tail, capacity);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // VALIDACIÓN DE DARKRINGBUS
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // DARKRINGBUS VALIDATION
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Valida la simetría de un DarkRingBus.
+     * Validates the symmetry of a DarkRingBus.
      * 
-     * @param bus Bus a validar
-     * @return Resultado de validación
+     * @param bus Bus to validate
+     * @return Validation result
      * 
-     *         PORQUÉ:
-     *         - Similar a DarkAtomicBus pero con métricas adicionales
-     *         - Verifica contadores de eventos (offered, polled)
-     *         - Detecta inconsistencias en estadísticas
+     *         WHY:
+     *         - Similar to DarkAtomicBus but with additional metrics
+     *         - Verifies event counters (offered, polled)
+     *         - Detects inconsistencies in statistics
      * 
-     *         TÉCNICA:
-     *         - Validación de invariantes básicos (tail >= head)
-     *         - Validación de métricas (offered >= polled)
-     *         - Padding checksum para detectar False Sharing
+     *         TECHNIQUE:
+     *         - Validation of basic invariants (tail >= head)
+     *         - Validation of metrics (offered >= polled)
+     *         - Padding checksum to detect False Sharing
      */
     public static ValidationResult validate(DarkRingBus bus) {
-        // Leer head y tail atómicamente
+        // Read head and tail atomically
         long head = bus.getHead();
         long tail = bus.getTail();
         long capacity = bus.getCapacity();
 
-        // Validación 1: tail >= head
+        // Validation 1: tail >= head
         if (tail < head) {
             return ValidationResult.invalid(
-                    "Tail < Head (corrupción detectada)",
+                    "Tail < Head (corruption detected)",
                     head, tail, capacity);
         }
 
-        // Validación 2: (tail - head) <= capacity
+        // Validation 2: (tail - head) <= capacity
         long size = tail - head;
         if (size > capacity) {
             return ValidationResult.invalid(
-                    "Size > Capacity (overflow detectado)",
+                    "Size > Capacity (overflow detected)",
                     head, tail, capacity);
         }
 
-        // Validación 3: Métricas consistentes
+        // Validation 3: Consistent metrics
         long offered = bus.getOfferedCount();
         long polled = bus.getPolledCount();
 
         if (offered < polled) {
             return ValidationResult.invalid(
-                    "Offered < Polled (métricas inconsistentes)",
+                    "Offered < Polled (inconsistent metrics)",
                     head, tail, capacity);
         }
 
-        // Validación 4: Padding checksum
+        // Validation 4: Padding checksum
         long paddingChecksum = bus.getPaddingChecksum();
         if (paddingChecksum != 0) {
             return ValidationResult.invalid(
-                    "Padding corrupto (False Sharing detectado)",
+                    "Corrupted padding (False Sharing detected)",
                     head, tail, capacity);
         }
 
-        // Todo OK
+        // All OK
         return ValidationResult.valid(head, tail, capacity);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // VALIDACIÓN BATCH
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // BATCH VALIDATION
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Valida múltiples buses en batch.
+     * Validates multiple buses in batch.
      * 
-     * @param buses Array de buses a validar
-     * @return true si todos son válidos, false si alguno falló
+     * @param buses Array of buses to validate
+     * @return true if all are valid, false if any failed
      * 
-     *         PORQUÉ:
-     *         - Para validación de boot (todos los buses)
-     *         - Early exit en primer error (fail-fast)
-     *         - Logging de errores para debugging
+     *         WHY:
+     *         - For boot validation (all buses)
+     *         - Early exit on first error (fail-fast)
+     *         - Error logging for debugging
      * 
-     *         TÉCNICA:
-     *         - Itera sobre array de buses
-     *         - Retorna false en primer error
-     *         - Imprime detalles de error en stderr
+     *         TECHNIQUE:
+     *         - Iterates over array of buses
+     *         - Returns false on first error
+     *         - Prints error details to stderr
      */
     public static boolean validateAll(DarkAtomicBus... buses) {
-        for (int i = 0; i < buses.length; i++) {
+        for (int i= 0; i< buses.length; i++) {
             ValidationResult result = validate(buses[i]);
             if (!result.isValid) {
-                System.err.println("[BUS VALIDATION ERROR] Bus " + i + ": " + result);
+                DarkLogger.error("BUS VALIDATION", "Bus " + i+ ": " + result);
                 return false;
             }
         }
@@ -246,58 +246,58 @@ public final class BusSymmetryValidator {
     }
 
     /**
-     * Valida múltiples DarkRingBus en batch.
+     * Validates multiple DarkRingBuses in batch.
      */
     public static boolean validateAllRing(DarkRingBus... buses) {
-        for (int i = 0; i < buses.length; i++) {
+        for (int i= 0; i< buses.length; i++) {
             ValidationResult result = validate(buses[i]);
             if (!result.isValid) {
-                System.err.println("[BUS VALIDATION ERROR] RingBus " + i + ": " + result);
+                DarkLogger.error("BUS VALIDATION", "RingBus " + i+ ": " + result);
                 return false;
             }
         }
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // UTILIDADES
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+    // UTILITIES
+    // ========================================================================== = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
     /**
-     * Verifica si un bus está vacío.
+     * Checks if a bus is empty.
      * 
-     * @param bus Bus a verificar
-     * @return true si está vacío (head == tail)
+     * @param bus Bus to check
+     * @return true if empty (head == tail)
      */
     public static boolean isEmpty(DarkAtomicBus bus) {
         return bus.getHead() == bus.getTail();
     }
 
     /**
-     * Verifica si un bus está lleno.
+     * Checks if a bus is full.
      * 
-     * @param bus Bus a verificar
-     * @return true si está lleno (tail - head == capacity)
+     * @param bus Bus to check
+     * @return true if full (tail - head == capacity)
      */
     public static boolean isFull(DarkAtomicBus bus) {
         return (bus.getTail() - bus.getHead()) == bus.getCapacity();
     }
 
     /**
-     * Calcula el tamaño actual del bus.
+     * Calculates the current size of the bus.
      * 
-     * @param bus Bus a medir
-     * @return Número de elementos en el bus
+     * @param bus Bus to measure
+     * @return Number of elements in the bus
      */
     public static long size(DarkAtomicBus bus) {
         return bus.getTail() - bus.getHead();
     }
 
     /**
-     * Calcula el espacio disponible en el bus.
+     * Calculates the available space in the bus.
      * 
-     * @param bus Bus a medir
-     * @return Número de slots disponibles
+     * @param bus Bus to measure
+     * @return Number of available slots
      */
     public static long availableSpace(DarkAtomicBus bus) {
         return bus.getCapacity() - (bus.getTail() - bus.getHead());

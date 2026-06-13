@@ -1,21 +1,21 @@
-// Script de Prueba de Sectores
-// Este script simula la creación y movimiento de entidades entre sectores.
+// Sector Test Script
+// This script simulates the creation and movement of entities between sectors.
 
-// 1. Configuración de Entidades
+// 1. Entity Configuration
 ajustar.entidad1.x = 50;
 ajustar.entidad1.y = 50;
 ajustar.entidad2.x = 150;
 ajustar.entidad2.y = 150;
 
-// 2. Registro Inicial en Sectores
+// 2. Initial Sector Registration
 sector.actualizar = entidad1;
 sector.actualizar = entidad2;
 
-// 3. Movimiento de Entidad 1 al Sector de Entidad 2
+// 3. Movement of Entity 1 to Entity 2's Sector
 ajustar.entidad1.x = 120;
 ajustar.entidad1.y = 120;
 sector.actualizar = entidad1;
 
-// 4. Verificación de Integridad
-// El log del motor debería mostrar la transición de la Entidad 1.
-System.out.println("PRUEBA_SECTORES_COMPLETADA");
+// 4. Integrity Verification
+// The engine log should show the transition of Entity 1.
+System.out.println("SECTOR_TEST_COMPLETED");

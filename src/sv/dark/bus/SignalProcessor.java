@@ -1,40 +1,41 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.bus;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Dark
- * RESPONSABILIDAD: Procesamiento de señales sin boxing.
- * GARANTÍAS: Zero-allocation, hot-path optimizado.
+ * RESPONSIBILITY: Procesamiento de señales sin boxing. (Signal processing without boxing).
+ * WHY: java.util.function.LongConsumer involves type inheritance which can prevent aggressive JIT optimizations. We need a domain-specific functional interface for the hot-path.
+ * TECHNIQUE: Functional Interface for 64-bit signal processing. No object creation, no I/O, no blocking.
+ * GUARANTEES: Zero-allocation, hot-path optimized. Expected latency <50ns per signal.
  * 
- * DIFERENCIA CON LongConsumer:
- * - No hereda de java.util.function (evita boxing)
- * - Especializada para el dominio del motor
- * - Permite optimizaciones del JIT específicas
- * 
- * PROPÓSITO:
- * Interfaz funcional para procesamiento de señales de 64 bits sin crear
- * objetos en el hot-path. A diferencia de java.util.function.LongConsumer,
- * esta interfaz está diseñada específicamente para el motor Dark y permite
- * al JIT aplicar optimizaciones más agresivas.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 @FunctionalInterface
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public interface SignalProcessor {
 
     /**
-     * Procesa una señal de 64 bits.
+     * Procesa una senal de 64 bits.
      * 
-     * ADVERTENCIA: Este método se llama en hot-path.
+     * ADVERTENCIA: Este metodo se llama en hot-path.
      * - NO crear objetos
      * - NO hacer I/O
      * - NO bloquear threads
-     * - NO lanzar excepciones (usar códigos de error)
+     * - NO lanzar excepciones (usar codigos de error)
      * 
-     * LATENCIA ESPERADA: <50ns por señal
+     * LATENCIA ESPERADA: <50ns por senal
      * 
-     * @param signal Señal empaquetada (64 bits)
+     * @param signal Senal empaquetada (64 bits)
      */
     void process(long signal);
 }

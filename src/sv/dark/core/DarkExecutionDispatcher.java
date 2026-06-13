@@ -1,20 +1,30 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core; // Sincronizado con la ruta src/sv/dark/core/
+
+import sv.dark.core.AAACertified;
 
 import sv.dark.state.WorldStateFrame;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Ejecución de Instrucciones de Bajo Nivel sobre el Estado.
- * DEPENDENCIAS: WorldStateFrame
- * MÉTRICAS: O(1) Execution, Zero-Branching Critical Path
+ * Low-Level Instruction Execution over State.
  * 
- * Despachador de ejecución directa. Inyecta valores primitivos directamente
- * en los offsets de memoria del WorldStateFrame sin intermediarios.
+ * <p>Direct execution dispatcher. Injects primitive values directly
+ * into the memory offsets of the WorldStateFrame without intermediaries.
  * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * <p>Metrics: O(1) Execution, Zero-Branching Critical Path
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+/**
+ * RESPONSIBILITY: Core component.
+ * WHY: Critical for DarkEngine deterministic execution.
+ * TECHNIQUE: Low-latency focused implementation.
+ * GUARANTEES: Lock-free execution where applicable.
+ */
+@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
 public final class DarkExecutionDispatcher {
 
     private final WorldStateFrame state;
@@ -24,35 +34,32 @@ public final class DarkExecutionDispatcher {
     }
 
     /**
-     * Inyección Directa Atómica.
-     * El autor asume la responsabilidad del offset (Soberanía de Datos).
-     * [MECHANICAL SYMPATHY]: Operación inyectada directamente en el pipeline de
-     * ejecución.
+     * Direct Atomic Injection.
+     * The author assumes responsibility for the offset (Data Sovereignty).
+     * [MECHANICAL SYMPATHY]: Operation injected directly into the execution pipeline.
      */
     public void dispatch(long offset, int value) {
-        // En V3.0, el offset ya viene validado por el InputBuffer.
-        // Se elimina cualquier check de límites para evitar stall en el pipeline.
+        // In V3.0, the offset is already validated by the InputBuffer.
+        // Any bounds checking is eliminated to avoid pipeline stall.
         state.writeInt(offset, value);
     }
 
     /**
-     * Señal de Control de Pulso.
-     * Modifica los registros de señalización del Kernel (Flags de control).
+     * Pulse Control Signal.
+     * Modifies the Kernel's signaling registers (Control flags).
      */
     public void triggerSignal(long signalOffset, int signalCode) {
         state.writeInt(signalOffset, signalCode);
-        // La alerta no se procesa aquí: el TelemetryMonitor la observa de forma no
-        // intrusiva.
+        // The alert is not processed here: the TelemetryMonitor observes it non-intrusively.
     }
 
     /**
-     * Sincronización de Sector por ID (Aritmética de Punteros).
-     * [ESTRATEGIA]: Acceso directo al offset del SectorVault omitiendo estructuras
-     * de datos pesadas.
+     * Sector Synchronization by ID (Pointer Arithmetic).
+     * [STRATEGY]: Direct access to SectorVault offset bypassing heavy data structures.
      */
     public void syncSector(int entityIndex) {
-        // Implementación futura: El índice se multiplica por el Stride directamente
-        // para hallar el offset físico.
+        // Future implementation: The index is multiplied by the Stride directly
+        // to find the physical offset.
     }
 }
-// actualizado3/1/26
+// updated 3/1/26

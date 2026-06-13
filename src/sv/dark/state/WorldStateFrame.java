@@ -1,3 +1,6 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 package sv.dark.state;
 
@@ -5,19 +8,26 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 
+import sv.dark.core.AAACertified;
+
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Snapshots inmutables de estado del mundo.
- * DEPENDENCIAS: MemorySegment, Arena
- * MÉTRICAS: Copia <50ns (memcpy), Alineación 64-byte
+ * RESPONSIBILITY: Immutable snapshot of the world state for historical persistence, network sync, and rollback.
+ * WHY: Deterministic multiplayer and physics rollback require exact, instantaneous copies of the entire world state at specific ticks.
+ * TECHNIQUE: Off-heap state container capturing state slices via direct hardware copy (CPU Burst) using MemorySegment.copyFrom(). Forces cache-line alignment (64-byte) for SIMD operations.
+ * GUARANTEES: Exact binary copy. 0-GC allocations. 64-byte aligned access to native memory. Immediate restoration (Rollback Protocol) in O(1) burst time.
  * 
- * Contenedor de estado off-heap para persistencia, red y rollback.
- * Garantiza copia binaria exacta y acceso alineado a memoria nativa.
- * 
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+@AAACertified(
+    date = "2026-01-05",
+    maxLatencyNs = 50,
+    minThroughput = 0,
+    alignment = 64,
+    lockFree = true,
+    offHeap = true,
+    notes = "Off-heap state container with guaranteed cache-line alignment"
+)
 public final class WorldStateFrame {
 
     private final MemorySegment data;
@@ -28,31 +38,30 @@ public final class WorldStateFrame {
      * [MECHANICAL SYMPATHY]: Force cache line alignment for SIMD bursts.
      */
     public WorldStateFrame(Arena arena, MemorySegment source, long timestamp) {
-        // Reserva de memoria nativa fuera del alcance del GC
+        // Reserve native memory outside of GC scope
         this.data = arena.allocate(source.byteSize(), 64L);
-        // Copia directa de hardware (CPU Burst)
+        // Direct hardware copy (CPU Burst)
         this.data.copyFrom(source);
         this.timestamp = timestamp;
     }
 
     /**
-     * Restauración inmediata (Protocolo de Rollback).
-     * El estado activo del motor se sobreescribe con este frame.
+     * Immediate restoration (Rollback Protocol).
+     * The active engine state is overwritten with this frame.
      */
     public void restoreInto(MemorySegment target) {
         target.copyFrom(this.data);
     }
 
     /**
-     * Escritura directa al frame (Solo permitida durante la fase de
-     * ejecución/setup).
+     * Direct write to the frame (Only permitted during the execution/setup phase).
      */
     public void writeInt(long offset, int value) {
         data.set(ValueLayout.JAVA_INT, offset, value);
     }
 
     /**
-     * Lectura segura de registros específicos del frame histórico.
+     * Safe read of specific registers from the historical frame.
      */
     public int readInt(long offset) {
         return data.get(ValueLayout.JAVA_INT, offset);
@@ -67,60 +76,59 @@ public final class WorldStateFrame {
     }
 
     /**
-     * Acceso directo a segmento de memoria nativa (Off-Heap).
-     * Usado por sistemas de alta frecuencia para evitar indirección.
-     * LATENCIA: ~50-150 ns (acceso directo sin boxing).
+     * Direct access to the native memory segment (Off-Heap).
+     * Used by high-frequency systems to avoid indirection.
+     * <p><b>Latency:</b> ~50-150 ns (direct access without boxing).
      */
     public MemorySegment getRawSegment() {
         return data;
     }
 
     /**
-     * Lectura de double desde offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Reads a double from a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public double readDouble(long offset) {
         return data.get(ValueLayout.JAVA_DOUBLE, offset);
     }
 
     /**
-     * Escritura de double en offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Writes a double to a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public void writeDouble(long offset, double value) {
         data.set(ValueLayout.JAVA_DOUBLE, offset, value);
     }
 
     /**
-     * Lectura de float desde offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Reads a float from a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public float readFloat(long offset) {
         return data.get(ValueLayout.JAVA_FLOAT, offset);
     }
 
     /**
-     * Lectura de long desde offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Reads a long from a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public long readLong(long offset) {
         return data.get(ValueLayout.JAVA_LONG, offset);
     }
 
     /**
-     * Escritura de float en offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Writes a float to a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public void writeFloat(long offset, float value) {
         data.set(ValueLayout.JAVA_FLOAT, offset, value);
     }
 
     /**
-     * Escritura de long en offset específico.
-     * LATENCIA: ~50-150 ns (acceso directo a memoria nativa).
+     * Writes a long to a specific offset.
+     * <p><b>Latency:</b> ~50-150 ns (direct native memory access).
      */
     public void writeLong(long offset, long value) {
         data.set(ValueLayout.JAVA_LONG, offset, value);
     }
 }
-// actualizado3/1/26

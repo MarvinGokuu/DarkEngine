@@ -1,70 +1,71 @@
 // Reading Order: 00001001
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package sv.dark.kernel;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import sv.dark.core.AAACertified; // 00000100
+
+import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Gestión Atómica del Estado del Kernel (State Machine).
- * DEPENDENCIAS: VarHandles (Java 9+)
- * MÉTRICAS: Latencia < 5ns (Transition), Thread-Safe, Cache Aligned
- * 
- * Registro de control de ultra-baja latencia para orquestar las fases
- * de vida del motor (Boot -> start -> Running -> Shutdown).
- * Usa VarHandles para evitar el overhead de AtomicInteger.
+ * RESPONSIBILITY: Atomic Kernel State Management (State Machine) orchestration.
+ * WHY: Critical state control requires lock-free operations (synchronized = 5000ns vs VarHandle = 5ns).
+ * TECHNIQUE: VarHandle with Acquire/Release semantics and Cache Line Padding (64 bytes) to prevent false sharing.
+ * GUARANTEES: Guaranteed immediate memory visibility between control threads without cache pollution.
+ *
+ * @author Marvin Alexander Flores Canales
  */
-// ═══════════════════════════════════════════════════════════════════════════════
-// CERTIFICACIÓN AAA+ - NÚCLEO DE CONTROL
-// ═══════════════════════════════════════════════════════════════════════════════
-// PORQUÉ:
-// - Control de estado crítico sin locks (synchronized = 5000ns vs VarHandle =
-// 5ns).
-// - Garantía de visibilidad de memoria inmediata entre hilos de control.
-//
-// TÉCNICA:
-// - VarHandle con semántica Acquire/Release.
-// - Cache Line Padding (64 bytes) para evitar contaminación de caché.
-//
-@AAACertified(date = "2026-01-09", maxLatencyNs = 5, minThroughput = 100_000_000, alignment = 64, lockFree = true, offHeap = false, notes = "Atomic State Machine with Hardware Padding")
+@AAACertified(
+    date         = "2026-01-09",
+    maxLatencyNs = 5,
+    minThroughput = 100_000_000,
+    alignment    = 64,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Atomic State Machine with Hardware Padding"
+)
 public final class KernelControlRegister {
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ESTADOS DEL KERNEL (Constantes Primitivas)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // KERNEL STATES (Primitive Constants)
+    // -------------------------------------------------------------------------
     public static final int STATE_OFFLINE = 0;
-    public static final int STATE_BOOTING = 1; // Cargando memoria/recursos
-    public static final int STATE_STARTING = 2; // Calentando JIT / Estabilizando
-    public static final int STATE_RUNNING = 3; // Loop principal activo
+    public static final int STATE_BOOTING = 1; // Loading memory/resources
+    public static final int STATE_STARTING = 2; // Warming up JIT / Stabilizing
+    public static final int STATE_RUNNING = 3; // Main loop active
     public static final int STATE_PAUSED = 4;
-    public static final int STATE_HALTING = 5; // Shutdown graceful
+    public static final int STATE_HALTING = 5; // Graceful shutdown
     public static final int STATE_TERMINATED = 6;
-    public static final int STATE_PANIC = 99; // Error irrecuperable
+    public static final int STATE_PANIC = 99; // Unrecoverable error
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     // PADDING: HEAD SHIELD (64 Bytes)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    private long headShield_1, headShield_2, headShield_3, headShield_4;
-    private long headShield_5, headShield_6, headShield_7;
+    // -------------------------------------------------------------------------
+    
+    // Package-private visibility for False Sharing mitigation and Audits
+    long headShield_1, headShield_2, headShield_3, headShield_4,
+         headShield_5, headShield_6, headShield_7;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // HOT STATE (Mutado por Control Plane)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // volatile para lecturas directas (si se requiere) pero usamos VarHandle
-    // principalmente
+    // -------------------------------------------------------------------------
+    // HOT STATE (Mutated by Control Plane)
+    // -------------------------------------------------------------------------
+    // volatile for direct reads (if required) but VarHandle is primarily used
     @SuppressWarnings("unused")
     private volatile int currentState = STATE_OFFLINE;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     // PADDING: TAIL SHIELD (64 Bytes)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    private long tailShield_1, tailShield_2, tailShield_3, tailShield_4;
-    private long tailShield_5, tailShield_6, tailShield_7;
+    // -------------------------------------------------------------------------
+    
+    // Package-private visibility for False Sharing mitigation and Audits
+    long tailShield_1, tailShield_2, tailShield_3, tailShield_4,
+         tailShield_5, tailShield_6, tailShield_7;
 
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     // VARHANDLE INFRASTRUCTURE
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
     private static final VarHandle STATE_H;
 
     static {
@@ -76,56 +77,69 @@ public final class KernelControlRegister {
     }
 
     public KernelControlRegister() {
-        // Validación de Padding en constructor
+        // Padding Validation in constructor
         if (getPaddingChecksum() != 0) {
             throw new Error("KernelControlRegister: Padding Corruption Detected");
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES DE CONTROL
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // CONTROL OPERATIONS
+    // -------------------------------------------------------------------------
 
     /**
-     * Obtiene el estado actual con semántica ACQUIRE.
-     * Garantiza ver la última escritura de cualquier hilo.
+     * Retrieves the current state with ACQUIRE semantics.
+     * Guarantees visibility of the latest write from any thread.
+     * 
+     * @return The current state.
      */
     public int readState() {
         return (int) STATE_H.getAcquire(this);
     }
 
     /**
-     * Intenta la transición de estado de forma atómica.
+     * Attempts to transition the state atomically.
      * 
-     * @param expected Estado esperado actual
-     * @param next     Nuevo estado
-     * @return true si la transición fue exitosa
+     * @param expected Expected current state.
+     * @param next     New state.
+     * @return true if the transition was successful.
      */
     public boolean transition(int expected, int next) {
         return STATE_H.compareAndSet(this, expected, next);
     }
 
     /**
-     * Fuerza un estado (Panic/Reset) con semántica RELEASE.
+     * Forces a state (Panic/Reset) with RELEASE semantics.
+     * 
+     * @param next New state to force.
      */
     public void forceState(int next) {
         STATE_H.setRelease(this, next);
     }
 
     /**
-     * Obtiene el estado actual (Alias para readState con semántica de lectura).
+     * Retrieves the current state (Alias for readState with read semantics).
+     * 
+     * @return The current state.
      */
     public int getState() {
         return readState();
     }
 
+    /**
+     * Checks if the kernel is in the booting phase.
+     * 
+     * @return true if booting.
+     */
     public boolean isBooting() {
         return readState() == STATE_BOOTING;
     }
 
     /**
-     * Intenta transicionar el kernel a RUNNING (Operativo).
-     * Solo válido desde BOOTING o STARTING.
+     * Attempts to transition the kernel to RUNNING (Operational).
+     * Only valid from BOOTING or STARTING states.
+     * 
+     * @return true if the transition to RUNNING was successful.
      */
     public boolean transitionToRunning() {
         int current = readState();
@@ -135,19 +149,34 @@ public final class KernelControlRegister {
         return false;
     }
 
+    /**
+     * Checks if the kernel is running.
+     * 
+     * @return true if running.
+     */
     public boolean isRunning() {
         return readState() == STATE_RUNNING;
     }
 
+    /**
+     * Checks if the kernel is operational (Running, Starting, or Paused).
+     * 
+     * @return true if operational.
+     */
     public boolean isOperational() {
         int s = readState();
         return s == STATE_RUNNING || s == STATE_STARTING || s == STATE_PAUSED;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // VALIDACIÓN AAA+
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // AAA+ VALIDATION
+    // -------------------------------------------------------------------------
 
+    /**
+     * Validates the structural integrity of the padding.
+     * 
+     * @return The checksum of the padding variables.
+     */
     public long getPaddingChecksum() {
         long sum = 0;
         sum += headShield_1 + headShield_2 + headShield_3 + headShield_4;

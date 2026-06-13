@@ -1,95 +1,102 @@
 // Reading Order: 00000101
-package sv.dark.bus; // Sincronizado con la ruta src/sv/dark/bus/
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+package sv.dark.bus;
+
+import sv.dark.core.AAACertified;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Empaquetado de señales atómicas de 64 bits (Zero-Heap).
- * DEPENDENCIAS: None (Pure Static Utility - Zero Dependencies)
- * MÉTRICAS: Operación O(1), Latencia <5ns (Bitwise Operations)
- * 
- * Garantías: Determinismo binario, transparencia de endianness.
- * Dominios: Concurrencia y Serialización Binaria.
- * Diseño: [32 bits: Command ID] | [32 bits: Payload/Value]
+ * High-performance 64-bit atomic signal packer (Zero-Heap).
  *
- * @author Marvin-Dev
- * @version 1.0
- * @since 2026-01-05
+ * <p>Provides deterministic bitwise operations to encode multiple scalar values 
+ * (commands, payloads, vectors, pointers) into single 64-bit primitives. This 
+ * guarantees zero object allocation on the hot path, maximizing CPU cache 
+ * efficiency and eliminating garbage collection overhead.
+ *
+ * <p>Standard Layout: {@code [32 bits: Command ID] | [32 bits: Payload/Value]}
+ *
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
-@sv.dark.core.AAACertified(date = "2026-01-05", maxLatencyNs = 5, minThroughput = 200_000_000, alignment = 0, lockFree = true, offHeap = false, notes = "Pure static utility for binary packing - Zero allocation")
+@AAACertified(
+    date         = "2026-01-05",
+    maxLatencyNs = 5,
+    minThroughput = 200_000_000,
+    alignment    = 0,
+    lockFree     = true,
+    offHeap      = false,
+    notes        = "Pure static utility for binary packing — Zero allocation"
+)
 public final class DarkSignalPacker {
 
+    /** Utility class — no instances. */
     private DarkSignalPacker() {
-    } // Sellado: Solo métodos estáticos de utilidad de bits.
+        throw new AssertionError("DarkSignalPacker is a static utility class");
+    }
 
     /**
-     * Empaqueta un comando y un valor entero en una señal soberana de 64 bits.
-     * Cero copias de memoria. Cero objetos. Solo aritmética de bits.
+     * Packs a command ID and an integer value into a single 64-bit signal.
+     * 
+     * <p>Executes entirely in CPU registers using bitwise shifts and masks.
+     * 
+     * @param commandId The upper 32 bits.
+     * @param value     The lower 32 bits.
+     * @return The 64-bit packed signal.
      */
     public static long pack(int commandId, int value) {
-        // [INGENIERÍA DURA]: Desplazamiento de bits para construcción de palabra de 64
-        // bits.
-        // Desplazamos el ID 32 bits a la izquierda y unimos el valor con una máscara OR
         return ((long) commandId << 32) | (value & 0xFFFFFFFFL);
     }
 
     /**
-     * Utilidad para empaquetar comandos de sistema sin valor adicional.
+     * Packs a system command without an additional payload.
+     * 
+     * <p>Optimized to skip the OR mask since the lower bits are implicitly zero.
+     * 
+     * @param commandId The command identifier.
+     * @return The 64-bit packed signal.
      */
     public static long packCmd(int commandId) {
-        // [OPTIMIZACIÓN]: No requiere máscara OR al no haber payload.
         return (long) commandId << 32;
     }
 
     /**
-     * Desempaqueta el ID del comando desde una señal de 64 bits.
-     * Extrae los 32 bits superiores que contienen el identificador del comando.
+     * Extracts the command ID from a packed 64-bit signal.
      * 
-     * @param signal Señal empaquetada de 64 bits
-     * @return ID del comando (32 bits superiores)
+     * @param signal The packed 64-bit signal.
+     * @return The command ID (upper 32 bits).
      */
     public static int unpackCommandId(long signal) {
-        // [INGENIERÍA DURA]: Desplazamiento aritmético de 32 bits a la derecha
-        // para extraer los bits superiores que contienen el Command ID.
+        // Arithmetic shift right to extract the upper 32 bits
         return (int) (signal >>> 32);
     }
 
     /**
-     * Desempaqueta el valor/payload desde una señal de 64 bits.
-     * Extrae los 32 bits inferiores que contienen el valor asociado.
+     * Extracts the value/payload from a packed 64-bit signal.
      * 
-     * @param signal Señal empaquetada de 64 bits
-     * @return Valor/payload (32 bits inferiores)
+     * @param signal The packed 64-bit signal.
+     * @return The payload value (lower 32 bits).
      */
     public static int unpackValue(long signal) {
-        // [INGENIERÍA DURA]: Máscara AND con 0xFFFFFFFF para extraer
-        // solo los 32 bits inferiores, descartando los superiores.
+        // AND mask to discard upper bits and retain only the lower 32 bits
         return (int) (signal & 0xFFFFFFFFL);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // FORMATOS ESPECIALIZADOS AAA+ (Vectores, Coordenadas, GUIDs)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Specialized Formats (Vectors, Coordinates, GUIDs)
+    // -------------------------------------------------------------------------
 
     /**
-     * Empaqueta dos floats (32-bit) en un long (64-bit).
+     * Packs two 32-bit floating point numbers into a 64-bit long.
      * 
-     * FORMATO: [float X: 32 bits][float Y: 32 bits]
+     * <p>Format: {@code [float X: 32 bits][float Y: 32 bits]}
+     * <p>Preserves IEEE 754 binary representation without loss of precision.
+     * Used heavily in 2D coordinate tracking and physics calculations to maintain 
+     * CPU register uniformity.
      * 
-     * PROPÓSITO:
-     * - Coordenadas 2D (posición, velocidad)
-     * - Datos de física (fuerza, aceleración)
-     * - Uniformidad de registro del CPU
-     * 
-     * MECÁNICA:
-     * - Convierte floats a representación binaria (IEEE 754)
-     * - Empaqueta X en bits superiores, Y en bits inferiores
-     * - Sin pérdida de precisión
-     * 
-     * LATENCIA: ~5ns (operaciones de bits puras)
-     * 
-     * @param x Coordenada X (32-bit float)
-     * @param y Coordenada Y (32-bit float)
-     * @return Vector empaquetado (64-bit long)
+     * @param x The X coordinate (32-bit float).
+     * @param y The Y coordinate (32-bit float).
+     * @return The packed vector (64-bit long).
      */
     public static long packFloats(float x, float y) {
         int xBits = Float.floatToRawIntBits(x);
@@ -98,188 +105,153 @@ public final class DarkSignalPacker {
     }
 
     /**
-     * Desempaqueta la coordenada X desde un vector empaquetado.
+     * Extracts the X coordinate from a packed float vector.
      * 
-     * @param packed Vector empaquetado (64-bit long)
-     * @return Coordenada X (32-bit float)
+     * @param packed The packed vector (64-bit long).
+     * @return The X coordinate (32-bit float).
      */
     public static float unpackX(long packed) {
         return Float.intBitsToFloat((int) (packed >>> 32));
     }
 
     /**
-     * Desempaqueta la coordenada Y desde un vector empaquetado.
+     * Extracts the Y coordinate from a packed float vector.
      * 
-     * @param packed Vector empaquetado (64-bit long)
-     * @return Coordenada Y (32-bit float)
+     * @param packed The packed vector (64-bit long).
+     * @return The Y coordinate (32-bit float).
      */
     public static float unpackY(long packed) {
         return Float.intBitsToFloat((int) (packed & 0xFFFFFFFFL));
     }
 
     /**
-     * Empaqueta coordenadas 3D con precisión mixta.
+     * Packs 3D coordinates using mixed precision to optimize bandwidth.
      * 
-     * FORMATO: [X: 16 bits][Y: 16 bits][Z: 32 bits]
+     * <p>Format: {@code [X: 16 bits][Y: 16 bits][Z: 32 bits]}
+     * <br>Used for spatial telemetry where X and Y ranges are bounded, but Z 
+     * requires full integer precision.
      * 
-     * PROPÓSITO:
-     * - Telemetría espacial (X,Y en rango corto, Z en rango largo)
-     * - Optimización de ancho de banda
-     * - Datos de órbitas comprimidas
-     * 
-     * RANGOS:
-     * - X: -32768 a 32767 (short)
-     * - Y: -32768 a 32767 (short)
-     * - Z: -2147483648 a 2147483647 (int)
-     * 
-     * @param x Coordenada X (short, -32768 a 32767)
-     * @param y Coordenada Y (short, -32768 a 32767)
-     * @param z Coordenada Z (int, rango completo)
-     * @return Coordenadas empaquetadas (64-bit long)
+     * @param x The X coordinate (short, -32768 to 32767).
+     * @param y The Y coordinate (short, -32768 to 32767).
+     * @param z The Z coordinate (int, full range).
+     * @return The packed coordinates (64-bit long).
      */
     public static long packCoordinates3D(short x, short y, int z) {
         return ((long) x << 48) | ((long) y << 32) | (z & 0xFFFFFFFFL);
     }
 
     /**
-     * Desempaqueta coordenada X desde coordenadas 3D.
+     * Extracts the X coordinate from a packed 3D coordinate signal.
      * 
-     * @param packed Coordenadas empaquetadas
-     * @return Coordenada X (short)
+     * @param packed The packed 3D coordinates.
+     * @return The X coordinate (short).
      */
     public static short unpack3DX(long packed) {
         return (short) (packed >>> 48);
     }
 
     /**
-     * Desempaqueta coordenada Y desde coordenadas 3D.
+     * Extracts the Y coordinate from a packed 3D coordinate signal.
      * 
-     * @param packed Coordenadas empaquetadas
-     * @return Coordenada Y (short)
+     * @param packed The packed 3D coordinates.
+     * @return The Y coordinate (short).
      */
     public static short unpack3DY(long packed) {
         return (short) (packed >>> 32);
     }
 
     /**
-     * Desempaqueta coordenada Z desde coordenadas 3D.
+     * Extracts the Z coordinate from a packed 3D coordinate signal.
      * 
-     * @param packed Coordenadas empaquetadas
-     * @return Coordenada Z (int)
+     * @param packed The packed 3D coordinates.
+     * @return The Z coordinate (int).
      */
     public static int unpack3DZ(long packed) {
         return (int) (packed & 0xFFFFFFFFL);
     }
 
     /**
-     * Empaqueta un GUID de 64 bits.
+     * Standardizes API passage for 64-bit GUIDs.
      * 
-     * PROPÓSITO:
-     * - Identificadores únicos de entidades
-     * - Tracking de paquetes de red
-     * - Referencias a objetos espaciales
+     * <p>Acts as a pass-through function to maintain uniformity across the 
+     * packing API for unique entity identifiers.
      * 
-     * NOTA: El GUID ya es de 64 bits, este método es para consistencia de API.
-     * 
-     * @param guid Identificador único (64-bit)
-     * @return GUID (sin modificación)
+     * @param guid The 64-bit unique identifier.
+     * @return The unchanged GUID.
      */
     public static long packGUID(long guid) {
-        return guid; // Pass-through para consistencia de API
+        return guid; 
     }
 
     /**
-     * Empaqueta un puntero de memoria off-heap.
+     * Standardizes API passage for off-heap memory pointers.
      * 
-     * PROPÓSITO:
-     * - Referencias a MemorySegment (Project Panama)
-     * - Punteros a datos masivos (mapas estelares)
-     * - Zero-copy desde fuentes externas
+     * <p>WARNING: Pointers are strictly bound to the active JVM session. 
+     * They must never be serialized or persisted across restarts.
      * 
-     * ADVERTENCIA: Solo válido en la misma sesión de JVM.
-     * No serializar ni persistir estos punteros.
-     * 
-     * @param memoryAddress Dirección de memoria (64-bit)
-     * @return Puntero empaquetado
+     * @param memoryAddress The 64-bit memory address.
+     * @return The packed pointer.
      */
     public static long packOffHeapPointer(long memoryAddress) {
-        return memoryAddress; // Pass-through, validación en uso
+        return memoryAddress;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // SEÑALES ATÓMICAS (Operaciones de Bits)
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Atomic Flag Operations
+    // -------------------------------------------------------------------------
 
     /**
-     * Empaqueta múltiples señales booleanas en un long.
+     * Packs multiple boolean signals into a single long flag mask.
      * 
-     * FORMATO: [63 bits de flags][1 bit reservado]
+     * <p>Format: {@code [63 bits of flags][1 bit reserved]}
      * 
-     * PROPÓSITO:
-     * - Estado de comunicación satelital (conectado/desconectado)
-     * - Flags de sincronización
-     * - Máscaras de eventos
-     * 
-     * EJEMPLO:
-     * - Bit 0: Satélite conectado
-     * - Bit 1: Datos válidos
-     * - Bit 2: Checksum correcto
-     * - Bits 3-62: Flags personalizados
-     * 
-     * @param flags Máscara de bits (cada bit es una señal)
-     * @return Señales empaquetadas
+     * @param flags Bitmask where each bit represents a discrete signal.
+     * @return The packed signals.
      */
     public static long packAtomicSignals(long flags) {
         return flags;
     }
 
     /**
-     * Obtiene el valor de un bit específico.
+     * Retrieves the state of a specific bit in a packed signal mask.
      * 
-     * @param packed   Señales empaquetadas
-     * @param bitIndex Índice del bit (0-62)
-     * @return true si el bit está en 1, false si está en 0
+     * @param packed   The packed signal mask.
+     * @param bitIndex The index of the bit to check (0-62).
+     * @return {@code true} if the bit is 1, {@code false} otherwise.
      */
     public static boolean getSignalBit(long packed, int bitIndex) {
         return ((packed >>> bitIndex) & 1L) == 1L;
     }
 
     /**
-     * Establece el valor de un bit específico.
+     * Modifies the state of a specific bit in a packed signal mask.
      * 
-     * @param packed   Señales empaquetadas
-     * @param bitIndex Índice del bit (0-62)
-     * @param value    Valor a establecer (true = 1, false = 0)
-     * @return Señales actualizadas
+     * @param packed   The original signal mask.
+     * @param bitIndex The index of the bit to modify (0-62).
+     * @param value    The new state (true = 1, false = 0).
+     * @return The updated signal mask.
      */
     public static long setSignalBit(long packed, int bitIndex, boolean value) {
         if (value) {
-            return packed | (1L << bitIndex); // Set bit to 1
+            return packed | (1L << bitIndex);
         } else {
-            return packed & ~(1L << bitIndex); // Set bit to 0
+            return packed & ~(1L << bitIndex);
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // OPERACIONES ARITMÉTICAS EN HOT-PATH
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // -------------------------------------------------------------------------
+    // Hot-Path Arithmetic Operations
+    // -------------------------------------------------------------------------
 
     /**
-     * Calcula el diferencial entre dos órbitas.
+     * Calculates the differential between two packed 2D orbital vectors.
      * 
-     * MECÁNICA:
-     * - Operación aritmética directa (resta)
-     * - Sin copias de memoria
-     * - Resultado en registro del CPU
+     * <p>Executes direct floating-point arithmetic without heap allocations, 
+     * resolving directly within CPU registers.
      * 
-     * PROPÓSITO:
-     * - Telemetría espacial en tiempo real
-     * - Detección de desviaciones orbitales
-     * - Procesamiento de flujos masivos
-     * 
-     * @param orbit1 Primera órbita (coordenada empaquetada)
-     * @param orbit2 Segunda órbita (coordenada empaquetada)
-     * @return Diferencial (orbit1 - orbit2)
+     * @param orbit1 The primary orbit vector (packed).
+     * @param orbit2 The secondary orbit vector (packed).
+     * @return The differential vector (packed).
      */
     public static long computeOrbitalDifferential(long orbit1, long orbit2) {
         float x1 = unpackX(orbit1);
@@ -294,27 +266,18 @@ public final class DarkSignalPacker {
     }
 
     /**
-     * Escala un flujo de datos por un porcentaje.
+     * Scales a packed 2D float vector by a specified percentage.
      * 
-     * MECÁNICA:
-     * - Multiplicación en punto flotante
-     * - Operación en registro del CPU
-     * - Sin allocations
-     * 
-     * PROPÓSITO:
-     * - Ajuste de telemetría por calibración
-     * - Normalización de datos espaciales
-     * - Escalado de flujos masivos
-     * 
-     * @param flowData   Datos de flujo (vector empaquetado)
-     * @param percentage Porcentaje (0-100)
-     * @return Datos escalados
+     * @param flowData   The flow vector (packed).
+     * @param percentage The scaling percentage (0-100).
+     * @return The scaled flow vector (packed).
      */
     public static long scaleFlowPercentage(long flowData, int percentage) {
         float x = unpackX(flowData);
         float y = unpackY(flowData);
 
-        float scale = percentage / 100.0f;
+        // Mechanical Sympathy: FPU Division replaced by reciprocal multiplication
+        float scale = percentage * 0.01f;
         float scaledX = x * scale;
         float scaledY = y * scale;
 
@@ -322,29 +285,23 @@ public final class DarkSignalPacker {
     }
 
     /**
-     * Valida y ajusta datos para alineación de página de 4KB.
+     * Validates and adjusts a memory pointer to a 4KB page boundary.
      * 
-     * MECÁNICA:
-     * - Verifica que el offset sea múltiplo de 4096
-     * - Ajusta automáticamente si es necesario
-     * - Reduce TLB misses
+     * <p>Reduces Translation Lookaside Buffer (TLB) misses by ensuring 
+     * data reads align with hardware memory pages.
      * 
-     * PROPÓSITO:
-     * - Lectura de datos masivos del espacio
-     * - Prevención de fallos de memoria
-     * - Optimización de acceso a disco/red
-     * 
-     * @param dataPointer Puntero a datos off-heap
-     * @return Puntero alineado a 4KB
+     * @param dataPointer The raw off-heap memory pointer.
+     * @return The 4KB-aligned pointer.
      */
     public static long alignToPage4KB(long dataPointer) {
-        long pageSize = 4096L;
-        long remainder = dataPointer % pageSize;
+        // Mechanical Sympathy: Modulo operator replaced by Bitwise AND for power of 2
+        // 4096 = 2^12. Mask = 4096 - 1 = 4095.
+        long remainder = dataPointer & 4095L;
 
         if (remainder == 0) {
-            return dataPointer; // Ya alineado
+            return dataPointer;
         }
 
-        return dataPointer + (pageSize - remainder);
+        return dataPointer + (4096L - remainder);
     }
 }
