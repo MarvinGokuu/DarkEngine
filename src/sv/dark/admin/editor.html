@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark-Engine | Visual Editor</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #121212; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #toolbar { background-color: #1e1e1e; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .logo { font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; color: #ff8c00; }
+        .status { font-size: 0.9rem; color: #888; }
+        #canvas-container { position: relative; width: 100vw; height: calc(100vh - 50px); background: radial-gradient(circle at center, #1a1a24 0%, #0a0a0f 100%); }
+        #entity { position: absolute; width: 40px; height: 40px; background-color: #ff8c00; border-radius: 50%; box-shadow: 0 0 15px #ff8c00; cursor: grab; transform: translate(-50%, -50%); transition: box-shadow 0.2s; }
+        #entity:active { cursor: grabbing; box-shadow: 0 0 25px #ffffff; background-color: #ffaa33; }
+        .grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <div class="logo">DARK-ENGINE <span style="color:#aaa; font-weight:normal; font-size: 0.9rem;">VISUAL EDITOR</span></div>
+        <div class="status" id="status-text">Connected: Syncing at 60Hz</div>
+    </div>
+    <div id="canvas-container">
+        <div class="grid"></div>
+        <div id="entity" style="left: 50%; top: 50%;"></div>
+    </div>
+
+    <script>
+        const entity = document.getElementById('entity');
+        const container = document.getElementById('canvas-container');
+        let isDragging = false;
+
+        entity.addEventListener('mousedown', () => { isDragging = true; });
+        document.addEventListener('mouseup', () => { isDragging = false; });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const rect = container.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            
+            // Constrain
+            x = Math.max(0, Math.min(x, rect.width));
+            y = Math.max(0, Math.min(y, rect.height));
+
+            entity.style.left = x + 'px';
+            entity.style.top = y + 'px';
+
+            // Send to Engine (Assuming engine resolution is 900x520)
+            // Scale to abstract engine coordinates (0-1000 for example, or exact pixels)
+            // SectorMemoryVault stores ints. Let's send raw pixels scaled to 1000.
+            const engineX = Math.round((x / rect.width) * 900 * 1000);
+            const engineY = Math.round((y / rect.height) * 520 * 1000);
+
+            // Fire and forget via fetch to /api/state
+            fetch(`http://localhost:8080/api/state?x=${engineX}&y=${engineY}`, { mode: 'no-cors' }).catch(e => {});
+        });
+    </script>
+</body>
+</html>

@@ -1,79 +1,47 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.net;
 
-import java.awt.*;
+import sv.dark.core.AAACertified;
 import sv.dark.state.DarkStateVault;
 import sv.dark.state.DarkStateLayout;
-import sv.dark.core.systems.DarkTheme;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Telemetry aggregator for metrics and alerts.
- * GARANTÍAS: Zero-allocation, Lock-free writes, Async persistence.
- * RESTRICTIONS: Forbidden to use real-time calculations (System.ms) for
- * critical metrics; forbidden to block the main loop.
- * CRITICAL DOMAIN: Telemetry / Industrial UX
- *
- * @author Marvin-Dev
+ * Telemetry Aggregator for Metrics and Alerts.
+ * 
+ * <p>GUARANTEES:
+ * <ul>
+ *   <li>Zero-allocation</li>
+ *   <li>Lock-free writes</li>
+ *   <li>Async persistence</li>
+ * </ul>
+ * 
+ * <p>RESTRICTIONS:
+ * <ul>
+ *   <li>Forbidden to use real-time calculations (System.ms) for critical metrics</li>
+ *   <li>Forbidden to block the main loop</li>
+ *   <li>Forbidden to use java.awt or perform GUI rendering</li>
+ * </ul>
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
+@AAACertified(date = "2026-06-12", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Decoupled from AWT/GUI rendering")
 public final class DarkTelemetryUnit {
 
-    private static final Font UI_FONT = new Font("Courier New", Font.BOLD, 14);
-
     /**
-     * Lógica de monitoreo: Analiza el pulso y activa protocolos de emergencia en el
-     * Vault.
+     * Monitoring logic: Analyzes the pulse and activates emergency protocols in the Vault.
      */
     public void update(DarkStateVault vault) {
-        // Leemos métricas escaladas (0-10000)
+        // Read scaled metrics (0-10000)
         int loadVal = vault.read(DarkStateLayout.METRIC_CPU_LOAD);
 
-        // Umbral de Seguridad: 80% (8000 en escala industrial)
+        // Security Threshold: 80% (8000 in industrial scale)
         boolean isCritical = loadVal > 8000;
 
-        // Inyectamos bandera de estado: 1 = Estrés Crítico, 0 = Operación Nominal.
-        // Esto permite que el WorkStealingProcessor o los Sistemas de Partículas cedan
-        // ciclos.
+        // Inject state flag: 1 = Critical Stress, 0 = Nominal Operation.
+        // This allows the WorkStealingProcessor or Particle Systems to yield cycles.
         vault.write(DarkStateLayout.SYS_ENGINE_FLAGS, isCritical ? 1 : 0);
     }
-
-    /**
-     * Renderizado de la consola de telemetría.
-     * Utiliza el pulso determinista del motor para efectos de animación.
-     */
-    public void render(Graphics2D g2d, DarkStateVault vault) {
-        int loadVal = vault.read(DarkStateLayout.METRIC_CPU_LOAD);
-        int flags = vault.read(DarkStateLayout.SYS_ENGINE_FLAGS);
-        int tick = vault.read(DarkStateLayout.SYS_TICK);
-
-        // UI Style: Aplicación de la estética Glassmorphism definida en el Kernel UI
-        DarkTheme.applyGlassStyle(g2d, 20, 20, 250, 80);
-
-        // [DETERMINISMO]: Parpadeo basado en el Tick actual (40 ticks por ciclo)
-        boolean blink = (tick % 40 < 20);
-        Color accent = DarkTheme.getDynamicAccent(flags);
-
-        g2d.setColor(flags == 1 && blink ? Color.WHITE : accent);
-        g2d.setFont(UI_FONT);
-
-        // Renderizado de métricas
-        // Nota: loadVal / 100 convierte la base 10000 a porcentaje humano (0-100)
-        drawMetric(g2d, "CPU_LOAD", loadVal / 100, 40, 45);
-
-        // Barra de estado física (representación visual del buffer de carga)
-        g2d.setColor(new Color(255, 255, 255, 30));
-        g2d.fillRect(40, 60, 200, 8); // Fondo de la barra
-
-        g2d.setColor(accent);
-        g2d.fillRect(40, 60, (loadVal * 200) / 10000, 8); // Indicador de carga
-    }
-
-    /**
-     * Dibuja la etiqueta técnica.
-     * [OPTIMIZACIÓN FUTURA]: Implementar GlyphCache para eliminar la concatenación
-     * de Strings.
-     */
-    private void drawMetric(Graphics2D g2d, String label, int value, int x, int y) {
-        g2d.drawString(label + ": " + value + "%", x, y);
-    }
 }
-// actualizado3/1/26
