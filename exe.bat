@@ -28,17 +28,21 @@ javac -d bin --enable-preview --source %JAVA_MAJOR% --add-modules jdk.incubator.
          src\sv\dark\bus\*.java ^
          src\sv\dark\net\*.java ^
          src\sv\dark\test\*.java ^
-         src\sv\dark\ui\*.java
+         src\sv\dark\ui\*.java ^
+         src\sv\dark\admin\*.java
 
 if %errorlevel% neq 0 (
     echo [ERROR] Compilation failed.
-    pause
     exit /b %errorlevel%
 )
 
 :: Copy resources (images, configurations, etc.) to bin
 if not exist bin\sv\dark\ui mkdir bin\sv\dark\ui
 copy /y src\sv\dark\ui\darkengine_logo.png bin\sv\dark\ui\darkengine_logo.png >nul
+
+if not exist bin\sv\dark\admin mkdir bin\sv\dark\admin
+copy /y src\sv\dark\admin\editor.html bin\sv\dark\admin\editor.html >nul
+copy /y src\sv\dark\admin\index.html bin\sv\dark\admin\index.html >nul
 
 echo [SUCCESS] Build complete. Binaries in: bin\
 
@@ -48,7 +52,6 @@ jar --create --file DarkEngine.jar --main-class sv.dark.state.DarkEngineMaster -
 
 if %errorlevel% neq 0 (
     echo [ERROR] JAR creation failed.
-    pause
     exit /b %errorlevel%
 )
 
@@ -64,13 +67,18 @@ jpackage --name "Dark-Engine" ^
 
 if %errorlevel% neq 0 (
     echo [ERROR] jpackage failed.
-    pause
     exit /b %errorlevel%
 )
 
+:: 5. Copy Native Libraries
+echo [STAGE] Bundling Native Libraries (DLLs)...
+if not exist Dark-Engine\lib mkdir Dark-Engine\lib
+copy /y lib\glfw3.dll Dark-Engine\lib\glfw3.dll >nul
+copy /y lib\soft_oal.dll Dark-Engine\lib\soft_oal.dll >nul
+
 echo --------------------------------------------
 echo [SUCCESS] Dark-Engine App Image ready.
+echo Portable Folder: Dark-Engine\
 echo Run: Dark-Engine\Dark-Engine.exe
 echo Log: darkengine.log (en el directorio de trabajo)
 echo --------------------------------------------
-pause
