@@ -1,3 +1,6 @@
+// Reading Order: 00011000
+// SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
+// SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.net;
 
 import sv.dark.state.DarkStateVault;
@@ -5,22 +8,31 @@ import sv.dark.core.AAACertified;
 import sv.dark.state.DarkStateLayout;
 
 /**
- * AUTORIDAD: Marvin-Dev
- * RESPONSABILIDAD: Physical memory metrics extraction from
- * SectorMemoryVault / StateVault.
- * GUARANTEES: Zero-allocation, non-blocking read (Atomic read), domain
- * isolation.
- * RESTRICTIONS: Forbidden to use java.awt, forbidden to format Strings,
- * forbidden to render.
- * CRITICAL DOMAIN: Telemetry
- *
- * @author Marvin-Dev
+ * Physical Memory Metrics Extractor.
+ * 
+ * <p>Extracts metrics from the SectorMemoryVault / StateVault.
+ * 
+ * <p>GUARANTEES:
+ * <ul>
+ *   <li>Zero-allocation</li>
+ *   <li>Non-blocking read (Atomic read)</li>
+ *   <li>Domain isolation</li>
+ * </ul>
+ * 
+ * <p>RESTRICTIONS:
+ * <ul>
+ *   <li>Forbidden to use java.awt</li>
+ *   <li>Forbidden to format Strings</li>
+ *   <li>Forbidden to render</li>
+ * </ul>
+ * 
+ * @author Marvin Alexander Flores Canales
+ * @since 1.0
  */
 @AAACertified(date = "2026-01-10", maxLatencyNs = 100, minThroughput = 100_000, alignment = 0, lockFree = true, offHeap = false, notes = "Memory Metrics Extractor (Zero-Allocation)")
 public final class MemoryMonitor {
 
-    // [HARD ENGINEERING]: Storage in primitive registers to avoid garbage
-    // collector.
+    // [HARD ENGINEERING]: Storage in primitive registers to avoid garbage collector.
     private long lastFreeBytes;
     private long lastTotalBytes;
 
@@ -44,9 +56,9 @@ public final class MemoryMonitor {
     }
 
     /**
-     * Calcula la utilización porcentual mediante aritmética entera escalada.
+     * Calculates percentage utilization using scaled integer arithmetic.
      * 
-     * @return Uso en base 10000 (ej. 8500 = 85.00%)
+     * @return Usage in basis points (e.g. 8500 = 85.00%).
      */
     public int getUsageBasisPoints() {
         if (lastTotalBytes == 0)
@@ -54,4 +66,4 @@ public final class MemoryMonitor {
         return (int) (((lastTotalBytes - lastFreeBytes) * 10000) / lastTotalBytes);
     }
 }
-// actualizado3/1/26
+// updated 3/1/26
