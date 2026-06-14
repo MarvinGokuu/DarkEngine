@@ -57,6 +57,12 @@ public final class DarkEngineWindow {
                 return;
             }
 
+            // Habilitar el contexto de video OpenGL (Requerido para Compute Shaders FFI)
+            DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
+
+            // Cargar funciones de OpenGL a través del contexto activo
+            sv.dark.core.systems.DarkOpenGLLinker.init();
+
             DarkLogger.info("GRAPHICS", "Native Window successfully created (0ms Input Lag).");
 
         } catch (Throwable e) {
