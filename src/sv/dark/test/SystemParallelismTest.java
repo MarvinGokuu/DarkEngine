@@ -24,7 +24,15 @@ import sv.dark.state.DarkStateLayout;
  * TECHNIQUE: Low-latency focused implementation.
  * GUARANTEES: Lock-free execution where applicable.
  */
-@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
+@AAACertified(
+    date = "2026-06-11",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment = 0,
+    lockFree = false,
+    offHeap = false,
+    notes = "Automatically AAA Certified during Core Audit"
+)
 public class SystemParallelismTest implements GameSystem {
     @SuppressWarnings("unused") // implement execution counter
     private long executionCount = 0;

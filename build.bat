@@ -1,12 +1,6 @@
 @echo off
 title Dark-Engine Compiler
-cls
 
-echo.
-echo ==============================================
-echo  DARK ENGINE - COMPILATION ROUTINE
-echo ==============================================
-echo.
 
 :: Detect JDK
 for /f "tokens=2 delims= " %%v in ('javac --version 2^>^&1') do set JAVAC_VER=%%v
@@ -23,7 +17,7 @@ for /f "tokens=2 delims=," %%p in ('wmic process where "Name='java.exe' or Name=
 
 if not exist bin mkdir bin
 
-echo [BUILD] Compiling kernel and subsystems (JDK %JAVAC_VER%)...
+<nul set /p="[BUILD] Compiling kernel and subsystems (JDK %JAVAC_VER%)... "
 javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
     -Xlint:-incubating ^
@@ -61,6 +55,5 @@ copy /y src\sv\dark\admin\index.html bin\sv\dark\admin\index.html >nul
 if exist compile.log del /q compile.log
 if exist logs\clean.log del /q logs\clean.log
 
-echo [SUCCESS] AAA+ Compiled. Engine ready.
-echo.
+echo [OK] AAA+ Compiled.
 exit /b 0
