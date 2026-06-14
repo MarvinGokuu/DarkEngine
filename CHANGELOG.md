@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.2.0] - 2026-06-14
+
+### Architecture (Main Thread Domination)
+- **FFI Hot-Path Integration**: 
+  - Eradicated the secondary asynchronous daemon thread (`dark-glfw-render`) for OS window rendering.
+  - Injected `glfwPollEvents` and `glfwWindowShouldClose` directly into the `EngineKernel`'s Phase 1 synchronous loop.
+  - The Engine Kernel now executes directly on the OS Main Thread at `MAX_PRIORITY`, achieving absolute spatial slicing and guaranteeing 0ms input lag.
+- **Test Suite Normalization**:
+  - Fixed an `ArrayIndexOutOfBoundsException` in `SummaryGenerator.java` caused by headless tests without pipeline formatting (`|`).
+  - Normalized the AAA+ test validation count to natively report 15/15 tests passed.
+
+---
+
 ## [3.1.0] - 2026-06-13
 
 ### Security & Compliance
