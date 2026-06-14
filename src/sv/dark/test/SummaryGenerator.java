@@ -17,7 +17,7 @@ public class SummaryGenerator {
         String memorySafety = "N/A";
         String engineRest = "N/A";
         int testsPassed = 0;
-        int totalTests = 15;
+        int totalTests = 16;
 
         try (BufferedReader br = new BufferedReader(new FileReader(logFile))) {
             String line;
@@ -51,7 +51,7 @@ public class SummaryGenerator {
                 }
             }
             // Normalizar a 15 (debido a que los asserts pueden imprimir varios [PASS])
-            if (testsPassed > 15) testsPassed = 15;
+            if (testsPassed > 16) testsPassed = 16;
             
         } catch (Exception e) {
             System.err.println("[SummaryGenerator] Error reading " + logFile);
