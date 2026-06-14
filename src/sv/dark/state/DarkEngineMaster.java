@@ -10,7 +10,6 @@ import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
 import sv.dark.kernel.EngineKernel;
 import sv.dark.memory.SectorMemoryVault;
-import sv.dark.ui.AsyncLogWriter;
 import sv.dark.ui.DarkEngineWindow;
 import sv.dark.core.systems.DarkInputSystem;
 import sv.dark.core.systems.DarkAudioSystem;
@@ -30,13 +29,8 @@ public final class DarkEngineMaster {
     public static void main(String[] args) throws java.io.IOException {
 
         // -------------------------------------------------------------------------
-        // STEP 0: Redirect stdout/stderr -> darkengine.log (before any output)
+        // (STEP 0 Eliminado: No se intercepta stdout/stderr. Se delega todo a DarkLogger)
         // -------------------------------------------------------------------------
-        // Without this: every System.out.println() in the kernel hot-path = blocking I/O.
-        // With this: println() -> in-memory ring buffer (nanoseconds), flushed in daemon thread.
-        AsyncLogWriter logWriter = new AsyncLogWriter("darkengine.log");
-        System.setOut(logWriter.createPrintStream(System.out));
-        System.setErr(logWriter.createPrintStream(System.err));
 
         // -------------------------------------------------------------------------
         // STEP 1: Visual Window - appears immediately, before kernel boot
