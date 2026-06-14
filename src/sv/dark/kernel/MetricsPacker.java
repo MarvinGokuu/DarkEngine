@@ -14,10 +14,12 @@ import sv.dark.core.AAACertified;
  *
  * <p>LAYOUT (64 bits):
  * <ul>
- *   <li>Bits 0-15: Frame count (16 bits, max 65535)</li>
- *   <li>Bits 16-31: Total time in microseconds (16 bits, max 65ms)</li>
- *   <li>Bits 32-47: Reserved for events/second</li>
- *   <li>Bits 48-63: Metric type/flags</li>
+ *   <li>Bits 0-15: Frame count (16 bits)</li>
+ *   <li>Bits 16-31: Total time in microseconds (16 bits)</li>
+ *   <li>Bits 32-39: Target FPS (8 bits)</li>
+ *   <li>Bits 40-47: Actual FPS (8 bits)</li>
+ *   <li>Bits 48-59: Headroom in 10-us units (12 bits, signed)</li>
+ *   <li>Bits 60-63: Metric type (4 bits)</li>
  * </ul>
  *
  * @author Marvin Alexander Flores Canales
@@ -38,24 +40,22 @@ public final class MetricsPacker {
         throw new AssertionError("MetricsPacker is a static utility class");
     }
 
-    // Metric Types
-    public static final long TYPE_FRAME_STATS = 0x0001L << 48;
-    public static final long TYPE_BUS_STATS = 0x0002L << 48;
-    public static final long TYPE_WARNING = 0x0003L << 48;
+    // Metric Types (Bits 60-63)
+    public static final long TYPE_FRAME_STATS = 0x1L << 60;
+    public static final long TYPE_BUS_STATS = 0x2L << 60;
+    public static final long TYPE_WARNING = 0x3L << 60;
 
     /**
      * Packs frame statistics into a single 64-bit long.
-     * 
-     * @param frameCount  Frame number (0-65535).
-     * @param totalTimeNs Total frame time in nanoseconds.
-     * @return Packed metric.
      */
-    public static long packFrameStats(long frameCount, long totalTimeNs) {
+    public static long packFrameStats(long frameCount, long totalTimeNs, long targetFps, long actualFps, long headroomNs) {
         long frame = (frameCount & 0xFFFFL);
-        // Mechanical Sympathy: Division by 1000 converted to multiply + bitshift.
-        // 2^32 / 1000 = 4294967.296. So (X * 4294967) >> 32 is equivalent to X / 1000.
         long timeUs = ((totalTimeNs * 4294967L) >> 32) & 0xFFFFL;
-        return TYPE_FRAME_STATS | (timeUs << 16) | frame;
+        long target = (targetFps & 0xFFL);
+        long actual = (actualFps & 0xFFL);
+        long head10us = (headroomNs / 10000L) & 0xFFFL; // 12 bits signed
+        
+        return TYPE_FRAME_STATS | (head10us << 48) | (actual << 40) | (target << 32) | (timeUs << 16) | frame;
     }
 
     /**
@@ -68,23 +68,28 @@ public final class MetricsPacker {
         return packed & 0xFFFFL;
     }
 
-    /**
-     * Unpacks the total time in microseconds from a packed metric.
-     * 
-     * @param packed Packed metric.
-     * @return Time in microseconds.
-     */
     public static long unpackTimeMicros(long packed) {
         return (packed >> 16) & 0xFFFFL;
     }
 
-    /**
-     * Returns the metric type from a packed metric.
-     * 
-     * @param packed Packed metric.
-     * @return Metric type.
-     */
+    public static long unpackTargetFps(long packed) {
+        return (packed >> 32) & 0xFFL;
+    }
+
+    public static long unpackActualFps(long packed) {
+        return (packed >> 40) & 0xFFL;
+    }
+
+    public static long unpackHeadroomNs(long packed) {
+        long head10us = (packed >> 48) & 0xFFFL;
+        // Sign extend 12 bits to 64 bits
+        if ((head10us & 0x800L) != 0) {
+            head10us |= 0xFFFFFFFFFFFFF000L;
+        }
+        return head10us * 10000L;
+    }
+
     public static long getMetricType(long packed) {
-        return packed & (0xFFFFL << 48);
+        return packed & (0xFL << 60);
     }
 }

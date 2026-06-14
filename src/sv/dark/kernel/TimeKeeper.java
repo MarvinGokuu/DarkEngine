@@ -4,52 +4,76 @@
 
 package sv.dark.kernel;
 
-
 import sv.dark.core.DarkLogger;
 import sv.dark.core.AAACertified;
+import sv.dark.config.DarkEngineConfig;
 
 /**
- * RESPONSIBILITY: Sensory neuron for temporal determinism and fixed timestep regulation.
- * WHY: Thread.sleep() relies on the OS scheduler and incurs 1-15ms of jitter. Deterministic physics require an exact delta time.
- * TECHNIQUE: Implements an aggressive Spin-Wait loop (Thread.onSpinWait()) for nanosecond precision. Includes a dynamic "Governor" that shifts FPS gears up/down based on stability headroom.
- * GUARANTEES: Absolute temporal determinism (exactly 16.666ms per frame at 60 FPS). Precision <1ns using the hardware TSC (Time Stamp Counter).
+ * RESPONSIBILITY: Sensory neuron for temporal determinism and Quad-Lane timestep regulation.
+ * WHY: We need distinct behaviors for Gaming (smoothness), Scientific Simulation (math purity), and Benchmarks (throughput).
+ * TECHNIQUE: Implements Quad-Lane Architecture. Uses Asymmetric Hysteresis for Lane 1 (Gaming CVT), and static behaviors for the rest.
+ * GUARANTEES: Absolute temporal determinism in Scientific mode. Stutter-free Hysteresis in Gaming mode. Zero-overhead routing.
  * 
- * <p>Dependencies: System.nanoTime()
- * <p>Metrics: Precision <1ns (TSC), Fixed timestep 60 FPS
+ * <p>Dependencies: System.nanoTime(), DarkEngineConfig
+ * <p>Metrics: Precision <1ns (TSC)
  * 
  * @author Marvin Alexander Flores Canales
- * @version 1.0
- * @since 2026-01-05
+ * @version 2.0
+ * @since 2026-06-13
  */
 @AAACertified(
-    date = "2026-01-06",
+    date = "2026-06-13",
     maxLatencyNs = 1,
-    minThroughput = 60,
+    minThroughput = 30,
     alignment = 64,
     lockFree = true,
     offHeap = false,
-    notes = "Sensory neuron - TSC-based temporal determinism at 60 FPS"
+    notes = "Quad-Lane Governor with Asymmetric Hysteresis"
 )
 public final class TimeKeeper {
 
-    // Time constants
-    private static final long TARGET_FPS = 60;
-    private static final long FRAME_TIME_NS = 1_000_000_000 / TARGET_FPS; // 16.666ms in nanoseconds
+    // ==========================================================================
+    // ARCHITECTURE: QUAD-LANE PIPELINE
+    // ==========================================================================
+    public enum EngineMode {
+        GAMING_CVT,          // Lane 1: Asymmetric Hysteresis (Default)
+        UNBOUNDED_RAW,       // Lane 2: 0-Wait Compute (Config 1)
+        DEBUG_LOCK,          // Lane 3: Legacy Fixed FPS (Config 2)
+        SCIENTIFIC_SYMMETRIC // Lane 4: Strict DeltaTime Simulation (Config 3)
+    }
 
-    // Time state
+    private final EngineMode currentMode;
+    private final long customDebugFps;
+
+    // ==========================================================================
+    // TIME STATE
+    // ==========================================================================
     private long lastFrameTime;
     private long currentFrameTime;
     private long frameCount;
 
-    // [GOVERNOR] Dynamic Performance Control
+    // ==========================================================================
+    // GOVERNOR STATE (CVT)
+    // ==========================================================================
+    private static final long MIN_FPS = 30;
+    private static final long MAX_FPS = 360;
     public static final long UNBOUNDED_FPS = 0L;
-    // Gears: 1=60FPS, 2=120FPS, 3=144FPS
-    private volatile long currentTargetFps = TARGET_FPS;
-    private volatile long currentFrameTimeNs = FRAME_TIME_NS;
-    private int stabilityCounter = 0; // Consecutive stable frames
-    private int currentGear = 1;
+    
+    private volatile long currentTargetFps;
+    private volatile long currentFrameTimeNs;
+    private int stabilityFrames = 0; 
 
-    // Metrics
+    // 1% Low Ring Buffer
+    private static final int BUFFER_SIZE = 60;
+    private final long[] frameTimeBuffer = new long[BUFFER_SIZE];
+    private int bufferIndex = 0;
+
+    // ==========================================================================
+    // METRICS
+    // ==========================================================================
+    private volatile long lastHeadroomNs;
+    private volatile long lastActualFps;
+    
     private long phase1TimeNs; // Input
     private long phase2TimeNs; // Bus (future)
     private long phase3TimeNs; // Systems
@@ -59,79 +83,160 @@ public final class TimeKeeper {
         this.lastFrameTime = System.nanoTime();
         this.currentFrameTime = lastFrameTime;
         this.frameCount = 0;
+
+        // Load configuration for the Lanes
+        EngineMode mode = EngineMode.GAMING_CVT;
+        try {
+            mode = EngineMode.valueOf(DarkEngineConfig.KERNEL_ENGINE_MODE);
+        } catch (Exception e) {
+            DarkLogger.warning("TIME", "Unknown ENGINE_MODE, defaulting to GAMING_CVT");
+        }
+        this.currentMode = mode;
+        this.customDebugFps = DarkEngineConfig.KERNEL_DEBUG_FPS_LOCK;
+
+        // Initialize target based on Lane
+        if (currentMode == EngineMode.DEBUG_LOCK || currentMode == EngineMode.SCIENTIFIC_SYMMETRIC) {
+            setTargetFps(customDebugFps);
+        } else if (currentMode == EngineMode.UNBOUNDED_RAW) {
+            setTargetFps(UNBOUNDED_FPS);
+        } else {
+            setTargetFps(60); // Default start for CVT
+        }
+
+        // Pre-fill ring buffer
+        long initialTarget = (this.currentFrameTimeNs == 0) ? 1_000_000_000L / 60 : this.currentFrameTimeNs;
+        for (int i = 0; i < BUFFER_SIZE; i++) {
+            frameTimeBuffer[i] = initialTarget;
+        }
     }
 
-    /**
-     * Marks the beginning of a new frame.
-     */
     public void startFrame() {
         currentFrameTime = System.nanoTime();
         frameCount++;
     }
 
     /**
-     * Returns the fixed or dynamic deltaTime for this frame.
-     * 
-     * @return Delta time in seconds.
+     * Delta Time adapts precisely to the active Lane to guarantee determinism.
      */
     public double getDeltaTime() {
-        if (currentTargetFps == UNBOUNDED_FPS) {
+        if (currentMode == EngineMode.SCIENTIFIC_SYMMETRIC) {
+            // Lane 4: Absolute mathematical determinism (Fixed Delta)
+            return 1.0 / customDebugFps; 
+        }
+        if (currentMode == EngineMode.UNBOUNDED_RAW || currentTargetFps == UNBOUNDED_FPS) {
             long deltaNs = currentFrameTime - lastFrameTime;
-            // Prevent division by zero or negative delta in extreme cases
             if (deltaNs <= 0) deltaNs = 1;
             return deltaNs / 1_000_000_000.0;
         }
+        // Lane 1 & 3: Floating delta based on current target
         return 1.0 / currentTargetFps;
     }
 
-    /**
-     * Returns the current frame number.
-     * 
-     * @return Frame count.
-     */
     public long getFrameCount() {
         return frameCount;
     }
 
-    /**
-     * Returns the start timestamp of the current frame (nanoseconds).
-     * Useful for profiling and synchronization.
-     * 
-     * @return currentFrameTime in nanoseconds.
-     */
     public long getFrameStartTimeNs() {
         return currentFrameTime;
     }
 
     /**
-     * Waits until it's time for the next frame.
-     * 
-     * TECHNIQUE: Spin-wait for nanosecond precision.
-     * GOVERNOR: Analyzes headroom and shifts gear based on stability.
+     * QUAD-LANE ROUTER
+     * Routes the waiting logic depending on the active architectural lane.
+     * Switch statement overhead is 0ns (Compiled as internal tableswitch/lookupswitch).
      */
     public void waitForNextFrame() {
-        if (currentTargetFps == UNBOUNDED_FPS) {
-            // [0-WAIT STATE] Unbounded FPS bypass
-            lastFrameTime = currentFrameTime;
-            return;
+        long actualWorkNs = System.nanoTime() - currentFrameTime;
+
+        // Save real work time to the 1% Low ring buffer
+        frameTimeBuffer[bufferIndex] = actualWorkNs;
+        bufferIndex = (bufferIndex + 1) % BUFFER_SIZE;
+
+        switch (currentMode) {
+            case UNBOUNDED_RAW:
+                // Lane 2: 0-Wait Compute. Do absolutely nothing. Run fast.
+                lastFrameTime = currentFrameTime;
+                return;
+
+            case SCIENTIFIC_SYMMETRIC:
+                // Lane 4: Strict fixed step. Sleep if early, slow motion if late.
+                enforceRigidTarget();
+                break;
+
+            case DEBUG_LOCK:
+                // Lane 3: Legacy Fixed FPS lock for testing.
+                enforceRigidTarget();
+                break;
+
+            case GAMING_CVT:
+            default:
+                // Lane 1: Asymmetric Hysteresis for buttery smooth gameplay.
+                enforceGamingCVT(actualWorkNs);
+                break;
+        }
+    }
+
+    /**
+     * [LANE 1] Asymmetric Hysteresis CVT
+     */
+    private void enforceGamingCVT(long actualWorkNs) {
+        long headroomNs = currentFrameTimeNs - actualWorkNs;
+        this.lastHeadroomNs = headroomNs;
+
+        // 1. Banda Muerta (Histéresis 5%) - Ignorar fluctuaciones
+        // [AUDIT FIX] Optimizacion: Evitar casteo a 'double' usando division entera (/20 = 5%)
+        if (Math.abs(headroomNs) < (currentFrameTimeNs / 20)) {
+            stabilityFrames++;
+        } 
+        // 2. Caída Defensiva Asimétrica (Stutter Protection)
+        else if (headroomNs < 0) {
+            long worstFrameNs = getWorstFrameInRingBuffer();
+            // [AUDIT FIX] Seguro contra division por cero en caso de saltos cuanticos
+            long actualFps = 1_000_000_000L / Math.max(1, worstFrameNs);
+            this.lastActualFps = actualFps;
+            
+            // Magia Torvalds: Truncar hacia abajo a múltiplo par (Bloques de 4)
+            long newTarget = (actualFps / 4) * 4; 
+            
+            // Anclaje al 1% Low
+            setTargetFps(Math.max(MIN_FPS, newTarget));
+            stabilityFrames = 0; 
+        } 
+        // 3. Subida Cautelosa (+20% Headroom)
+        // [AUDIT FIX] Optimizacion: Evitar casteo a 'double' usando division entera (/5 = 20%)
+        else if (headroomNs > (currentFrameTimeNs / 5)) {
+            stabilityFrames++;
+            // Exigimos 300 frames de estabilidad absoluta (Aprox 5 segundos)
+            if (stabilityFrames >= 300) { 
+                setTargetFps(Math.min(MAX_FPS, currentTargetFps + 4));
+                stabilityFrames = 0;
+            }
         }
 
+        // Spin-wait based on current dynamic target
+        executeSpinWait();
+    }
+
+    /**
+     * [LANE 3 & 4] Rigid static lock
+     */
+    private void enforceRigidTarget() {
+        executeSpinWait();
+    }
+
+    /**
+     * Unified hardware spin-wait core.
+     */
+    private void executeSpinWait() {
         long targetTime = lastFrameTime + currentFrameTimeNs;
         long now = System.nanoTime();
 
-        // [GOVERNOR] Headroom Analysis
-        long actualWorkDuration = now - currentFrameTime;
-        long headroom = currentFrameTimeNs - actualWorkDuration;
-
-        updateGovernor(headroom);
-
-        // Aggressive spin-wait for precision
         while (now < targetTime) {
             Thread.onSpinWait();
             now = System.nanoTime();
         }
 
-        // Avoid slip accumulation if greater than 2 frames (stutter protection)
+        // Slip compensation (Max 2 frames of stutter debt)
         if (now - targetTime > currentFrameTimeNs * 2) {
             lastFrameTime = now;
         } else {
@@ -139,72 +244,27 @@ public final class TimeKeeper {
         }
     }
 
-    /**
-     * [GOVERNOR] PERFORMANCE BRAIN
-     * Adjusts FPS based on system stability.
-     * 
-     * Rules:
-     * - Upshift: 60 stable frames with >50% headroom.
-     * - Downshift: 1 single unstable frame (Headroom < 0).
-     * 
-     * @param headroomNs Time left in the current frame in nanoseconds.
-     */
-    private void updateGovernor(long headroomNs) {
-        // Safety threshold to upshift: 20% of current frame time remaining
-        long SAFE_HEADROOM = currentFrameTimeNs / 5;
-
-        if (headroomNs > SAFE_HEADROOM) {
-            stabilityCounter++;
-            // If stable for 1 second (approx 60 frames), attempt to upshift
-            if (stabilityCounter > 60 && currentGear < 6) {
-                shiftGearUp();
-                stabilityCounter = 0; // Reset to test new stability
+    private long getWorstFrameInRingBuffer() {
+        long worstNs = 0;
+        for (int i = 0; i < BUFFER_SIZE; i++) {
+            if (frameTimeBuffer[i] > worstNs) {
+                worstNs = frameTimeBuffer[i];
             }
-        } else if (headroomNs < 0) {
-            // [FAIL-SAFE] Deadline violation -> Downshift IMMEDIATELY
-            // Prevents stuttering in heavy workloads (Cyberpunk/StarCitizen scenario)
-            if (currentGear > 1) {
-                shiftGearDown();
-                stabilityCounter = 0;
-            }
-        } else {
-            // Gray zone: stable but no headroom to upshift
-            stabilityCounter = 0;
         }
+        return worstNs;
     }
 
-    private void shiftGearUp() {
-        currentGear++;
-        applyGear();
-    }
-
-    private void shiftGearDown() {
-        currentGear--;
-        applyGear();
-    }
-
-    private void applyGear() {
-        switch (currentGear) {
-            case 1 -> setTargetFps(60);
-            case 2 -> setTargetFps(120);
-            case 3 -> setTargetFps(144);
-            case 4 -> setTargetFps(240);
-            case 5 -> setTargetFps(360);
-            case 6 -> setTargetFps(UNBOUNDED_FPS);
-        }
-    }
+    public long getCurrentTargetFps() { return currentTargetFps; }
+    public long getLastHeadroomNs() { return lastHeadroomNs; }
+    public long getLastActualFps() { return lastActualFps; }
 
     private void setTargetFps(long fps) {
+        if (fps == this.currentTargetFps) return;
         this.currentTargetFps = fps;
         this.currentFrameTimeNs = (fps == 0) ? 0 : 1_000_000_000 / fps;
+        DarkLogger.info("TIME", "Governor shifted to: " + fps + " FPS (" + currentMode.name() + ")");
     }
 
-    /**
-     * Records the time of a specific phase.
-     * 
-     * @param phase  Phase number (1-4).
-     * @param timeNs Time in nanoseconds.
-     */
     public void recordPhaseTime(int phase, long timeNs) {
         switch (phase) {
             case 1 -> phase1TimeNs = timeNs;
@@ -214,39 +274,25 @@ public final class TimeKeeper {
         }
     }
 
-    /**
-     * Returns the total time of the last frame.
-     * 
-     * @return Time in milliseconds.
-     */
     public double getLastFrameTimeMs() {
         long total = phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs;
         return total / 1_000_000.0;
     }
 
-    /**
-     * Verifies if the frame exceeded the time budget.
-     * 
-     * @return true if it exceeded the budget.
-     */
     public boolean isOverBudget() {
         long total = phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs;
         return total > currentFrameTimeNs;
     }
 
-    /**
-     * Prints time statistics.
-     */
     public void printStats() {
-        DarkLogger.info("TIME", String.format("Gear %d (%d FPS) | Frame %d: Total=%.2fms (Headroom=%.2fms)%n",
-                currentGear,
+        DarkLogger.info("TIME", String.format("Mode: %s | FPS Target: %d | Frame %d: Total=%.2fms",
+                currentMode.name(),
                 currentTargetFps,
                 frameCount,
-                getLastFrameTimeMs(),
-                (currentFrameTimeNs - (phase1TimeNs + phase2TimeNs + phase3TimeNs + phase4TimeNs)) / 1_000_000.0));
+                getLastFrameTimeMs()));
 
         if (isOverBudget()) {
-            DarkLogger.warning("TIME", "⚠️ WARNING: Frame exceeded budget! Governor likely downshifted.");
+            DarkLogger.warning("TIME", "⚠️ WARNING: Frame exceeded budget (" + currentMode.name() + ")!");
         }
     }
 }

@@ -26,7 +26,15 @@ import sv.dark.state.WorldStateFrame;
  * TECHNIQUE: Low-latency focused implementation.
  * GUARANTEES: Lock-free execution where applicable.
  */
-@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
+@AAACertified(
+    date = "2026-06-11",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment = 0,
+    lockFree = false,
+    offHeap = false,
+    notes = "Automatically AAA Certified during Core Audit"
+)
 public final class DarkDisplayBridge {
 
     private final BufferStrategy strategy;

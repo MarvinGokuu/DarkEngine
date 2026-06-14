@@ -17,7 +17,7 @@
 // CONFIGURACIÓN DE CONEXIÓN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const METRICS_SERVER_URL = 'http://localhost:8080/metrics';
+const METRICS_SERVER_URL = 'http://localhost:13000/metrics';
 const POLLING_INTERVAL_MS = 16; // ~60 FPS (16.67ms)
 
 // ═══════════════════════════════════════════════════════════════════════════════
