@@ -194,6 +194,10 @@ public final class EngineKernel {
         System.out.println("[KERNEL] EXECUTING JIT WARM-UP...");
         UltraFastBootSequence.warmUpWithStructuralIntegrity();
 
+        // [NEURONA_048 STEP 2.5] NATIVE WINDOW INIT (Main Thread FFI)
+        System.out.println("[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
+        sv.dark.ui.DarkEngineWindow.initNativeWindow();
+
         // -------------------------------------------------------------------------
         // ULTRA FAST BOOT SEQUENCE
         // -------------------------------------------------------------------------
@@ -256,6 +260,12 @@ public final class EngineKernel {
 
         // COOPERATIVE INTERRUPTION: Verify only 'running' to avoid JNI call overhead
         while (running) {
+            // [FFI HOT-PATH] Absolute OS Control. If OS requests close, we obey and shutdown gracefully.
+            if (sv.dark.ui.DarkEngineWindow.shouldClose()) {
+                this.running = false;
+                break;
+            }
+
             timeKeeper.startFrame();
             // @SuppressWarnings("unused")
             long frameStart = System.nanoTime();
@@ -393,9 +403,8 @@ public final class EngineKernel {
      * FUTURE: Integrate with input system.
      */
     private void phaseInputLatch() {
-        // [AAA FUTURE] Integration with DarkInput (GLFW/JInput)
-        // For now, we read signals directly from the assigned memory slot.
-        // This maintains the contract that ALL input comes from the State.
+        // [FFI BINDING] Poll Native OS Events synchronously (Spatial Slicing)
+        sv.dark.ui.DarkEngineWindow.pollOS();
 
         // Simulating input buffer read (avoids empty TODOs)
         @SuppressWarnings("unused")
@@ -620,12 +629,23 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 6: CLOSE SECTOR VAULT (Off-heap memory)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 6/6] Closing Sector Vault...");
+        System.out.println("[STEP 6/7] Closing Sector Vault...");
         try {
             sectorVault.close();
-            System.out.println("[STEP 6/6] Sector Vault closed [OK]");
+            System.out.println("[STEP 6/7] Sector Vault closed [OK]");
         } catch (Throwable e) {
-            System.err.println("[STEP 6/6] Error closing Sector Vault: " + e.getMessage());
+            System.err.println("[STEP 6/7] Error closing Sector Vault: " + e.getMessage());
+        }
+
+        // -------------------------------------------------------------------------
+        // STEP 7: TERMINATE NATIVE FFI (GLFW)
+        // -------------------------------------------------------------------------
+        System.out.println("[STEP 7/7] Terminating FFI Native Graphics...");
+        try {
+            sv.dark.core.systems.DarkGraphicsLinker.glfwTerminate.invokeExact();
+            System.out.println("[STEP 7/7] Native Graphics terminated [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 7/7] Error terminating GLFW: " + e.getMessage());
         }
 
         System.out.println("-------------------------------------------------------------------------");

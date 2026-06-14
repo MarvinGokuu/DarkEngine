@@ -40,6 +40,48 @@ src/sv/dark/security/
 
 # Secret Configuration Files
 *.secrets.properties
+# [DARK ENGINE - GIT OBLIVION PROTOCOL]
+
+# --- BINARIOS Y COMPILACIÓN ---
+bin/
+out/
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# --- ARTEFACTOS NATIVOS ---
+*.so
+*.dll
+*.dylib
+*.exe
+*.obj
+
+# --- ESTADO Y TELEMETRÍA (VAULT) ---
+*.vault
+*.log
+*.dump
+debug_view.html
+telemetry_cache/
+
+# --- CONFIGURACIÓN DE ENTORNO ---
+.env
+.gemini/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+cd
+move
+
+# Sovereign Secrets (Do Not Commit)
+src/sv/jarvis/
+src/sv/dark/security/
+
+# Secret Configuration Files
+*.secrets.properties
 darkengine.secrets.properties
 .env.local
 .env.production
@@ -50,6 +92,7 @@ secrets.*
 # brain/
 # DOCUMENTATION_BOOTSTRAP.md
 AGENT_SKILL_MANIFESTO.md
+DARK_ENGINE_ROADMAP.md
 PENDING_TASKS_ARCHIVE.md
 tools/*.ps1
 tools/code-injector/DocInjector.java

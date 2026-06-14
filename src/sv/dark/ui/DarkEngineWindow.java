@@ -16,11 +16,10 @@ import java.lang.foreign.MemorySegment;
  * 
  * @author Marvin-Dev
  */
-@AAACertified(date = "2026-06-13", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = true, offHeap = true, notes = "Native FFI Window via GLFW")
+@AAACertified(date = "2026-06-14", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = true, offHeap = true, notes = "Native FFI Window via GLFW (Synchronous)")
 public final class DarkEngineWindow {
 
     private static MemorySegment windowPointer;
-    private static volatile boolean running = true;
 
     /**
      * Exposes the native FFI pointer for Raw Input Polling.
@@ -30,27 +29,11 @@ public final class DarkEngineWindow {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // ENTRY POINT
+    // SYNCHRONOUS FFI METHODS (Called from Main EngineKernel)
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Launches the native window via FFI and returns immediately. */
-    public static void launch() {
-        // [TERMINATOR THREAD] Guarantees the Java process dies and releases ports
-        // if the Kernel Shutdown Hook freezes for any reason.
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            running = false;
-        }));
-
-        Thread t = new Thread(DarkEngineWindow::renderLoop, "dark-glfw-render");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RENDER LOOP (NATIVE)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private static void renderLoop() {
+    /** Initializes the native window synchronously on the Main Thread. */
+    public static void initNativeWindow() {
         try {
             DarkLogger.info("GRAPHICS", "Initializing Native Graphics Pipeline (GLFW)...");
             int initResult = (int) DarkGraphicsLinker.glfwInit.invokeExact();
@@ -76,28 +59,30 @@ public final class DarkEngineWindow {
 
             DarkLogger.info("GRAPHICS", "Native Window successfully created (0ms Input Lag).");
 
-            // Main OS Event Loop
-            while (running) {
-                int shouldClose = (int) DarkGraphicsLinker.glfwWindowShouldClose.invokeExact(windowPointer);
-                if (shouldClose != 0) {
-                    running = false;
-                    break;
-                }
-                
-                // Poll native OS events (Keyboard, Mouse, Window resizes)
-                DarkGraphicsLinker.glfwPollEvents.invokeExact();
-                
-                // Limit the loop slightly so we don't cook the CPU while we don't have Vulkan rendering
-                Thread.sleep(16);
-            }
-
-            DarkLogger.info("GRAPHICS", "Terminating Native Window...");
-            DarkGraphicsLinker.glfwTerminate.invokeExact();
-            System.exit(0);
-
         } catch (Throwable e) {
-            DarkLogger.fatal("GRAPHICS", "Native FFI Exception in Render Loop", e);
+            DarkLogger.fatal("GRAPHICS", "Native FFI Exception in Window Init", e);
             System.exit(1);
+        }
+    }
+
+    /** Polls hardware events synchronously (O(1) Hot-Path). */
+    public static void pollOS() {
+        if (windowPointer == null || windowPointer.equals(MemorySegment.NULL)) return;
+        try {
+            DarkGraphicsLinker.glfwPollEvents.invokeExact();
+        } catch (Throwable e) {
+            // Ignore for robust loop execution
+        }
+    }
+
+    /** Checks if the OS requested window closure. */
+    public static boolean shouldClose() {
+        if (windowPointer == null || windowPointer.equals(MemorySegment.NULL)) return false;
+        try {
+            int close = (int) DarkGraphicsLinker.glfwWindowShouldClose.invokeExact(windowPointer);
+            return close != 0;
+        } catch (Throwable e) {
+            return false;
         }
     }
 }
