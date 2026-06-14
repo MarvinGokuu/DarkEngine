@@ -29,49 +29,52 @@ echo.
 
 set JAVA_CMD=java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector
 
-call :run_test "1/15" "Bus Benchmark" "sv.dark.bus.BusBenchmarkTest" ""
+call :run_test "1/16" "Bus Benchmark" "sv.dark.bus.BusBenchmarkTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "2/15" "Bus Coordination" "sv.dark.bus.BusCoordinationTest" ""
+call :run_test "2/16" "Bus Coordination" "sv.dark.bus.BusCoordinationTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "3/15" "Bus Hardware" "sv.dark.bus.BusHardwareTest" ""
+call :run_test "3/16" "Bus Hardware" "sv.dark.bus.BusHardwareTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "4/15" "Ultra Fast Boot" "sv.dark.test.UltraFastBootTest" ""
+call :run_test "4/16" "Ultra Fast Boot" "sv.dark.test.UltraFastBootTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "5/15" "Graceful Shutdown" "sv.dark.test.GracefulShutdownTest" ""
+call :run_test "5/16" "Graceful Shutdown" "sv.dark.test.GracefulShutdownTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "6/15" "Power Saving" "sv.dark.test.PowerSavingTest" ""
+call :run_test "6/16" "Power Saving" "sv.dark.test.PowerSavingTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "7/15" "Governor Telemetry Validation" "sv.dark.test.GovernorTest" ""
+call :run_test "7/16" "Governor Telemetry Validation" "sv.dark.test.GovernorTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "8/15" "Particle System Determinism" "sv.dark.test.ParticleSystemDeterminismTest" ""
+call :run_test "8/16" "Particle System Determinism" "sv.dark.test.ParticleSystemDeterminismTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "9/15" "System Registry Capacity" "sv.dark.test.SystemRegistryCapacityTest" "--add-opens java.base/java.util=ALL-UNNAMED"
+call :run_test "9/16" "System Registry Capacity" "sv.dark.test.SystemRegistryCapacityTest" "--add-opens java.base/java.util=ALL-UNNAMED"
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "10/15" "Dependency Graph Performance" "sv.dark.test.DependencyGraphPerformanceTest" "--add-opens java.base/java.util=ALL-UNNAMED"
+call :run_test "10/16" "Dependency Graph Performance" "sv.dark.test.DependencyGraphPerformanceTest" "--add-opens java.base/java.util=ALL-UNNAMED"
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "11/15" "Metrics Aggregation" "sv.dark.test.MetricsAggregationTest" ""
+call :run_test "11/16" "Metrics Aggregation" "sv.dark.test.MetricsAggregationTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "12/15" "System State Manager" "sv.dark.test.SystemStateManagerTest" ""
+call :run_test "12/16" "System State Manager" "sv.dark.test.SystemStateManagerTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "13/15" "Bus Benchmark (Final Validation)" "sv.dark.bus.BusBenchmarkTest" ""
+call :run_test "13/16" "Bus Benchmark (Final Validation)" "sv.dark.bus.BusBenchmarkTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "14/15" "SIMD Data Accelerator Throughput" "sv.dark.core.DarkDataAccelerator" ""
+call :run_test "14/16" "SIMD Data Accelerator Throughput" "sv.dark.core.DarkDataAccelerator" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "15/15" "SIMD Physics Engine Throughput" "sv.dark.test.SimdPhysicsDemoTest" ""
+call :run_test "15/16" "SIMD Physics Engine Throughput" "sv.dark.test.SimdPhysicsDemoTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "16/16" "SIMD Kinematics Throughput" "sv.dark.test.SystemSIMDKinematicsTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
