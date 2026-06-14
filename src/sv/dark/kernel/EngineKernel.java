@@ -239,7 +239,7 @@ public final class EngineKernel {
      * </ul>
      */
     private void runMainLoop() {
-        System.out.println("[KERNEL] Main loop started (60 FPS target");
+        sv.dark.ui.EngineStateChannel.STATE.set(sv.dark.ui.EngineStateChannel.STATE_RUNNING);
 
         // Off-critical-path telemetry
         MetricsCollector.FrameMetrics frameMetrics = new MetricsCollector.FrameMetrics();
@@ -283,6 +283,9 @@ public final class EngineKernel {
                 // ACTIVITY PRESENT: Reset to active mode
                 lastActivityTime = System.nanoTime();
                 if (powerSavingTier > 0) {
+                    if (powerSavingTier == 3) {
+                        sv.dark.ui.EngineStateChannel.STATE.set(sv.dark.ui.EngineStateChannel.STATE_RUNNING);
+                    }
                     powerSavingTier = 0;
                 }
             } else {
@@ -293,6 +296,7 @@ public final class EngineKernel {
                     // TIER 3: DEEP HIBERNATION (>1 minute)
                     if (powerSavingTier != 3) {
                         powerSavingTier = 3;
+                        sv.dark.ui.EngineStateChannel.STATE.set(sv.dark.ui.EngineStateChannel.STATE_TIER3);
                     }
                     try {
                         Thread.sleep(100); // Deep hibernation: 100ms (10 wake-ups/second)
@@ -343,7 +347,10 @@ public final class EngineKernel {
             if (totalFrames % 60 == 0) {
                 long totalTimeNs = phase1End - phase1Start + phase2End - phase2Start +
                         phase3End - phase3Start + phase4End - phase4Start;
-                long packedMetric = MetricsPacker.packFrameStats(totalFrames, totalTimeNs);
+                long packedMetric = MetricsPacker.packFrameStats(totalFrames, totalTimeNs,
+                        timeKeeper.getCurrentTargetFps(),
+                        timeKeeper.getLastActualFps(),
+                        timeKeeper.getLastHeadroomNs());
                 adminMetricsBus.offer(packedMetric); // Zero-copy, no I/O
             }
 
@@ -364,10 +371,6 @@ public final class EngineKernel {
                             executor.getAudioSystem(),
                             adminMetricsBus,
                             frameMetrics);
-                    // System.out.println inside the loop is intercepted by AsyncLogWriter,
-                    // but still incurs allocation overhead.
-                    // TODO(Performance): Route metrics formatting fully through off-heap AdminBus.
-                    System.out.println("[METRICS] " + frameMetrics); // [FIX] I/O in hot-path removed);
                 }
             }
 

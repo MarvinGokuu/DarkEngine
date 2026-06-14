@@ -27,7 +27,14 @@ import java.util.Properties;
  * TECHNIQUE: Low-latency focused implementation.
  * GUARANTEES: Lock-free execution where applicable.
  */
-@AAACertified(date = "2026-06-11", maxLatencyNs = 0, minThroughput = 0, alignment = 0, lockFree = false, offHeap = false, notes = "Automatically AAA Certified during Core Audit")
+@AAACertified(date = "2026-06-11",
+    maxLatencyNs = 0,
+    minThroughput = 0,
+    alignment = 0,
+    lockFree = false,
+    offHeap = false, 
+    notes = "Automatically AAA Certified during Core Audit"
+)
 public final class DarkEngineConfig {
 
     // ==========================================================================
@@ -82,6 +89,8 @@ public final class DarkEngineConfig {
     public static final int KERNEL_TICK_RATE;
     public static final boolean KERNEL_THREAD_PINNING;
     public static final int KERNEL_THREAD_CORE;
+    public static final String KERNEL_ENGINE_MODE;
+    public static final int KERNEL_DEBUG_FPS_LOCK;
 
     // ==========================================================================
     // MEMORY CONFIGURATION
@@ -130,7 +139,7 @@ public final class DarkEngineConfig {
         METRICS_ENABLED = Boolean.parseBoolean(props.getProperty("dark.metrics.enabled", "true"));
         METRICS_SAMPLING = Double.parseDouble(props.getProperty("dark.metrics.sampling", "0.001"));
         METRICS_SERVER_ENABLED = Boolean.parseBoolean(props.getProperty("dark.metrics.server.enabled", "true"));
-        METRICS_SERVER_PORT = Integer.parseInt(props.getProperty("dark.metrics.server.port", "8080"));
+        METRICS_SERVER_PORT = Integer.parseInt(props.getProperty("dark.metrics.server.port", "13000"));
 
     // ==========================================================================
         // VALIDATION
@@ -152,6 +161,8 @@ public final class DarkEngineConfig {
         KERNEL_TICK_RATE = Integer.parseInt(props.getProperty("dark.kernel.tick.rate", "60"));
         KERNEL_THREAD_PINNING = Boolean.parseBoolean(props.getProperty("dark.kernel.thread.pinning", "true"));
         KERNEL_THREAD_CORE = Integer.parseInt(props.getProperty("dark.kernel.thread.core", "1"));
+        KERNEL_ENGINE_MODE = props.getProperty("dark.kernel.engine.mode", "GAMING_CVT");
+        KERNEL_DEBUG_FPS_LOCK = Integer.parseInt(props.getProperty("dark.kernel.debug.fps.lock", "60"));
 
     // ==========================================================================
         // MEMORY
