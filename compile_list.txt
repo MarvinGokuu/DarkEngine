@@ -91,3 +91,6 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\memory\SectorMemoryP
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\systems\AudioSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\SpaceMath.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\WorkStealingProcessor.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkTransformSoA.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkKinematicsSystem.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
