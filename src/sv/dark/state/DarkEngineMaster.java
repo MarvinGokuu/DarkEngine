@@ -33,9 +33,8 @@ public final class DarkEngineMaster {
         // -------------------------------------------------------------------------
 
         // -------------------------------------------------------------------------
-        // STEP 1: Visual Window - appears immediately, before kernel boot
+        // STEP 1: (REMOVED) Visual Window is now initialized inside EngineKernel.start()
         // -------------------------------------------------------------------------
-        DarkEngineWindow.launch();
 
         // -------------------------------------------------------------------------
         // STEP 2: Original Init (unchanged)
@@ -70,21 +69,19 @@ public final class DarkEngineMaster {
         configureSystems(kernel, memoryVault);
 
         // -------------------------------------------------------------------------
-        // STEP 3: Kernel in dedicated MAX_PRIORITY thread - preserves mechanical sympathy
+        // STEP 3: Execute Kernel on Main Thread (MAX_PRIORITY)
         // -------------------------------------------------------------------------
-        // kernel.start() internally calls ThreadPinning.pinToCore(1).
-        // By running in its own MAX_PRIORITY thread, the OS favors it over the UI thread
-        // (NORM_PRIORITY - 1) and does not share the ForkJoinPool with WorkStealingProcessor.
-        Thread kernelThread = new Thread(() -> {
-            try {
-                kernel.start();
-            } catch (Throwable t) {
-                DarkLogger.fatal("MASTER", "Fatal Kernel Error", t);
-            }
-        }, "dark-engine-kernel");
-        kernelThread.setPriority(Thread.MAX_PRIORITY);
-        kernelThread.setDaemon(false); // JVM does not terminate while the kernel runs
-        kernelThread.start();
+        // By running the Kernel on the Main Thread, we guarantee that GLFW operates
+        // directly on the primary OS context (required by macOS and Wayland).
+        // The EngineKernel will internally apply Spatial Slicing (Pinning to Core 1)
+        // and take absolute control of the OS without yielding.
+        Thread.currentThread().setName("dark-engine-kernel");
+        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+        try {
+            kernel.start();
+        } catch (Throwable t) {
+            DarkLogger.fatal("MASTER", "Fatal Kernel Error", t);
+        }
     }
 
     private static void configureSystems(EngineKernel kernel, SectorMemoryVault memoryVault) {
