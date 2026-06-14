@@ -22,7 +22,7 @@ El motor se niega a arrancar de forma perezosa (Lazy Loading). El arranque, enca
 ## SystemRegistry y Loop Unrolling
 
 En lugar de recorrer `ArrayList<System>` utilizando iteradores que contaminan las cachés L1, el `SystemRegistry` consolida todos los sistemas en arreglos primitivos estáticos.
-Esto le permite a la JVM realizar "Loop Unrolling", desenrollando los ciclos `for` a nivel de ensamblador, haciendo que llamar a 10 sistemas tome el mismo tiempo que llamar a 1 macro-sistema monolítico.
+Esto le permite a la JVM realizar "Loop Unrolling", desenrollando los ciclos `for` a nivel de ensamblador, haciendo que llamar a 10 sistemas tome el mismo tiempo que llamar a 1 macro-sistema monolítico. Adicionalmente, los sistemas no guardan estado; operan sobre memorias planas **Structure of Arrays (SoA)** (como `DarkTransformSoA`) utilizando procesadores SIMD para máximo rendimiento.
 
 ## El Gobernador de Energía (TimeKeeper)
 

@@ -4,14 +4,15 @@ En el ecosistema DarkEngine, ninguna pieza de código entra a producción sin pa
 
 ## Suite de Integridad AAA+ (`test.bat`)
 
-El archivo `test.bat` automatiza el flujo de compilación en frío seguido de un ataque implacable de 14 pruebas al motor. Todas las pruebas arrojan su salida al log unificado `aaa_test_report.log`, garantizando que la salida no interfiera visualmente durante la compilación.
+El archivo `test.bat` automatiza el flujo de compilación en frío seguido de un ataque implacable de 16 pruebas al motor. Todas las pruebas arrojan su salida al log unificado `aaa_test_report.log`, garantizando que la salida no interfiera visualmente durante la compilación.
 
 ### Tipos de Pruebas Fundamentales
 
 1. **Pruebas de Latencia Extrema**: El `UltraFastBootTest` califica el inicio en frío. Si la instanciación de memoria, mapeo de Kernel y despliegue del dispatcher toma más de 1.00 milisegundos, el test falla categóricamente.
 2. **Benchmark del Bus Atómico**: El `BusBenchmarkTest` satura el MPSC RingBus. Se requiere que alcance más de 10 Millones de operaciones por segundo (Ops/s).
-3. **Prueba de Gráficos de Dependencia**: El `SystemDependencyGraph` es atacado inyectando miles de sistemas circulares para asegurar que el algoritmo lineal valide $O(V+E)$ en tiempo real, previniendo *deadlocks*.
-4. **Shutdown Elegante**: `GracefulShutdownTest`. Verifica que todos los buffers y la memoria Off-Heap liberen limpiamente en menos de 1 segundo sin llamadas de OS (kill signal).
+3. **Rendimiento SIMD**: El `SystemSIMDKinematicsTest` (Test 16/16) inyecta 1,000,000 de entidades en una memoria SoA. El test exige que Project Panama Vector API actualice la física de este millón de cuerpos en menos de 2.0 milisegundos.
+4. **Prueba de Gráficos de Dependencia**: El `SystemDependencyGraph` es atacado inyectando miles de sistemas circulares para asegurar que el algoritmo lineal valide $O(V+E)$ en tiempo real, previniendo *deadlocks*.
+5. **Shutdown Elegante**: `GracefulShutdownTest`. Verifica que todos los buffers y la memoria Off-Heap liberen limpiamente en menos de 1 segundo sin llamadas de OS (kill signal).
 
 ## La Certificación "AAA+"
 

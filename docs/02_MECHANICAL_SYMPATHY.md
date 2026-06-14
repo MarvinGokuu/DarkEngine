@@ -8,6 +8,12 @@ En Java tradicional, crear objetos dinámicamente (`new Object()`) en un ciclo d
 
 En **DarkEngine**, evitamos las "Object Allocations" en el Hot-Path. Utilizamos primitivos de 64 bits (`long`) compactados para transmitir instrucciones, offsets y banderas.
 
+Además, erradicamos el paradigma Orientado a Objetos (OOP) para la lógica de alto rendimiento (ECS Clásico) e implementamos **Structure of Arrays (SoA)**. Las posiciones espaciales y físicas de millones de entidades se almacenan en arreglos contiguos gigantes.
+
+## Procesamiento SIMD (Vector API)
+
+Para procesar esta memoria plana, el motor invoca instrucciones SIMD (Single Instruction, Multiple Data) a través de *Project Panama Vector API*. En lugar de actualizar entidades una por una, los procesadores matemáticos (Ej: `DarkKinematicsSystem`) cargan vectores nativos y calculan 8 a 16 entidades en un solo ciclo de reloj de la CPU utilizando registros AVX-512.
+
 ## VarHandles y FFI (Panama API)
 
 Para interactuar con la memoria y la CPU sin intermediarios:

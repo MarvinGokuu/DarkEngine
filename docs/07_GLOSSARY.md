@@ -32,6 +32,10 @@ Este glosario consolida la terminología técnica exclusiva de DarkEngine. Para 
 ## S
 **SectorMemoryVault**: La clase que rige todas las *arenas* de memoria fuera del Heap. El motor no tiene objetos, tiene sectores contiguos mapeados matemáticamente.
 
+**SIMD (Single Instruction, Multiple Data)**: Arquitectura de hardware donde una sola instrucción de CPU procesa múltiples datos simultáneamente (Ej. sumar 8 posiciones X a la vez).
+
+**SoA (Structure of Arrays)**: Patrón de diseño Data-Oriented opuesto a OOP (Array of Objects). En lugar de tener una clase `Entity` con `x` e `y`, se tienen arreglos gigantes de datos (`float[] X` y `float[] Y`), garantizando aciertos continuos en la Caché L1 al iterar.
+
 ## T
 **Thread Pinning**: Práctica de forzar a un Hilo (Thread) del Sistema Operativo a ejecutarse exclusivamente en un Núcleo Físico (Core) específico del procesador, maximizando el aprovechamiento de la Caché L1/L2 local.
 
