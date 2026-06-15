@@ -96,3 +96,6 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkKinematicsSyste
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
 src/sv/dark/net/DarkWebEditorSocket.java
 src/sv/dark/ui/DarkImGuiLinker.java
+
+src/sv/dark/editor/DarkAssetCompiler.java
+src/sv/dark/memory/DarkAssetStreamer.java
