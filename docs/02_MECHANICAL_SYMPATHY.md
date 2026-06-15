@@ -14,6 +14,9 @@ Además, erradicamos el paradigma Orientado a Objetos (OOP) para la lógica de a
 
 Para procesar esta memoria plana, el motor invoca instrucciones SIMD (Single Instruction, Multiple Data) a través de *Project Panama Vector API*. En lugar de actualizar entidades una por una, los procesadores matemáticos (Ej: `DarkKinematicsSystem`) cargan vectores nativos y calculan 8 a 16 entidades en un solo ciclo de reloj de la CPU utilizando registros AVX-512.
 
+## VRAM Offloading (Compute Shaders)
+Cuando ni siquiera SIMD AVX-512 es suficiente para procesar 1 Millón de colisiones espaciales en pantalla, la Simpatía Mecánica dicta que se debe cambiar de chip. DarkEngine transfiere la carga masiva paralelizable a la GPU. Al enviar los arreglos SoA vía PCI-Express hacia la VRAM, un *Compute Shader* en GLSL puede descartar geometría invisible usando miles de núcleos gráficos dedicados, esquivando totalmente a la CPU.
+
 ## VarHandles y FFI (Panama API)
 
 Para interactuar con la memoria y la CPU sin intermediarios:

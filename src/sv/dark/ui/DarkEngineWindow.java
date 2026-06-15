@@ -57,13 +57,17 @@ public final class DarkEngineWindow {
                 return;
             }
 
+            // Iniciar Drag & Drop de Fase 21
             initDropCallback();
 
-            // Create OpenGL Context
+            // Habilitar el contexto de video OpenGL (Requerido para ImGui y Compute Shaders FFI)
             DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
             DarkGraphicsLinker.glfwSwapInterval.invokeExact(0); // V-Sync Off by default for benchmarking
 
-            // Initialize Native ImGui Chassis
+            // Cargar funciones de OpenGL a través del contexto activo (Phase 19)
+            sv.dark.core.systems.DarkOpenGLLinker.init();
+
+            // Initialize Native ImGui Chassis (Phase 9)
             sv.dark.ui.DarkImGuiLinker.init();
             if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
                 sv.dark.ui.DarkImGuiLinker.igCreateContext.invokeExact(MemorySegment.NULL);

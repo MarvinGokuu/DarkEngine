@@ -16,8 +16,9 @@ public class SummaryGenerator {
         String bootSequence = "N/A";
         String memorySafety = "N/A";
         String engineRest = "N/A";
+        String gpuCulling = "N/A";
         int testsPassed = 0;
-        int totalTests = 16;
+        int totalTests = 17;
 
         try (BufferedReader br = new BufferedReader(new FileReader(logFile))) {
             String line;
@@ -49,9 +50,12 @@ public class SummaryGenerator {
                 if (line.contains("Tier 1 (Spin Wait):")) {
                     engineRest = "SpinWait (10s) -> LightSleep (20s) -> Hibernation (1min)";
                 }
+                if (line.contains("VRAM Compute Dispatch Completado:")) {
+                    gpuCulling = line.split("Completado:")[1].trim();
+                }
             }
-            // Normalizar a 15 (debido a que los asserts pueden imprimir varios [PASS])
-            if (testsPassed > 16) testsPassed = 16;
+            // Normalizar a 17 (debido a que los asserts pueden imprimir varios [PASS])
+            if (testsPassed > 17) testsPassed = 17;
             
         } catch (Exception e) {
             System.err.println("[SummaryGenerator] Error reading " + logFile);
@@ -68,6 +72,7 @@ public class SummaryGenerator {
         System.out.printf(" %-30s | %-30s\n", "Boot Sequence Time", bootSequence);
         System.out.printf(" %-30s | %-30s\n", "OS Cleanup / Memory Safe", memorySafety);
         System.out.printf(" %-30s | %-30s\n", "Engine Power Governor", engineRest);
+        System.out.printf(" %-30s | %-30s\n", "GPU Culling (1M Entities)", gpuCulling);
         System.out.printf(" %-30s | %-30s\n", "AAA+ Tests Passed", testsPassed + " / " + totalTests);
         System.out.println("======================================================================\n");
     }
