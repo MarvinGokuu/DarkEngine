@@ -10,6 +10,8 @@ Este glosario consolida la terminología técnica exclusiva de DarkEngine. Para 
 ## C
 **Cache Line**: La unidad mínima de transferencia de datos entre la CPU y la RAM (típicamente 64 bytes). Compartir una línea de caché entre hilos concurrentes destruye el rendimiento (ver *False Sharing*).
 
+**Compute Shader**: Un programa (GLSL/HLSL) que se ejecuta enteramente en la GPU fuera del proceso de renderizado clásico, permitiendo utilizar miles de núcleos de video para matemáticas masivas paralelas (como el descarte de geometría/Culling).
+
 ## F
 **False Sharing**: Fenómeno donde dos núcleos de CPU modifican variables independientes que residen en la misma Línea de Caché, forzando invalidaciones mutuas. Se soluciona mediante variables de *Padding*.
 
@@ -36,6 +38,8 @@ Este glosario consolida la terminología técnica exclusiva de DarkEngine. Para 
 
 **SoA (Structure of Arrays)**: Patrón de diseño Data-Oriented opuesto a OOP (Array of Objects). En lugar de tener una clase `Entity` con `x` e `y`, se tienen arreglos gigantes de datos (`float[] X` y `float[] Y`), garantizando aciertos continuos en la Caché L1 al iterar.
 
+**SSBO (Shader Storage Buffer Object)**: Una estructura de memoria masiva y desestructurada en OpenGL. DarkEngine utiliza SSBOs para mapear directamente sus `MemorySegments` nativos hacia la memoria VRAM sin serialización.
+
 ## T
 **Thread Pinning**: Práctica de forzar a un Hilo (Thread) del Sistema Operativo a ejecutarse exclusivamente en un Núcleo Físico (Core) específico del procesador, maximizando el aprovechamiento de la Caché L1/L2 local.
 
@@ -43,3 +47,5 @@ Este glosario consolida la terminología técnica exclusiva de DarkEngine. Para 
 
 ## V
 **VarHandle**: Primitiva de la JVM que provee acceso atómico relajado o estricto (`Compare-And-Swap`, `getOpaque`, `setVolatile`) a posiciones de memoria o campos de clase de forma mucho más barata que un bloque `synchronized`.
+
+**VRAM (Video RAM)**: Memoria interna de la tarjeta gráfica, que cuenta con anchos de banda masivos (>500 GB/s) comparado con la RAM del sistema. El motor transfiere carga matemática pesada aquí para desatascar la CPU.

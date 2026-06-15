@@ -24,6 +24,9 @@ El motor se niega a arrancar de forma perezosa (Lazy Loading). El arranque, enca
 En lugar de recorrer `ArrayList<System>` utilizando iteradores que contaminan las cachés L1, el `SystemRegistry` consolida todos los sistemas en arreglos primitivos estáticos.
 Esto le permite a la JVM realizar "Loop Unrolling", desenrollando los ciclos `for` a nivel de ensamblador, haciendo que llamar a 10 sistemas tome el mismo tiempo que llamar a 1 macro-sistema monolítico. Adicionalmente, los sistemas no guardan estado; operan sobre memorias planas **Structure of Arrays (SoA)** (como `DarkTransformSoA`) utilizando procesadores SIMD para máximo rendimiento.
 
+## GPU-Driven Engine (El Asesino de la CPU)
+El Kernel delega por completo las matemáticas espaciales masivas (ej. Frustum Culling) a la tarjeta gráfica. Utilizando enlaces nativos FFI (`DarkOpenGLLinker`), el motor transfiere la memoria cruda del `DarkTransformSoA` hacia *Shader Storage Buffer Objects* (SSBO) en la VRAM. Posteriormente, despacha miles de *Compute Shaders* paralelos que resuelven colisiones y descartes, dejando a la CPU 100% dedicada a la Inteligencia Artificial y reglas de juego.
+
 ## El Gobernador de Energía (TimeKeeper)
 
 El `TimeKeeper` implementa un *Governor* mecánico:

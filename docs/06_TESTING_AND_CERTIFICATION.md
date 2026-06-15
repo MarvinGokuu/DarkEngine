@@ -10,9 +10,10 @@ El archivo `test.bat` automatiza el flujo de compilación en frío seguido de un
 
 1. **Pruebas de Latencia Extrema**: El `UltraFastBootTest` califica el inicio en frío. Si la instanciación de memoria, mapeo de Kernel y despliegue del dispatcher toma más de 1.00 milisegundos, el test falla categóricamente.
 2. **Benchmark del Bus Atómico**: El `BusBenchmarkTest` satura el MPSC RingBus. Se requiere que alcance más de 10 Millones de operaciones por segundo (Ops/s).
-3. **Rendimiento SIMD**: El `SystemSIMDKinematicsTest` (Test 16/16) inyecta 1,000,000 de entidades en una memoria SoA. El test exige que Project Panama Vector API actualice la física de este millón de cuerpos en menos de 2.0 milisegundos.
-4. **Prueba de Gráficos de Dependencia**: El `SystemDependencyGraph` es atacado inyectando miles de sistemas circulares para asegurar que el algoritmo lineal valide $O(V+E)$ en tiempo real, previniendo *deadlocks*.
-5. **Shutdown Elegante**: `GracefulShutdownTest`. Verifica que todos los buffers y la memoria Off-Heap liberen limpiamente en menos de 1 segundo sin llamadas de OS (kill signal).
+3. **Rendimiento SIMD**: El `SystemSIMDKinematicsTest` inyecta 1,000,000 de entidades en una memoria SoA. El test exige que Project Panama Vector API actualice la física de este millón de cuerpos en menos de 2.0 milisegundos.
+4. **Latencia VRAM (GPU Culling)**: El `SystemGPUCullingTest` somete a estrés el ancho de banda del bus PCI-e. Envía el millón de entidades a la VRAM, invoca un Compute Shader paralelo y sincroniza memoria. Debe resolverse en menos de 5.0 milisegundos (incluyendo JIT Warmup).
+5. **Prueba de Gráficos de Dependencia**: El `SystemDependencyGraph` es atacado inyectando miles de sistemas circulares para asegurar que el algoritmo lineal valide $O(V+E)$ en tiempo real, previniendo *deadlocks*.
+6. **Shutdown Elegante**: `GracefulShutdownTest`. Verifica que todos los buffers y la memoria Off-Heap liberen limpiamente en menos de 1 segundo sin llamadas de OS (kill signal).
 
 ## La Certificación "AAA+"
 
