@@ -22,7 +22,7 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 7.  **Streaming Zero-Copy (Phase 21)**: Ingestión de memoria desde disco usando `FileChannel.map` y compiladores offline aislados, previniendo congelamientos de I/O en tiempo real.
 
 Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes, lee:
-👉 **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**
+ **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**
 
 ---
 
@@ -30,7 +30,7 @@ Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes,
 
 No existe un "sistema orquestador" que ahogue el rendimiento con overhead de gestión. Toda la base de código se rige por el determinismo asíncrono y paralelismo puro.
 
-### 📚 El Santo Grial Técnico
+### explicativo didáctico!
 Si quieres entender cómo implementamos todo esto usando Java 25, debes estudiar nuestras especificaciones de arquitectura Core. Aquí reside el conocimiento clasificado del motor:
 
 1. **[MECHANICAL SYMPATHY CORE](docs/architecture/MECHANICAL_SYMPATHY_CORE.md)**: Cómo destruir el "False Sharing", alinear estructuras de memoria y operar atómicamente con VarHandles.
