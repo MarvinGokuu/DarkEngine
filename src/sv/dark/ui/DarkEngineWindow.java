@@ -57,6 +57,20 @@ public final class DarkEngineWindow {
                 return;
             }
 
+            // Create OpenGL Context
+            DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
+            DarkGraphicsLinker.glfwSwapInterval.invokeExact(0); // V-Sync Off by default for benchmarking
+
+            // Initialize Native ImGui Chassis
+            sv.dark.ui.DarkImGuiLinker.init();
+            if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
+                sv.dark.ui.DarkImGuiLinker.igCreateContext.invokeExact(MemorySegment.NULL);
+                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL != null) {
+                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL.invokeExact(windowPointer, true);
+                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_Init.invokeExact(MemorySegment.NULL);
+                }
+            }
+
             DarkLogger.info("GRAPHICS", "Native Window successfully created (0ms Input Lag).");
 
         } catch (Throwable e) {
