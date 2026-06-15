@@ -198,6 +198,9 @@ public final class EngineKernel {
         System.out.println("[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
         sv.dark.ui.DarkEngineWindow.initNativeWindow();
 
+        // [APP EDITOR PAUSED] 
+        // AWT/Java2D violates Zero-Garbage architecture. Reserved for WebSockets and FFI.
+
         // -------------------------------------------------------------------------
         // ULTRA FAST BOOT SEQUENCE
         // -------------------------------------------------------------------------
@@ -352,6 +355,13 @@ public final class EngineKernel {
             long phase4End = System.nanoTime();
             timeKeeper.recordPhaseTime(4, phase4End - phase4Start);
 
+            // -------------------------------------------------------------------------
+            // PHASE 5: NATIVE RENDER (ImGui & GLFW)
+            // -------------------------------------------------------------------------
+            long phaseRenderStart = System.nanoTime();
+            phaseRender();
+            long phaseRenderEnd = System.nanoTime();
+
             // [NEURONA_048 STEP 3] Send metrics to Control Plane (no I/O on hot-path)
             totalFrames++;
             if (totalFrames % 60 == 0) {
@@ -505,6 +515,41 @@ public final class EngineKernel {
         if (stateVault.read(DarkStateLayout.ENTITY_COUNT) < 0) {
             System.err.println("[KERNEL PANIC] Entity count corrupted!");
             this.running = false;
+        }
+    }
+
+    /**
+     * PHASE 5: NATIVE RENDER (ImGui & GLFW)
+     */
+    private void phaseRender() {
+        if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
+            try {
+                // New Frame
+                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_NewFrame != null) sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_NewFrame.invokeExact();
+                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_NewFrame != null) sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_NewFrame.invokeExact();
+                sv.dark.ui.DarkImGuiLinker.igNewFrame.invokeExact();
+                
+                // Build UI (Demo Window for now)
+                sv.dark.ui.DarkImGuiLinker.igShowDemoWindow.invokeExact(java.lang.foreign.MemorySegment.NULL);
+                
+                // Render
+                sv.dark.ui.DarkImGuiLinker.igRender.invokeExact();
+                java.lang.foreign.MemorySegment drawData = (java.lang.foreign.MemorySegment) sv.dark.ui.DarkImGuiLinker.igGetDrawData.invokeExact();
+                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_RenderDrawData != null) {
+                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_RenderDrawData.invokeExact(drawData);
+                }
+            } catch (Throwable t) {
+                // Ignore render errors to avoid crashing the kernel
+            }
+        }
+        
+        // Swap buffers to display the frame
+        if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
+            try {
+                sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
+            } catch (Throwable t) {
+                // Ignore
+            }
         }
     }
 
