@@ -94,3 +94,5 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\WorkStealingProcesso
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkTransformSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkKinematicsSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
+src/sv/dark/net/DarkWebEditorSocket.java
+src/sv/dark/ui/DarkImGuiLinker.java

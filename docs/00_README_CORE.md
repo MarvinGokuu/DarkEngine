@@ -42,6 +42,7 @@ Este repositorio mantiene su conocimiento arquitectónico consolidado en **8 Arc
 6. `05_TELEMETRY_AND_SILENCE.md`: DarkLogger y manejo de errores silenciosos.
 7. `06_TESTING_AND_CERTIFICATION.md`: Suite de Integridad AAA+.
 8. `07_GLOSSARY.md`: Diccionario técnico de términos.
+9. `08_NATIVE_GRAPHICS_FFI.md`: Integración de Project Panama con GLFW e ImGui (Zero-GC Render).
 
 ---
 *Escrito y diseñado por la élite arquitectónica. Bienvenido al DarkEngine.*
