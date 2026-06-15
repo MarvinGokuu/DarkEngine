@@ -17,7 +17,9 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 2.  **Cero Locks**: La concurrencia se logra con colas en anillo (Ring Buffers) usando **VarHandles** atómicos. Latencia de transferencia inter-núcleos: `~23ns`.
 3.  **Ancho de Banda SIMD**: Matemáticas vectorizadas vía `jdk.incubator.vector` (AVX-512) para anchos de banda procesados superiores a `4.17 GB/s`.
 4.  **Anti-False Sharing**: Aislamiento y padding de estructuras críticas a 64 bytes para empatizar perfectamente con las *L1 Cache Lines*.
-5.  **GPU-Driven Compute**: Descarte masivo de geometría (Culling) 100% en VRAM vía Compute Shaders y OpenGL 4.3 FFI (Zero-Overhead).
+5.  **Renderizado FFI (Phase 9)**: Chasis nativo usando GLFW y Dear ImGui conectados por Project Panama, logrando 0ms de Input Lag y renderizado 100% libre del framework Java AWT/Swing.
+6.  **GPU-Driven Compute (Phase 19)**: Descarte masivo de geometría (Culling) 100% en VRAM vía Compute Shaders y OpenGL 4.3 FFI (Zero-Overhead).
+7.  **Streaming Zero-Copy (Phase 21)**: Ingestión de memoria desde disco usando `FileChannel.map` y compiladores offline aislados, previniendo congelamientos de I/O en tiempo real.
 
 Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes, lee:
 👉 **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**

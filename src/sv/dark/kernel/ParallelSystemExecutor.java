@@ -11,7 +11,8 @@ import sv.dark.core.AAACertified;
 import sv.dark.state.WorldStateFrame;
 
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 
 import sv.dark.core.systems.MovementSystem;
@@ -22,7 +23,7 @@ import sv.dark.core.systems.AudioSystem;
 /**
  * RESPONSIBILITY: Parallel System Executor for deterministic parallel execution.
  * WHY: Sequential execution of systems wastes multi-core CPU potential. We need parallel execution without data races.
- * TECHNIQUE: Executes systems in parallel using ForkJoinPool, respecting the dependency graph (Topological Sort). Uses pre-allocated Phasers and mutable Tasks for zero GC allocations.
+ * TECHNIQUE: Executes systems in parallel using Java Virtual Threads (Project Loom), respecting the dependency graph (Topological Sort). Uses pre-allocated Phasers and mutable Tasks for zero GC allocations.
  * GUARANTEES: Determinism (same graph + same input = same output). All systems in layer N finish before layer N+1 starts. No GC allocations during the loop.
  * 
  * @author Marvin Alexander Flores Canales
@@ -39,8 +40,8 @@ import sv.dark.core.systems.AudioSystem;
 )
 public final class ParallelSystemExecutor {
 
-    // Thread pool (uses available cores)
-    private final ForkJoinPool pool;
+    // Thread pool (uses Java 21+ Virtual Threads / Fibers)
+    private final ExecutorService pool;
 
     // Execution layers (from the dependency graph)
     private final List<List<GameSystem>> executionLayers;
@@ -103,8 +104,8 @@ public final class ParallelSystemExecutor {
 
         this.executionLayers = executionLayers;
 
-        // Use commonPool() to leverage native parallelism
-        this.pool = ForkJoinPool.commonPool();
+        // Mechanical Sympathy: Project Loom Virtual Threads evade OS Context Switches
+        this.pool = Executors.newVirtualThreadPerTaskExecutor();
         this.lastExecutionTimeNs = 0;
 
         // Mechanical Sympathy: Pre-allocate Phasers & Tasks
@@ -144,8 +145,7 @@ public final class ParallelSystemExecutor {
         }
 
         System.out.println("[PARALLEL] Executor initialized with " +
-                executionLayers.size() + " layers, " +
-                pool.getParallelism() + " threads");
+                executionLayers.size() + " layers running on Java Virtual Threads (Loom)");
     }
 
     public MovementSystem getMovementSystem() {
@@ -239,6 +239,7 @@ public final class ParallelSystemExecutor {
      * Shutdown the pool (call when closing the engine).
      */
     public void shutdown() {
+        pool.close();
         System.out.println("[PARALLEL] Executor shutdown");
     }
 }

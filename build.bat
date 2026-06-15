@@ -32,6 +32,7 @@ javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     src\sv\dark\core\systems\*.java ^
     src\sv\dark\state\*.java ^
     src\sv\dark\bus\*.java ^
+    src\sv\dark\scene\*.java ^
     src\sv\dark\net\*.java ^
     src\sv\dark\test\*.java ^
     src\sv\dark\ui\*.java ^

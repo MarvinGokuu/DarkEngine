@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [3.4.0] - 2026-06-14
+## [3.4.0] - 2026-06-15
+
+### Architecture (Zero-Copy Asset Pipeline)
+- **Offline Asset Compiler (Phase 21)**:
+  - Built `DarkAssetCompiler.java` to asynchronously compile raw assets into flat `.darkasset` binaries.
+  - Eludes standard parsing to prevent Garbage Collection and Main Thread blocking.
+- **Zero-Copy Memory Streaming**:
+  - Built `DarkAssetStreamer.java` using `FileChannel.map` and Project Panama `MemorySegment`.
+  - Injects compiled assets directly from disk to VRAM/RAM without byte allocations.
+- **FFI Drag & Drop**:
+  - Bound `glfwSetDropCallback` in `DarkGraphicsLinker`.
+  - Implemented Upcall Stubs in `DarkEngineWindow` to route dropped files to the background compiler instantly.
 
 ### Architecture (GPU-Driven Rendering)
 - **Phase 19% (GPU Compute Culling)**:
