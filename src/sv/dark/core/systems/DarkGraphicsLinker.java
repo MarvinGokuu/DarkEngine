@@ -89,6 +89,11 @@ public final class DarkGraphicsLinker {
         FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT)
     );
 
+    public static final MethodHandle glfwSetDropCallback = LINKER.downcallHandle(
+        GLFW.find("glfwSetDropCallback").orElseThrow(),
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    );
+
     public static final MethodHandle glfwTerminate = LINKER.downcallHandle(
         GLFW.find("glfwTerminate").orElseThrow(),
         FunctionDescriptor.ofVoid()
