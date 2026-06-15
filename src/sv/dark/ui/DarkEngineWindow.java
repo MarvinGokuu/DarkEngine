@@ -57,6 +57,8 @@ public final class DarkEngineWindow {
                 return;
             }
 
+            initDropCallback();
+
             // Create OpenGL Context
             DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
             DarkGraphicsLinker.glfwSwapInterval.invokeExact(0); // V-Sync Off by default for benchmarking
@@ -97,6 +99,41 @@ public final class DarkEngineWindow {
             return close != 0;
         } catch (Throwable e) {
             return false;
+        }
+    }
+
+    // =========================================================================
+    // ASSET COMPILER DRAG & DROP FFI
+    // =========================================================================
+
+    private static MemorySegment dropCallbackStub;
+
+    public static void initDropCallback() {
+        try {
+            java.lang.invoke.MethodHandle handle = java.lang.invoke.MethodHandles.lookup().findStatic(
+                DarkEngineWindow.class, 
+                "onDrop", 
+                java.lang.invoke.MethodType.methodType(void.class, MemorySegment.class, int.class, MemorySegment.class)
+            );
+            
+            dropCallbackStub = java.lang.foreign.Linker.nativeLinker().upcallStub(
+                handle, 
+                java.lang.foreign.FunctionDescriptor.ofVoid(java.lang.foreign.ValueLayout.ADDRESS, java.lang.foreign.ValueLayout.JAVA_INT, java.lang.foreign.ValueLayout.ADDRESS),
+                Arena.global()
+            );
+            
+            MemorySegment prev = (MemorySegment) DarkGraphicsLinker.glfwSetDropCallback.invokeExact(windowPointer, dropCallbackStub);
+            DarkLogger.info("UI", "Drag & Drop Asset Compiler link enabled.");
+        } catch (Throwable t) {
+            DarkLogger.error("UI", "Failed to init drop callback.");
+        }
+    }
+
+    public static void onDrop(MemorySegment window, int count, MemorySegment pathsArray) {
+        for (int i = 0; i < count; i++) {
+            MemorySegment pathPtr = pathsArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+            String path = pathPtr.getString(0);
+            sv.dark.editor.DarkAssetCompiler.compileAsync(path);
         }
     }
 }
