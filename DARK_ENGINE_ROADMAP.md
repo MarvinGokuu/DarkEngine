@@ -1,6 +1,6 @@
 # 🚀 ROADMAP GLOBAL DARK ENGINE (C++, Vulkan, Project Panama)
 
-**PROGRESO GLOBAL DEL DESARROLLO: [███████████████████████████-------------------------------------------------------------------------] 27%**
+**PROGRESO GLOBAL DEL DESARROLLO: [███████████████████████████████████----------------------------------------------------------------] 35%**
 
 *Este roadmap es un documento vivo. Las fases se marcan con `[COMPLETADO]` a medida que se certifican con rendimiento AAA+.*
 
@@ -76,9 +76,9 @@ La base atómica de bajo nivel que ya codificaste y que sostiene todo el motor.
 ~~    *   Allí, dispararemos un Compute Shader que descartará la geometría no visible en paralelo con miles de núcleos gráficos.~~
 ~~    *   La CPU quedará 100% liberada de las matemáticas espaciales, enfocándose únicamente en la IA y reglas de juego pesadas.~~
 
-**21% [NUEVA PRIORIDAD: PENDIENTE] — Compilador de Assets (Assimp FFI) y Streaming Zero-Copy**
-- **El Problema Clásico:** Cargar y parsear `.FBX` o `.GLTF` en el motor durante el juego congela el hilo principal, destruye la caché L1 y llena la RAM de basura (GC).
-- **La Visión del CEO (La Ruta Star-RAGE):** Si queremos mundos masivos sin pantallas de carga como GTA VI, **NUNCA** parseamos en tiempo real. Adelantamos la importación masiva: Construiremos una herramienta offline con Assimp FFI que leerá modelos y los pre-compilará en archivos binarios crudos (`.darkasset`). En el juego, usaremos *Memory-Mapped Files* para inyectar esta memoria directamente a la VRAM sin deserializar un byte.
+**~~21% [COMPLETADO] — Compilador de Assets (Assimp FFI) y Streaming Zero-Copy~~**
+~~- **El Problema Clásico:** Cargar y parsear `.FBX` o `.GLTF` en el motor durante el juego congela el hilo principal, destruye la caché L1 y llena la RAM de basura (GC).~~
+~~- **La Visión del CEO (La Ruta Star-RAGE):** Si queremos mundos masivos sin pantallas de carga como GTA VI, **NUNCA** parseamos en tiempo real. Adelantamos la importación masiva: Construimos una herramienta offline que lee archivos arrastrados al motor y los pre-compila asíncronamente en binarios crudos (`.darkasset`). En el juego, usamos *Memory-Mapped Files* (`FileChannel.map`) para inyectar esta memoria directamente a la VRAM sin deserializar un byte, logrando un Streaming Zero-Copy ininterrumpido.~~
 
 *(Nota del Arquitecto: Todo cuello de botella de escalado masivo se delega a Compute Shaders y I/O directo. Java es el dictador Lock-Free; la GPU es el ejército inagotable).*
 

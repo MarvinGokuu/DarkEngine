@@ -33,7 +33,7 @@
 
 ##  Estructura de Documentación Maestra
 
-Este repositorio mantiene su conocimiento arquitectónico consolidado en **8 Archivos Maestros**:
+Este repositorio mantiene su conocimiento arquitectónico consolidado en **10 Archivos Maestros**:
 1. `00_README_CORE.md` (Estás aquí)
 2. `01_ARCHITECTURE_AND_KERNEL.md`: Estructura del Kernel y Secuencia de Arranque.
 3. `02_MECHANICAL_SYMPATHY.md`: Memoria de bajo nivel, Hilos y VarHandles.
@@ -43,6 +43,7 @@ Este repositorio mantiene su conocimiento arquitectónico consolidado en **8 Arc
 7. `06_TESTING_AND_CERTIFICATION.md`: Suite de Integridad AAA+.
 8. `07_GLOSSARY.md`: Diccionario técnico de términos.
 9. `08_NATIVE_GRAPHICS_FFI.md`: Integración de Project Panama con GLFW e ImGui (Zero-GC Render).
+10. `09_ASSET_COMPILER_STREAMING.md`: La técnica Zero-Copy para carga de modelos pesados eludiendo a Java.
 
 ---
 *Escrito y diseñado por la élite arquitectónica. Bienvenido al DarkEngine.*
