@@ -40,6 +40,13 @@ public final class DarkMetricsServer {
     public DarkMetricsServer(int port, SectorMemoryVault vault) throws IOException {
         // The server no longer needs the Kernel. It is a pure infrastructure component.
         this.server = HttpServer.create(new InetSocketAddress(port), 0);
+        
+        // Start Native WebSocket Server for Web Editor (port 13001)
+        try {
+            new DarkWebEditorSocket(13001, vault).start();
+        } catch (Exception e) {
+            DarkLogger.error("WEB EDITOR", "Failed to start WebSocket server: " + e.getMessage());
+        }
 
         // Endpoints
         server.createContext("/", new RootHandler());
@@ -48,8 +55,6 @@ public final class DarkMetricsServer {
         server.createContext("/editor", new EditorHandler());
 
         // Configuration: Default executor (null creates a default one)
-        // For real AAA production, we would use a Virtual Threads Executor or similar,
-        // but for the "Blind Server" standard, this is sufficient.
         server.setExecutor(null);
     }
 
