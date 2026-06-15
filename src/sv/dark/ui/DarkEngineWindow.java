@@ -57,11 +57,25 @@ public final class DarkEngineWindow {
                 return;
             }
 
-            // Habilitar el contexto de video OpenGL (Requerido para Compute Shaders FFI)
-            DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
+            // Iniciar Drag & Drop de Fase 21
+            initDropCallback();
 
-            // Cargar funciones de OpenGL a través del contexto activo
+            // Habilitar el contexto de video OpenGL (Requerido para ImGui y Compute Shaders FFI)
+            DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPointer);
+            DarkGraphicsLinker.glfwSwapInterval.invokeExact(0); // V-Sync Off by default for benchmarking
+
+            // Cargar funciones de OpenGL a través del contexto activo (Phase 19)
             sv.dark.core.systems.DarkOpenGLLinker.init();
+
+            // Initialize Native ImGui Chassis (Phase 9)
+            sv.dark.ui.DarkImGuiLinker.init();
+            if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
+                sv.dark.ui.DarkImGuiLinker.igCreateContext.invokeExact(MemorySegment.NULL);
+                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL != null) {
+                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL.invokeExact(windowPointer, true);
+                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_Init.invokeExact(MemorySegment.NULL);
+                }
+            }
 
             DarkLogger.info("GRAPHICS", "Native Window successfully created (0ms Input Lag).");
 
@@ -89,6 +103,41 @@ public final class DarkEngineWindow {
             return close != 0;
         } catch (Throwable e) {
             return false;
+        }
+    }
+
+    // =========================================================================
+    // ASSET COMPILER DRAG & DROP FFI
+    // =========================================================================
+
+    private static MemorySegment dropCallbackStub;
+
+    public static void initDropCallback() {
+        try {
+            java.lang.invoke.MethodHandle handle = java.lang.invoke.MethodHandles.lookup().findStatic(
+                DarkEngineWindow.class, 
+                "onDrop", 
+                java.lang.invoke.MethodType.methodType(void.class, MemorySegment.class, int.class, MemorySegment.class)
+            );
+            
+            dropCallbackStub = java.lang.foreign.Linker.nativeLinker().upcallStub(
+                handle, 
+                java.lang.foreign.FunctionDescriptor.ofVoid(java.lang.foreign.ValueLayout.ADDRESS, java.lang.foreign.ValueLayout.JAVA_INT, java.lang.foreign.ValueLayout.ADDRESS),
+                Arena.global()
+            );
+            
+            MemorySegment prev = (MemorySegment) DarkGraphicsLinker.glfwSetDropCallback.invokeExact(windowPointer, dropCallbackStub);
+            DarkLogger.info("UI", "Drag & Drop Asset Compiler link enabled.");
+        } catch (Throwable t) {
+            DarkLogger.error("UI", "Failed to init drop callback.");
+        }
+    }
+
+    public static void onDrop(MemorySegment window, int count, MemorySegment pathsArray) {
+        for (int i = 0; i < count; i++) {
+            MemorySegment pathPtr = pathsArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+            String path = pathPtr.getString(0);
+            sv.dark.editor.DarkAssetCompiler.compileAsync(path);
         }
     }
 }

@@ -18,17 +18,17 @@ public class SystemSIMDKinematicsTest {
         
         // Inicializar entidades aleatoriamente
         for(int i = 0; i < ENTITY_COUNT; i++) {
-            soa.setEntity(i, 0f, 0f, 10.5f, -5.2f);
+            soa.setEntity(i, 0.0, 0.0, 10.5f, -5.2f);
         }
         
         // Calentamiento JIT
         for(int i = 0; i < 50; i++) {
-            DarkKinematicsSystem.update(soa, 0.016f);
+            DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0);
         }
         
         // Medición
         long start = System.nanoTime();
-        DarkKinematicsSystem.update(soa, 0.016f);
+        DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0);
         long end = System.nanoTime();
         
         double durationMs = (end - start) / 1_000_000.0;
@@ -37,8 +37,8 @@ public class SystemSIMDKinematicsTest {
         
         soa.destroy();
         
-        if (durationMs > 2.0) { // Tolerancia máxima 2ms para ser AAA+
-            throw new RuntimeException("Kinematics latency exceeded 2.0 ms: " + durationMs + " ms");
+        if (durationMs > 4.0) { // Tolerancia máxima 4ms para ser AAA+ (64-bits reduce carriles a la mitad)
+            throw new RuntimeException("Kinematics latency exceeded 4.0 ms: " + durationMs + " ms");
         }
         
         DarkLogger.info("TEST", "[OK] AAA+ Kinematics Throughput passed.");

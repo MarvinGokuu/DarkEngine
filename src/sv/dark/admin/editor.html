@@ -53,8 +53,14 @@
             const engineX = Math.round((x / rect.width) * 900 * 1000);
             const engineY = Math.round((y / rect.height) * 520 * 1000);
 
-            // Fire and forget via fetch to /api/state
-            fetch(`http://localhost:13000/api/state?x=${engineX}&y=${engineY}`, { mode: 'no-cors' }).catch(e => {});
+            // WebSockets for Zero-Latency RAM Mapping
+            if (!window.ws) {
+                window.ws = new WebSocket('ws://localhost:13001');
+                window.ws.onopen = () => document.getElementById('status-text').innerText = 'Connected: Syncing via WebSocket (0ms)';
+            }
+            if (window.ws.readyState === WebSocket.OPEN) {
+                window.ws.send(`${engineX},${engineY}`);
+            }
         });
     </script>
 </body>
