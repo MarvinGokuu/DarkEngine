@@ -4,8 +4,7 @@
 **Tecnología Core**: Java 25 (Project Panama, Vector API, Loom)  
 **Estado**: Production Ready (AAA+ Certified)  
 
-> **🚀 "Un simple mortal les vino a bajar la industria"**  
-> *DarkEngine no es un motor; es la demostración física de que el hardware barato puede entregar latencias extremas si aplicas Mechanical Sympathy absoluta.*
+> *el hardware barato puede entregar latencias extremas si aplicas Mechanical Sympathy absoluta.*
 
 ---
 
