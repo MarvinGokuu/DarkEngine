@@ -59,6 +59,16 @@ public final class DarkGraphicsLinker {
         FunctionDescriptor.ofVoid()
     );
 
+    public static final MethodHandle glfwMakeContextCurrent = LINKER.downcallHandle(
+        GLFW.find("glfwMakeContextCurrent").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
+    );
+
+    public static final MethodHandle glfwGetProcAddress = LINKER.downcallHandle(
+        GLFW.find("glfwGetProcAddress").orElseThrow(),
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    );
+
     public static final MethodHandle glfwGetKey = LINKER.downcallHandle(
         GLFW.find("glfwGetKey").orElseThrow(),
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
