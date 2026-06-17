@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.5.0] - 2026-06-17
+
+### Architecture (Deferred Rendering Pipeline — Phase 27)
+- **G-Buffer Infrastructure (Fase 27 — Mission A)**:
+  - Built `DarkDeferredPipeline.java` — Allocates a 1280×720 G-Buffer fully in VRAM at boot via FFI.
+  - **Albedo Buffer**: `GL_RGBA8` texture (`GL_COLOR_ATTACHMENT0`) — stores per-pixel color.
+  - **Normal Buffer**: `GL_RGBA16F` texture (`GL_COLOR_ATTACHMENT1`) — stores geometric surface vectors for lighting passes.
+  - FBO completeness verified via `glCheckFramebufferStatus` — fails fast if VRAM allocation fails.
+  - Unbound after init to restore default framebuffer. Zero GC. Pre-allocated at startup.
+- **OpenGL 4.3 FFI Bindings (Phase 27)**:
+  - Extended `DarkOpenGLLinker.java` with 9 new Panama downcall handles:
+    `glGenTextures`, `glBindTexture`, `glTexImage2D`, `glTexParameteri`,
+    `glGenFramebuffers`, `glBindFramebuffer`, `glFramebufferTexture2D`,
+    `glCheckFramebufferStatus`, `glBindImageTexture`.
+
+### Architecture (GPU Compute Culling — Phase 19 Wiring COMPLETED)
+- **Missing Wiring Resolved**:
+  - `DarkComputeCullingSystem.init()` was implemented in Phase 19 but never called at boot.
+  - Injected into `DarkEngineWindow.initNativeWindow()` in correct order:
+    `OpenGL FFI → GPU Culling init → Deferred Pipeline init`.
+  - Now compiles `culling_shader.comp` to VRAM and pre-allocates 3 SSBOs on every engine start.
+
+### Infrastructure
+- `compile_list.txt`: Removed full duplicate block (was 192 lines with 2x every entry). Normalized.
+- `.gitignore`: Deduplicated entries + added protection for `repomix-output.xml` dump files.
+- `DarkGraphicsLinker.java`: Removed duplicate `glfwMakeContextCurrent` MethodHandle that caused compile error.
+
+---
+
 ## [3.4.0] - 2026-06-15
+
 
 ### Architecture (Zero-Copy Asset Pipeline)
 - **Offline Asset Compiler (Phase 21)**:
