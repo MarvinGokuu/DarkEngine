@@ -84,10 +84,7 @@ public final class DarkGraphicsLinker {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
     );
 
-    public static final MethodHandle glfwMakeContextCurrent = LINKER.downcallHandle(
-        GLFW.find("glfwMakeContextCurrent").orElseThrow(),
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
-    );
+
 
     public static final MethodHandle glfwSwapBuffers = LINKER.downcallHandle(
         GLFW.find("glfwSwapBuffers").orElseThrow(),
