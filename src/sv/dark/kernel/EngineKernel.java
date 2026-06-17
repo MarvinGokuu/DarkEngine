@@ -454,12 +454,12 @@ public final class EngineKernel {
                     break;
                 case 2: // SYS_PAUSE_SIGNAL
                     this.paused = !this.paused; // Toggle pause state
-                    System.out.println("[KERNEL] Pause State: " + this.paused);
+                    DarkLogger.info("KERNEL", "Pause State toggled");
                     break;
                 case sv.dark.bus.DarkSignalCommands.SYS_ENGINE_ROLLBACK:
                     if (this.timeControlUnit != null) {
                         this.timeControlUnit.rollback(stateVault.getRawSegment());
-                        System.out.println("[KERNEL] Rollback / Time Travel Executed!");
+                        DarkLogger.info("KERNEL", "Rollback / Time Travel Executed");
                     }
                     break;
                 case 100: // INPUT_KEY_PRESS

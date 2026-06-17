@@ -144,7 +144,7 @@ public final class ParallelSystemExecutor {
             }
         }
 
-        System.out.println("[PARALLEL] Executor initialized with " +
+        DarkLogger.info("PARALLEL", "Executor initialized with " +
                 executionLayers.size() + " layers running on Java Virtual Threads (Loom)");
     }
 
@@ -240,6 +240,6 @@ public final class ParallelSystemExecutor {
      */
     public void shutdown() {
         pool.close();
-        System.out.println("[PARALLEL] Executor shutdown");
+        DarkLogger.info("PARALLEL", "Executor shutdown");
     }
 }

@@ -8,6 +8,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
 import sv.dark.core.AAACertified;
+import sv.dark.core.DarkLogger;
 
 /**
  * Ultra-low latency Inter-Thread event transport.
@@ -476,7 +477,7 @@ public final class DarkAtomicBus implements IEventBus {
      * 3. Final Validation (checks memory integrity).
      */
     public void gracefulShutdown() {
-        System.out.println("[ATOMIC BUS] Injecting Tombstone Event...");
+        DarkLogger.info("ATOMIC BUS", "Injecting Tombstone Event...");
         offer(TOMBSTONE_EVENT);
 
         // Drain existing events (Spin Wait)
@@ -491,10 +492,10 @@ public final class DarkAtomicBus implements IEventBus {
             }
         }
 
-        System.out.println("[ATOMIC BUS] Clearing buffer...");
+        DarkLogger.info("ATOMIC BUS", "Clearing buffer...");
         clear();
 
-        System.out.println("[ATOMIC BUS] Validating memory integrity...");
+        DarkLogger.info("ATOMIC BUS", "Validating memory integrity...");
 
         long currentHead = (long) HEAD_H.getAcquire(this);
         long currentTail = (long) TAIL_H.getAcquire(this);
@@ -506,6 +507,6 @@ public final class DarkAtomicBus implements IEventBus {
             throw new Error("DarkAtomicBus: Memory signature corrupted during shutdown");
         }
 
-        System.out.println("[ATOMIC BUS] Shutdown completed - 100% Integrity");
+        DarkLogger.info("ATOMIC BUS", "Shutdown completed - 100% Integrity");
     }
 }

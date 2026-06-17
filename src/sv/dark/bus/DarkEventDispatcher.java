@@ -5,6 +5,7 @@
 package sv.dark.bus;
 
 import sv.dark.core.AAACertified;
+import sv.dark.core.DarkLogger;
 
 /**
  * Central Event Orchestrator and Multi-Lane Dispatcher.
@@ -227,18 +228,14 @@ public final class DarkEventDispatcher {
      * Prints the status of all active lanes.
      */
     public void printStatus() {
-        System.out.println("═══════════════════════════════════════════════════════");
-        System.out.println("  DARK EVENT DISPATCHER - STATUS REPORT");
-        System.out.println("═══════════════════════════════════════════════════════");
-
+        DarkLogger.info("DISPATCHER", "═══ DARK EVENT DISPATCHER - STATUS REPORT ═══");
         for (int i= 0; i< laneArray.length; i++) {
             DarkEventLane lane = laneArray[i];
             if (lane != null) {
-                System.out.println(lane.getStatusReport());
+                DarkLogger.info("DISPATCHER", lane.getStatusReport());
             }
         }
-
-        System.out.println("═══════════════════════════════════════════════════════");
+        DarkLogger.info("DISPATCHER", "═══════════════════════════════════════════════");
     }
 
     /**
@@ -282,11 +279,11 @@ public final class DarkEventDispatcher {
      * - Release bus references.
      */
     public void shutdown() {
-        System.out.println("[EVENT DISPATCHER] Initiating shutdown for all lanes...");
+        DarkLogger.info("DISPATCHER", "Initiating shutdown for all lanes...");
 
         int pendingEvents = getTotalPendingEvents();
         if (pendingEvents > 0) {
-            System.err.printf("[EVENT DISPATCHER] WARNING: %d pending events at shutdown%n", pendingEvents);
+            DarkLogger.warning("DISPATCHER", "WARNING: " + pendingEvents + " pending events at shutdown");
         }
 
         // Close in reverse priority order
@@ -309,6 +306,6 @@ public final class DarkEventDispatcher {
             }
         }
 
-        System.out.println("[EVENT DISPATCHER] Shutdown completed");
+        DarkLogger.info("DISPATCHER", "Shutdown completed");
     }
 }
