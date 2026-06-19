@@ -614,10 +614,21 @@ public final class EngineKernel {
         System.out.println("-------------------------------------------------------------------------");
 
         // -------------------------------------------------------------------------
-        // STEP 1: STOP MAIN LOOP
+        // STEP 1: STOP MAIN LOOP & SUBSYSTEMS
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 1/6] Stopping main loop...");
+        System.out.println("[STEP 1/6] Stopping main loop and subsystems...");
         running = false;
+
+        ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
+        if (executor != null) {
+            // 1. Apagamos los hilos del Game System de forma segura para que terminen de escribir
+            executor.shutdown(); 
+            
+            // 2. Cerramos el dispositivo de audio nativo (OpenAL) para vaciar el búfer de la tarjeta de sonido
+            if (executor.getDarkAudioSystem() != null) {
+                executor.getDarkAudioSystem().cleanup();
+            }
+        }
 
         // Wait for loop to finish (maximum 1 second)
         try {
@@ -625,7 +636,7 @@ public final class EngineKernel {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println("[STEP 1/6] Main loop stopped [OK]");
+        System.out.println("[STEP 1/6] Main loop and subsystems stopped [OK]");
 
         // -------------------------------------------------------------------------
         // STEP 2: CLOSE EVENT DISPATCHER (All priority buses)
