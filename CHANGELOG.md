@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.0] - 2026-06-18
+
+### Architecture (Cross-Platform Compatibility & Legacy Prevention)
+- **NativeLibraryResolver (OS Dynamic Linker)**:
+  - Created `NativeLibraryResolver.java` to dynamically detect OS (Windows, Linux, MacOS).
+  - Refactored `DarkGraphicsLinker`, `DarkAudioLinker`, and `DarkImGuiLinker` to load `.dll`, `.so`, or `.dylib` dynamically, removing Windows-only hardcoding.
+- **Hardware Affinity Fallback**:
+  - Modified `ThreadPinning.java` to safely bypass `kernel32.dll` execution if the host OS is not Windows, preventing instant crashes on Linux/Mac.
+- **Flexible SIMD Mathematics (Vector API)**:
+  - Refactored `DarkKinematicsSystem.java` to use `FloatVector.SPECIES_PREFERRED` instead of hardcoded 256-bit and 128-bit limits.
+  - Ensures SIMD math scales perfectly across Intel AVX-512, older AVX2, and ARM NEON architectures without `IndexOutOfBoundsException`.
+- **Dynamic Memory Pagination**:
+  - Replaced hardcoded 4KB `PAGE_SIZE` in `SectorMemoryVault.java` with dynamic OS page size detection using `sun.misc.Unsafe.pageSize()`, preventing `Segmentation Faults` on ARM/Apple Silicon architectures (16KB pages).
+
+---
+
 ## [3.5.0] - 2026-06-17
 
 ### Architecture (Deferred Rendering Pipeline — Phase 27)
