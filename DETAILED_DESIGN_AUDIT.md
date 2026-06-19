@@ -207,27 +207,26 @@ bufferIndex = (bufferIndex + 1) & (BUFFER_SIZE - 1);
 ## 📋 ORDEN DE EJECUCIÓN RECOMENDADO (Próximas Sesiones)
 
 ```
-PRIORIDAD 1 — Completar Fase 27 Misión B (FSR Upscaler):
-  → Crear src/sv/dark/scene/fsr_upscaler.comp
-  → Crear src/sv/dark/core/systems/DarkFSRSystem.java
-  → Wire en DarkEngineWindow.java después de DarkDeferredPipeline.init()
-  → Compilar y hacer PR a master
+PRIORIDAD 1 — Completar Fase 27 Misión B (FSR Upscaler / Deferred Pipeline):
+  → PENDIENTE: Crear src/sv/dark/scene/fsr_upscaler.comp
+  → PENDIENTE: Crear src/sv/dark/core/systems/DarkFSRSystem.java
+  → PENDIENTE: Wire en DarkEngineWindow.java después de DarkDeferredPipeline.init()
 
-PRIORIDAD 2 — Correcciones Hot-Path (AUDIT-KERNEL-001/002/003):
-  → EngineKernel.java L457, L462: System.out → DarkLogger
-  → EngineKernel.java L367: % 60 → contador auxiliar
-  → SectorMemoryVault.java L101, L226: % PAGE_SIZE → & (PAGE_SIZE-1)
-  → TimeKeeper.java L153: % BUFFER_SIZE → & (BUFFER_SIZE-1) si es potencia de 2
+PRIORIDAD 2 — [✅ COMPLETADO] Correcciones Hot-Path (AUDIT-KERNEL-001/002/003):
+  → [x] EngineKernel.java L457, L462: System.out → DarkLogger
+  → [x] EngineKernel.java L367: % 60 → contador auxiliar
+  → [x] SectorMemoryVault.java L101, L226: % PAGE_SIZE → & (PAGE_SIZE-1)
+  → [x] TimeKeeper.java L153: % BUFFER_SIZE → & (BUFFER_SIZE-1) si es potencia de 2
 
-PRIORIDAD 3 — VolatileImage Pre-Baking (GRIAL-002):
-  → Identificar los RadialGradientPaint en DarkEngineWindow
-  → Extraer a buildGradients() ejecutado una sola vez en boot
-  → Reemplazar en renderLoop() por drawImage del cache VRAM
+PRIORIDAD 3 — [✅ COMPLETADO / SUSTITUIDO POR FASE 21] VolatileImage Pre-Baking (GRIAL-002):
+  → [x] Implementado en Fase 21: DarkAssetCompiler y DarkAssetStreamer
+  → [x] Carga de textura directo a VRAM usando FFI Drag & Drop y Zero-Copy
+  → [x] Píxeles crudos mapeados sin tocar la CPU
 
 PRIORIDAD 4 — Decoupled Render Loop (GRIAL-001):
-  → Separar phaseRender() del EngineKernel
-  → Crear DarkRenderThread.java dedicado
-  → Conectar vía DarkStateVault como canal de datos
+  → PENDIENTE: Separar phaseRender() del EngineKernel
+  → PENDIENTE: Crear DarkRenderThread.java dedicado
+  → PENDIENTE: Conectar vía DarkStateVault como canal de datos
 ```
 
 ---
