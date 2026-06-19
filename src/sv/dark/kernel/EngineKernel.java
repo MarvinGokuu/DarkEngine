@@ -160,6 +160,13 @@ public final class EngineKernel {
         this(DarkEventDispatcher.createDefault(14), new SectorMemoryVault(1024));
     }
 
+    // Phase 21: Cross-Thread Asset Upload Queue
+    private static final java.util.concurrent.ConcurrentLinkedQueue<sv.dark.memory.DarkAsset> pendingAssets = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    public static void queueAssetForUpload(sv.dark.memory.DarkAsset asset) {
+        pendingAssets.offer(asset);
+    }
+
     /**
      * Retrieves the system registry for configuration.
      * 
@@ -286,6 +293,10 @@ public final class EngineKernel {
             // -------------------------------------------------------------------------
             long phase2Start = System.nanoTime();
             int eventsProcessed = phaseBusProcessing();
+            
+            // [PHASE 21] VRAM INJECTION: Cross-Thread Asset Upload
+            processPendingAssets();
+            
             long phase2End = System.nanoTime();
             timeKeeper.recordPhaseTime(2, phase2End - phase2Start);
 
@@ -734,6 +745,60 @@ public final class EngineKernel {
             // Ignore: Shutdown in progress
         } catch (Exception e) {
             System.err.println("[KERNEL] Warning: Could not remove Shutdown Hook");
+        }
+    }
+
+    /**
+     * Executes Phase 21: VRAM Injection.
+     * Uploads pending assets to OpenGL via FFI directly from Zero-Copy MemorySegments.
+     */
+    private void processPendingAssets() {
+        sv.dark.memory.DarkAsset asset;
+        while ((asset = pendingAssets.poll()) != null) {
+            try {
+                // Generate Texture
+                java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined();
+                java.lang.foreign.MemorySegment texPtr = tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+                sv.dark.core.systems.DarkOpenGLLinker.glGenTextures.invokeExact(1, texPtr);
+                int textureId = texPtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+                
+                // Bind and Upload
+                sv.dark.core.systems.DarkOpenGLLinker.glBindTexture.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    textureId
+                );
+                
+                // Set parameters (Linear filtering)
+                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    0x2801, // GL_TEXTURE_MIN_FILTER
+                    0x2601  // GL_LINEAR
+                );
+                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    0x2800, // GL_TEXTURE_MAG_FILTER
+                    0x2601  // GL_LINEAR
+                );
+
+                // Direct DMA from mapped file payload to VRAM
+                sv.dark.core.systems.DarkOpenGLLinker.glTexImage2D.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D,
+                    0,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA8,
+                    asset.width(),
+                    asset.height(),
+                    0,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_UNSIGNED_BYTE,
+                    asset.payload()
+                );
+                
+                tempArena.close();
+                sv.dark.core.DarkLogger.info("RENDERER", "Successfully uploaded texture to VRAM (ID: " + textureId + ") [" + asset.width() + "x" + asset.height() + "]");
+                
+            } catch (Throwable t) {
+                sv.dark.core.DarkLogger.error("RENDERER", "Failed to upload asset to VRAM: " + t.getMessage());
+            }
         }
     }
 }
