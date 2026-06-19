@@ -30,6 +30,11 @@ if exist DarkEngine.jar (
     set CLEAN_PORTABLE=1
 )
 
+if exist compile_list.txt (
+    del /q compile_list.txt >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
+    set CLEAN_LOGS=1
+)
+
 if exist *.log (
     del /q *.log >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
     set CLEAN_LOGS=1

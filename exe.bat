@@ -17,19 +17,13 @@ echo [INFO] javac: %JAVAC_VER%
 
 :: 2. Compile
 echo [STAGE] Compiling Source...
+
+:: Auto-discover all Java files to prevent missing dependencies or OS command-line limits
+dir /s /B src\*.java > compile_list.txt
+
 javac -d bin --enable-preview --source %JAVA_MAJOR% --add-modules jdk.incubator.vector,jdk.httpserver -Xlint:-incubating -cp src ^
          -J-XX:+UseZGC -J-Xms4G -J-Xmx4G -J-XX:+AlwaysPreTouch ^
-         src\sv\dark\state\DarkEngineMaster.java ^
-         src\sv\dark\kernel\*.java ^
-         src\sv\dark\core\*.java ^
-         src\sv\dark\core\memory\*.java ^
-         src\sv\dark\core\systems\*.java ^
-         src\sv\dark\state\*.java ^
-         src\sv\dark\bus\*.java ^
-         src\sv\dark\net\*.java ^
-         src\sv\dark\test\*.java ^
-         src\sv\dark\ui\*.java ^
-         src\sv\dark\admin\*.java
+         @compile_list.txt
 
 if %errorlevel% neq 0 (
     echo [ERROR] Compilation failed.
