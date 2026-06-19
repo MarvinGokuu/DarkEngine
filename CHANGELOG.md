@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dynamic Memory Pagination**:
   - Replaced hardcoded 4KB `PAGE_SIZE` in `SectorMemoryVault.java` with dynamic OS page size detection using `sun.misc.Unsafe.pageSize()`, preventing `Segmentation Faults` on ARM/Apple Silicon architectures (16KB pages).
 
+### Architecture (Production Readiness & Build Infrastructure)
+- **Automated Dependency Crawler**:
+  - Rewrote `build.bat` binary compilation script. Replaced fragile manual wildcards with an automated `dir /s /B` crawler that dynamically generates `compile_list.txt`.
+  - Guarantees 100% inclusion of all new modules (`NativeLibraryResolver`, `DarkAssetCompiler`, etc.) and eliminates silent compilation failures.
+- **Global Logging Subsystem (DarkLogger)**:
+  - Purged all synchronous `System.out.println` calls from Core Engine components (Kernel, Validation, Memory, Network Probes).
+  - Rerouted all engine telemetry through `DarkLogger` for true decoupled execution, keeping the OS standard output completely silent outside of the testing suite.
+- **Architectural Encapsulation (AAA+ Tests)**:
+  - Validated and preserved the `sv.dark.bus` package-private encapsulation for hardware-level L1 Cache padding tests (`BusHardwareTest`, `BusCoordinationTest`). Update `test.bat` runner paths to match.
+
 ---
 
 ## [3.5.0] - 2026-06-17
