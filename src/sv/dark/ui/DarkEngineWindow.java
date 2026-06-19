@@ -144,9 +144,11 @@ public final class DarkEngineWindow {
     }
 
     public static void onDrop(MemorySegment window, int count, MemorySegment pathsArray) {
+        // Reinterpret the zero-length C pointer array to its actual size in bytes
+        MemorySegment safeArray = pathsArray.reinterpret(count * java.lang.foreign.ValueLayout.ADDRESS.byteSize());
         for (int i = 0; i < count; i++) {
-            MemorySegment pathPtr = pathsArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
-            String path = pathPtr.getString(0);
+            MemorySegment pathPtr = safeArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+            String path = pathPtr.reinterpret(Long.MAX_VALUE).getString(0);
             sv.dark.editor.DarkAssetCompiler.compileAsync(path);
         }
     }

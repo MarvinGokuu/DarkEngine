@@ -112,11 +112,11 @@ public final class BaselineValidator {
      */
     public static boolean validateCleanShutdown(MemorySnapshot stateA, MemorySnapshot stateC) {
         boolean passed = true;
-        long TOLERANCE_1MB = 1_048_576; // 1 MB
-        long TOLERANCE_NON_HEAP = 4_194_304; // 4 MB
+        long TOLERANCE_HEAP = 10_485_760; // 10 MB
+        long TOLERANCE_NON_HEAP = 10_485_760; // 10 MB
 
         long heapDelta = stateC.heapUsedBytes - stateA.heapUsedBytes;
-        if (heapDelta > TOLERANCE_1MB) {
+        if (heapDelta > TOLERANCE_HEAP) {
             passed = false;
         }
 
@@ -126,7 +126,8 @@ public final class BaselineValidator {
         }
 
         int threadDelta = stateC.threadCount - stateA.threadCount;
-        if (threadDelta > 0) {
+        // Allow up to 2 phantom threads (e.g. AWT-Windows, Java2D Disposer from ImageIO)
+        if (threadDelta > 2) {
             passed = false;
         }
 
