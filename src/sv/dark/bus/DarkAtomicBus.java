@@ -480,18 +480,6 @@ public final class DarkAtomicBus implements IEventBus {
         DarkLogger.info("ATOMIC BUS", "Injecting Tombstone Event...");
         offer(TOMBSTONE_EVENT);
 
-        // Drain existing events (Spin Wait)
-        int backoff = 0;
-        while ((long) TAIL_H.getAcquire(this) != (long) HEAD_H.getAcquire(this)) {
-            Thread.onSpinWait();
-            backoff++;
-            if (backoff > 1_000_000) {
-                // If taking too long, yield to let consumer catch up
-                Thread.yield();
-                backoff = 0;
-            }
-        }
-
         DarkLogger.info("ATOMIC BUS", "Clearing buffer...");
         clear();
 
