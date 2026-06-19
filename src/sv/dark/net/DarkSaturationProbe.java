@@ -33,7 +33,7 @@ public final class DarkSaturationProbe {
         int workerCount = 10;
         ExecutorService pool = Executors.newFixedThreadPool(workerCount);
 
-        // System.out.println("[DARK-STRESS] Initiating binary saturation: " + workerCount + " threads.");
+        // sv.dark.core.DarkLogger.info("[DARK-STRESS] Initiating binary saturation: " + workerCount + " threads.");
 
         for (int i= 0; i< workerCount; i++) {
             final int id = i;
@@ -51,7 +51,7 @@ public final class DarkSaturationProbe {
 
                 // [MECHANICAL SYMPATHY]: Disable local network buffer for direct impact
                 socket.setTcpNoDelay(true);
-                // System.out.println("[STRESS-WORKER-" + threadId + "] Link established. Injecting load...");
+                // sv.dark.core.DarkLogger.info("[STRESS-WORKER-" + threadId + "] Link established. Injecting load...");
 
                 while (true) {
                     // Generate artificial load: 95.00% + offset per thread
@@ -82,3 +82,4 @@ public final class DarkSaturationProbe {
     }
 }
 // updated 3/1/26
+

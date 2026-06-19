@@ -29,7 +29,7 @@ echo.
 
 set JAVA_CMD=java --enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector
 
-call :run_test "1/17" "Bus Benchmark" "sv.dark.bus.BusBenchmarkTest" ""
+call :run_test "1/17" "Bus Benchmark" "sv.dark.test.BusBenchmarkTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 call :run_test "2/17" "Bus Coordination" "sv.dark.bus.BusCoordinationTest" ""
@@ -65,7 +65,7 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "12/17" "System State Manager" "sv.dark.test.SystemStateManagerTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "13/17" "Bus Benchmark (Final Validation)" "sv.dark.bus.BusBenchmarkTest" ""
+call :run_test "13/17" "Bus Benchmark (Final Validation)" "sv.dark.test.BusBenchmarkTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 call :run_test "14/17" "SIMD Data Accelerator Throughput" "sv.dark.core.DarkDataAccelerator" ""
