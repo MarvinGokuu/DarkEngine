@@ -42,21 +42,21 @@ public final class CleanupValidator {
      * @return {@code true} if the system was completely restored (no residuals), {@code false} otherwise.
      */
     public static boolean validate(SystemSnapshot initial, SystemSnapshot current) {
-        System.out.println("\n--------------------------------------------------------------");
-        System.out.println("OS CLEANUP AUDIT: INITIAL vs POST-SHUTDOWN");
-        System.out.println("--------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "\n--------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "OS CLEANUP AUDIT: INITIAL vs POST-SHUTDOWN");
+        sv.dark.core.DarkLogger.info("KERNEL", "--------------------------------------------------------------");
 
         boolean passed = true;
 
         if (initial == null || current == null) {
             System.err.println("  [ERROR] AUDIT CRITICAL: One or both snapshots are null.");
-            System.out.println("--------------------------------------------------------------\n");
+            sv.dark.core.DarkLogger.info("KERNEL", "--------------------------------------------------------------\n");
             return false;
         }
 
         // 1. Validate thread affinity restoration
         if (initial.threadAffinityMask == current.threadAffinityMask) {
-            System.out.println("  [OK] Thread Affinity: RESTORED OK");
+            sv.dark.core.DarkLogger.info("KERNEL", "  [OK] Thread Affinity: RESTORED OK");
         } else {
             System.err.printf("  [ERROR] THREAD AFFINITY RESIDUAL DETECTED: Initial: 0x%X | Post-Shutdown: 0x%X%n",
                     initial.threadAffinityMask, current.threadAffinityMask);
@@ -65,21 +65,23 @@ public final class CleanupValidator {
 
         // 2. Validate power scheme restoration
         if (initial.powerSchemeGuid.equalsIgnoreCase(current.powerSchemeGuid)) {
-            System.out.println("  [OK] Power Scheme: RESTORED OK (" + initial.powerSchemeName + ")");
+            sv.dark.core.DarkLogger.info("KERNEL", "  [OK] Power Scheme: RESTORED OK (" + initial.powerSchemeName + ")");
         } else {
             System.err.printf("  [ERROR] POWER SCHEME RESIDUAL DETECTED: Initial: %s (%s) | Post-Shutdown: %s (%s)%n",
                     initial.powerSchemeName, initial.powerSchemeGuid, current.powerSchemeName, current.powerSchemeGuid);
             passed = false;
         }
 
-        System.out.println("--------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "--------------------------------------------------------------");
         if (passed) {
-            System.out.println("[OK] SYSTEM RESTORE VALIDATION PASSED: 100% CLEAN");
+            sv.dark.core.DarkLogger.info("KERNEL", "[OK] SYSTEM RESTORE VALIDATION PASSED: 100% CLEAN");
         } else {
-            System.out.println("[ERROR] SYSTEM RESTORE VALIDATION FAILED: OS is in a dirty/modified state");
+            sv.dark.core.DarkLogger.info("KERNEL", "[ERROR] SYSTEM RESTORE VALIDATION FAILED: OS is in a dirty/modified state");
         }
-        System.out.println("--------------------------------------------------------------\n");
+        sv.dark.core.DarkLogger.info("KERNEL", "--------------------------------------------------------------\n");
 
         return passed;
     }
 }
+
+

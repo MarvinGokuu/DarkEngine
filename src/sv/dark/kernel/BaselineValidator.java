@@ -77,18 +77,18 @@ public final class BaselineValidator {
         }
 
         public void print() {
-            System.out.println("═══════════════════════════════════════════════════════════════");
-            System.out.println("BASELINE SNAPSHOT: " + label);
-            System.out.println("═══════════════════════════════════════════════════════════════");
-            System.out.println(String.format("  Heap Used:      %,d bytes (%.2f MB)%n", heapUsedBytes, heapUsedBytes / 1_048_576.0));
-            System.out.printf("  Heap Committed: %,d bytes (%.2f MB)%n", heapCommittedBytes,
-                    heapCommittedBytes / 1_048_576.0);
-            System.out.println(String.format("  Heap Max:       %,d bytes (%.2f MB)%n", heapMaxBytes, heapMaxBytes / 1_048_576.0));
-            System.out.printf("  Non-Heap Used:  %,d bytes (%.2f MB)%n", nonHeapUsedBytes,
-                    nonHeapUsedBytes / 1_048_576.0);
-            System.out.println(String.format("  Thread Count:   %d%n", threadCount));
-            System.out.println(String.format("  Timestamp:      %,d ns%n", timestamp));
-            System.out.println("═══════════════════════════════════════════════════════════════");
+            sv.dark.core.DarkLogger.info("KERNEL", "═══════════════════════════════════════════════════════════════");
+            sv.dark.core.DarkLogger.info("KERNEL", "BASELINE SNAPSHOT: " + label);
+            sv.dark.core.DarkLogger.info("KERNEL", "═══════════════════════════════════════════════════════════════");
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Heap Used:      %,d bytes (%.2f MB)%n", heapUsedBytes, heapUsedBytes / 1_048_576.0));
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Heap Committed: %, d bytes (%.2f MB)%n", heapCommittedBytes,
+                    heapCommittedBytes / 1_048_576.0));
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Heap Max:       %,d bytes (%.2f MB)%n", heapMaxBytes, heapMaxBytes / 1_048_576.0));
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Non-Heap Used:  %, d bytes (%.2f MB)%n", nonHeapUsedBytes,
+                    nonHeapUsedBytes / 1_048_576.0));
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Thread Count:   %d%n", threadCount));
+            sv.dark.core.DarkLogger.info("KERNEL", String.format("  Timestamp:      %,d ns%n", timestamp));
+            sv.dark.core.DarkLogger.info("KERNEL", "═══════════════════════════════════════════════════════════════");
         }
     }
 
@@ -154,12 +154,12 @@ public final class BaselineValidator {
      * ADVERTENCIA: Solo usar en tests, NUNCA en producción.
      */
     public static void aggressiveGC() {
-        System.out.println("[KERNEL] Reclaiming deep memory (Triple GC cycle)... ");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] Reclaiming deep memory (Triple GC cycle)... ");
         for (int i = 1; i <= 3; i++) {
             System.gc();
             try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
-        System.out.println("DONE.");
+        sv.dark.core.DarkLogger.info("KERNEL", "DONE.");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -197,3 +197,5 @@ public final class BaselineValidator {
         return new MemorySnapshot("State C (Post-Shutdown)");
     }
 }
+
+
