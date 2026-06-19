@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `OpenGL FFI → GPU Culling init → Deferred Pipeline init`.
   - Now compiles `culling_shader.comp` to VRAM and pre-allocates 3 SSBOs on every engine start.
 
+### Architecture (Zero-Copy Asset Pipeline — Phase 21 Refactor)
+- **Zero-GC DMA Transfers**:
+  - Rewrote `DarkAssetCompiler.java` to use `FileChannel.transferTo()`. Discarded destructive `Files.readAllBytes` that previously forced full-file allocations into the Java Heap.
+- **Payload Isolation (Streaming)**:
+  - Fixed `DarkAssetStreamer.java` mapping the entire file. Now actively slices the `MemorySegment` to exclude the 9-byte `"DARK\0"` header before sending the data payload to VRAM, avoiding texture/buffer corruption.
+
+### Architecture (Graceful Shutdown Integrity)
+- **Zero-Zombie Processes & Audio Underflow Fix**:
+  - `EngineKernel.gracefulShutdown()` now explicitly shuts down `ParallelSystemExecutor` to prevent game threads from writing to Off-Heap `WorldStateFrame` during native memory deallocation.
+  - Shutting down now triggers `DarkAudioSystem.cleanup()` explicitly via FFI `alcMakeContextCurrent`, flushing the native audio buffers to prevent OpenAL underflow (infinite buzzing sound) and hanging threads in `audiodg`.
+
 ### Infrastructure
 - `compile_list.txt`: Removed full duplicate block (was 192 lines with 2x every entry). Normalized.
 - `.gitignore`: Deduplicated entries + added protection for `repomix-output.xml` dump files.
