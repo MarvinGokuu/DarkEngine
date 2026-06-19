@@ -33,5 +33,5 @@ El `TimeKeeper` implementa un *Governor* mecánico:
 - Si el motor termina su trabajo antes de su presupuesto de 16.6ms (para 60FPS), no utiliza `Thread.sleep` (lo cual entrega el hilo al SO y arruina la caché).
 - En cambio, hace un *Spin-Wait* dinámico o utiliza un *ParkNanos* agresivo para mantenerse despierto y vigilante. 
 
-## Graceful Shutdown
-Cuando el motor recibe la orden de detención, el `SystemStateManager` y el `EngineKernel` cortan la ingesta de nuevos eventos, drenan los que están en tránsito en los buses atómicos, liberan los bloqueos de off-heap en el `SectorMemoryVault`, y cierran el proceso. Un hilo *Terminator* vigila que esto tome máximo 1 segundo, de lo contrario aborta el proceso violentamente.
+## Graceful Shutdown (Zero-Deadlock)
+Cuando el motor recibe la orden de detención (ej. el usuario cierra la ventana GLFW), el `SystemStateManager` y el `EngineKernel` cortan la ingesta de nuevos eventos y detienen el Bucle Principal. Posteriormente, el `DarkEventDispatcher` apaga los buses atómicos purificando instantáneamente la memoria sobrante (`clear()`) sin emplear esperas giratorias (*Spin-Waits*), evitando deadlocks que podrían colgar la Máquina Virtual. Finalmente, se cierran las *Arenas*, se libera la memoria *Off-Heap* en el `SectorMemoryVault`, y la tarjeta de audio OpenAL se desconecta del hardware nativamente, garantizando un apagado quirúrgico sin crasheos ni "Zombies".

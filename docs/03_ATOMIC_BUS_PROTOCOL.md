@@ -13,6 +13,7 @@ Múltiples hilos (como sensores de red, entradas de teclado o timers) pueden esc
 ### 2. DarkRingBus (SPSC - Single-Producer, Single-Consumer)
 Diseñado para la comunicación más rápida posible entre dos puntos fijos (ej. del Kernel a Renderizado).
 Al haber solo un lector y un escritor, las comprobaciones atómicas de contención son mucho menores. Es un buffer circular puro donde las cabezas de escritura y lectura corren en círculos infinitos sobrescribiendo memoria antigua de forma segura.
+**Gestión de Ciclo de Vida**: No utiliza variables `volatile boolean closed` para apagar el bus, ya que esto agregaría una condicional costosa por cada evento. En su lugar, el cierre se indica inyectando un `TOMBSTONE_EVENT` (`0xFFFFFFFFFFFFFFFFL`) y limpiando la memoria residual instantáneamente sin bloqueos (*Spin-Waits*), previniendo los infames *Deadlocks* durante cierres forzados.
 
 ### 3. DarkEventDispatcher
 Es el centro logístico que agrupa múltiples carriles (`DarkEventLane`) y enruta los eventos. Permite aplicar "máscaras" y filtros a las señales (SIMD data filtering) para procesarlas masivamente antes de entregárselas a los Sistemas de Juego.
