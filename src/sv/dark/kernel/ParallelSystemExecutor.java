@@ -60,6 +60,7 @@ public final class ParallelSystemExecutor {
     private RenderSystem renderSystem;
     private PhysicsSystem physicsSystem;
     private AudioSystem audioSystem;
+    private sv.dark.core.systems.DarkAudioSystem darkAudioSystem;
 
     /**
      * Reusable, mutable task representation to prevent dynamic object/lambda alocations.
@@ -140,6 +141,8 @@ public final class ParallelSystemExecutor {
                     this.physicsSystem = (PhysicsSystem) system;
                 } else if (system instanceof AudioSystem) {
                     this.audioSystem = (AudioSystem) system;
+                } else if (system instanceof sv.dark.core.systems.DarkAudioSystem) {
+                    this.darkAudioSystem = (sv.dark.core.systems.DarkAudioSystem) system;
                 }
             }
         }
@@ -162,6 +165,10 @@ public final class ParallelSystemExecutor {
 
     public AudioSystem getAudioSystem() {
         return audioSystem;
+    }
+
+    public sv.dark.core.systems.DarkAudioSystem getDarkAudioSystem() {
+        return darkAudioSystem;
     }
 
     /**
