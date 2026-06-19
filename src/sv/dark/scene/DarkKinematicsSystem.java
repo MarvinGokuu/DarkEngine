@@ -20,8 +20,14 @@ import sv.dark.core.AAACertified;
 @AAACertified(date = "2026-06-14", maxLatencyNs = 1, minThroughput = 1_000_000, lockFree = true, offHeap = true, notes = "SIMD 64-bit Camera Relative")
 public final class DarkKinematicsSystem {
     
-    private static final VectorSpecies<Double> D_SPECIES = DoubleVector.SPECIES_256;
-    private static final VectorSpecies<Float> F_SPECIES = FloatVector.SPECIES_128;
+    private static final VectorSpecies<Double> D_SPECIES = DoubleVector.SPECIES_PREFERRED;
+    private static final VectorSpecies<Float> F_SPECIES;
+    static {
+        int lanes = D_SPECIES.length();
+        if (lanes >= 8) F_SPECIES = FloatVector.SPECIES_256;
+        else if (lanes == 4) F_SPECIES = FloatVector.SPECIES_128;
+        else F_SPECIES = FloatVector.SPECIES_64;
+    }
     private static final ByteOrder BO = ByteOrder.nativeOrder();
 
     /**

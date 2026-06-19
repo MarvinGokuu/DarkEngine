@@ -28,15 +28,15 @@ public final class DarkGraphicsLinker {
     private static final SymbolLookup GLFW;
     
     static {
-        // Load the GLFW native library downloaded in the 'lib' folder
-        File glfwDll = new File("lib/glfw3.dll");
+        // Load the GLFW native library dynamically using cross-platform resolver
+        File glfwDll = sv.dark.core.util.NativeLibraryResolver.resolveLibrary("glfw3");
         if (!glfwDll.exists()) {
-            DarkLogger.fatal("GRAPHICS", "Missing lib/glfw3.dll! Please ensure GLFW is downloaded.", null);
-            throw new RuntimeException("Missing lib/glfw3.dll");
+            DarkLogger.fatal("GRAPHICS", "Missing " + glfwDll.getName() + "! Please ensure GLFW is downloaded.", null);
+            throw new RuntimeException("Missing " + glfwDll.getName());
         }
         System.load(glfwDll.getAbsolutePath());
         GLFW = SymbolLookup.loaderLookup();
-        DarkLogger.info("GRAPHICS", "Project Panama FFI: glfw3.dll loaded successfully.");
+        DarkLogger.info("GRAPHICS", "Project Panama FFI: " + glfwDll.getName() + " loaded successfully.");
     }
     
     // =========================================================================
