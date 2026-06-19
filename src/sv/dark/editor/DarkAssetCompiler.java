@@ -3,6 +3,9 @@ package sv.dark.editor;
 import sv.dark.core.DarkLogger;
 import java.io.*;
 import java.nio.file.*;
+import java.nio.channels.FileChannel;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * RESPONSIBILITY: Offline compilation of heavy assets into flat binaries.
@@ -23,14 +26,28 @@ public class DarkAssetCompiler {
                 DarkLogger.info("COMPILER", "Compiling asset offline: " + source.getFileName());
                 
                 // SIMULATION of Phase 21 Asset Compiler:
-                // We read the raw file, and write it to our custom flat binary format.
+                // We read the raw file, and write it to our custom flat binary format via DMA (Zero-GC).
                 // In production (Fase 27), this would strip PNG headers and write pure RGBA.
-                byte[] rawData = Files.readAllBytes(source);
-                
-                try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(outPath))) {
-                    dos.writeBytes("DARK\0"); // 5 byte Magic Header
-                    dos.writeInt(rawData.length); // 4 byte Size
-                    dos.write(rawData); // Raw Data Payload
+                try (FileChannel sourceChannel = FileChannel.open(source, StandardOpenOption.READ);
+                     FileChannel destChannel = FileChannel.open(Paths.get(outPath), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                     
+                    long size = sourceChannel.size();
+                    
+                    // Write Header
+                    ByteBuffer header = ByteBuffer.allocateDirect(9);
+                    header.put("DARK\0".getBytes(StandardCharsets.US_ASCII));
+                    header.putInt((int) size);
+                    header.flip();
+                    
+                    while (header.hasRemaining()) {
+                        destChannel.write(header);
+                    }
+                    
+                    // Direct DMA Transfer (Zero-GC, Zero-Heap Allocation)
+                    long position = 0;
+                    while (position < size) {
+                        position += sourceChannel.transferTo(position, size - position, destChannel);
+                    }
                 }
                 
                 DarkLogger.info("COMPILER", "Asset compiled successfully: " + outPath);

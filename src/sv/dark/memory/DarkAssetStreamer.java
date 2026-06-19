@@ -27,11 +27,25 @@ public class DarkAssetStreamer {
         try (RandomAccessFile file = new RandomAccessFile(assetPath, "r");
              FileChannel channel = file.getChannel()) {
             
-            long size = channel.size();
-            MemorySegment segment = channel.map(FileChannel.MapMode.READ_ONLY, 0, size, arena);
+            long totalSize = channel.size();
+            MemorySegment segment = channel.map(FileChannel.MapMode.READ_ONLY, 0, totalSize, arena);
             
-            DarkLogger.info("STREAMER", "Zero-Copy mapped asset: " + assetPath + " (" + size + " bytes)");
-            return segment;
+            // Validate Magic Header (DARK\0)
+            byte[] magic = new byte[5];
+            MemorySegment.copy(segment, 0, MemorySegment.ofArray(magic), 0, 5);
+            if (!new String(magic, java.nio.charset.StandardCharsets.US_ASCII).equals("DARK\0")) {
+                DarkLogger.error("STREAMER", "Invalid asset header: " + assetPath);
+                return MemorySegment.NULL;
+            }
+            
+            // Read Payload Size
+            int payloadSize = segment.get(java.lang.foreign.ValueLayout.JAVA_INT_UNALIGNED, 5);
+            
+            // Return Zero-Copy Payload Slice (ignoring the 9-byte header)
+            MemorySegment payloadSegment = segment.asSlice(9, payloadSize);
+            
+            DarkLogger.info("STREAMER", "Zero-Copy mapped asset payload: " + assetPath + " (" + payloadSize + " bytes)");
+            return payloadSegment;
             
         } catch (Exception e) {
             DarkLogger.error("STREAMER", "Failed to stream asset: " + assetPath);
