@@ -34,7 +34,13 @@ public final class DarkDeferredPipeline {
     public static final int TARGET_WIDTH = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_WIDTH;
     public static final int TARGET_HEIGHT = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_HEIGHT;
 
+    private static boolean isInitialized = false;
+
     public static void init() {
+        if (isInitialized) {
+            destroy();
+        }
+
         try (Arena arena = Arena.ofConfined()) {
             DarkLogger.info("GRAPHICS", "Initializing Deferred G-Buffer (" + INTERNAL_WIDTH + "x" + INTERNAL_HEIGHT + ") in VRAM...");
 
@@ -89,8 +95,33 @@ public final class DarkDeferredPipeline {
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
 
             DarkLogger.info("GRAPHICS", "Deferred Pipeline Chassis Ready. Targets: Base 720p -> Presentation 4K");
+            isInitialized = true;
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Failed to initialize Deferred Pipeline FFI.", e);
+        }
+    }
+
+    public static void destroy() {
+        if (!isInitialized) return;
+        
+        try (Arena arena = Arena.ofConfined()) {
+            // Eliminar texturas
+            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT, 4);
+            texPtr.set(ValueLayout.JAVA_INT, 0, albedoTexture);
+            texPtr.set(ValueLayout.JAVA_INT, 4, normalTexture);
+            texPtr.set(ValueLayout.JAVA_INT, 8, litTexture);
+            texPtr.set(ValueLayout.JAVA_INT, 12, presentationTexture);
+            DarkOpenGLLinker.glDeleteTextures.invokeExact(4, texPtr);
+
+            // Eliminar FBO
+            MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
+            fboPtr.set(ValueLayout.JAVA_INT, 0, gBufferFBO);
+            DarkOpenGLLinker.glDeleteFramebuffers.invokeExact(1, fboPtr);
+
+            DarkLogger.info("GRAPHICS", "Deferred Pipeline VRAM Buffers Released.");
+            isInitialized = false;
+        } catch (Throwable e) {
+            DarkLogger.fatal("GRAPHICS", "Failed to destroy Deferred Pipeline VRAM FFI.", e);
         }
     }
 

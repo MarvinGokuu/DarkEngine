@@ -40,10 +40,12 @@ public final class DarkOpenGLLinker {
 
     // Phase 27 - Deferred Pipeline Bindings
     public static MethodHandle glGenTextures;
+    public static MethodHandle glDeleteTextures;
     public static MethodHandle glBindTexture;
     public static MethodHandle glTexImage2D;
     public static MethodHandle glTexParameteri;
     public static MethodHandle glGenFramebuffers;
+    public static MethodHandle glDeleteFramebuffers;
     public static MethodHandle glBindFramebuffer;
     public static MethodHandle glFramebufferTexture2D;
     public static MethodHandle glCheckFramebufferStatus;
@@ -100,11 +102,13 @@ public final class DarkOpenGLLinker {
 
             // Phase 27 - Textures and FBOs
             glGenTextures = bind(arena, "glGenTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteTextures = bind(arena, "glDeleteTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindTexture = bind(arena, "glBindTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glTexImage2D = bind(arena, "glTexImage2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glTexParameteri = bind(arena, "glTexParameteri", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             
             glGenFramebuffers = bind(arena, "glGenFramebuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteFramebuffers = bind(arena, "glDeleteFramebuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindFramebuffer = bind(arena, "glBindFramebuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glFramebufferTexture2D = bind(arena, "glFramebufferTexture2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glCheckFramebufferStatus = bind(arena, "glCheckFramebufferStatus", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));

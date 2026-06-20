@@ -77,7 +77,10 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "16/17" "SIMD Kinematics Throughput" "sv.dark.test.SystemSIMDKinematicsTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "17/17" "GPU Compute Culling" "sv.dark.test.SystemGPUCullingTest" ""
+call :run_test "17/18" "GPU Compute Culling" "sv.dark.test.SystemGPUCullingTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "18/18" "VRAM Lifecycle (FBO Leak Test)" "sv.dark.test.SystemVRAMLeakTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.

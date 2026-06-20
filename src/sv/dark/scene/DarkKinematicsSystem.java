@@ -48,28 +48,26 @@ public final class DarkKinematicsSystem {
             long offset32 = i * 4L;
             long offset64 = i * 8L;
             
-            // Vector X (Global)
+            // 1. Memory Load (Interleaved para saturar el bus de memoria)
             DoubleVector px = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosX, offset64, BO);
-            FloatVector vxFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velX, offset32, BO);
-            DoubleVector vx = (DoubleVector) vxFloat.castShape(D_SPECIES, 0);
-            
-            DoubleVector newPx = px.add(vx.mul(dt));
-            newPx.intoMemorySegment(soa.globalPosX, offset64, BO);
-            
-            // Inyección Camera Relative Rendering -> 32-bits VRAM
-            FloatVector finalVisualX = (FloatVector) newPx.sub(camX).castShape(F_SPECIES, 0);
-            finalVisualX.intoMemorySegment(soa.posX, offset32, BO);
-            
-            // Vector Y (Global)
             DoubleVector py = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosY, offset64, BO);
+            FloatVector vxFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velX, offset32, BO);
             FloatVector vyFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velY, offset32, BO);
+
+            // 2. CPU ALU Math (Instruction Level Parallelism - X e Y en distintos puertos)
+            DoubleVector vx = (DoubleVector) vxFloat.castShape(D_SPECIES, 0);
             DoubleVector vy = (DoubleVector) vyFloat.castShape(D_SPECIES, 0);
             
+            DoubleVector newPx = px.add(vx.mul(dt));
             DoubleVector newPy = py.add(vy.mul(dt));
-            newPy.intoMemorySegment(soa.globalPosY, offset64, BO);
             
-            // Inyección Camera Relative Rendering -> 32-bits VRAM
+            FloatVector finalVisualX = (FloatVector) newPx.sub(camX).castShape(F_SPECIES, 0);
             FloatVector finalVisualY = (FloatVector) newPy.sub(camY).castShape(F_SPECIES, 0);
+
+            // 3. Memory Store
+            newPx.intoMemorySegment(soa.globalPosX, offset64, BO);
+            newPy.intoMemorySegment(soa.globalPosY, offset64, BO);
+            finalVisualX.intoMemorySegment(soa.posX, offset32, BO);
             finalVisualY.intoMemorySegment(soa.posY, offset32, BO);
         }
 

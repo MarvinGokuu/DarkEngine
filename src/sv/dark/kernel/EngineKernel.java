@@ -709,6 +709,17 @@ public final class EngineKernel {
         }
 
         // -------------------------------------------------------------------------
+        // STEP 6.5: DESTROY DEFERRED PIPELINE VRAM OBJECTS
+        // -------------------------------------------------------------------------
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6.5/7] Destroying VRAM objects...");
+        try {
+            sv.dark.scene.DarkDeferredPipeline.destroy();
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6.5/7] VRAM objects destroyed [OK]");
+        } catch (Throwable e) {
+            System.err.println("[STEP 6.5/7] Error destroying VRAM objects: " + e.getMessage());
+        }
+
+        // -------------------------------------------------------------------------
         // STEP 7: TERMINATE NATIVE FFI (GLFW)
         // -------------------------------------------------------------------------
         sv.dark.core.DarkLogger.info("KERNEL", "[STEP 7/7] Terminating FFI Native Graphics...");

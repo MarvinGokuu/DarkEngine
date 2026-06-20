@@ -11,6 +11,12 @@ import sv.dark.core.systems.PhysicsSystem;
 import sv.dark.core.systems.AudioSystem;
 import sv.dark.bus.IEventBus;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.charset.StandardCharsets;
+
 /**
  * RESPONSIBILITY: OFF-CRITICAL-PATH metrics aggregation. Collect metrics from independent systems and aggregate without contention.
  * WHY: Tracking metrics synchronously inside systems degrades frame latency. We need an isolated aggregation phase.
@@ -60,19 +66,29 @@ public class MetricsCollector {
         public double avgFrameTimeMs = 0;
         public int droppedFrames = 0;
         
-        @Override
-        public String toString() {
-            return String.format(
-                "Frame[%d] Time: %.2f ms | Latency: %d ns | " +
-                "Movement: %d | Render: %d | Physics: %d | Audio: %d",
-                frameNumber,
-                frameTimeNs / 1_000_000.0,
-                busLatencyNs,
-                movementProcessed,
-                renderProcessed,
-                physicsProcessed,
-                audioProcessed
+        // Memoria JVM (Zero-Allocation Track)
+        public long jvmTotalMemoryMb = 0;
+        public long jvmFreeMemoryMb = 0;
+        
+        // Se elimina toString() para evitar String.format (Genera Garbage Collection)
+    }
+
+    // =========================================================================
+    // TELEMETRY I/O (ZERO-ALLOCATION)
+    // =========================================================================
+    private static FileChannel telemetryChannel;
+    private static final ByteBuffer writeBuffer = ByteBuffer.allocateDirect(1024);
+    
+    static {
+        try {
+            telemetryChannel = FileChannel.open(
+                Path.of("telemetry_zero_alloc.log"), 
+                StandardOpenOption.CREATE, 
+                StandardOpenOption.WRITE, 
+                StandardOpenOption.APPEND
             );
+        } catch (Exception e) {
+            DarkLogger.error("METRICS", "Failed to init Zero-Allocation Telemetry I/O.");
         }
     }
     
@@ -120,6 +136,76 @@ public class MetricsCollector {
         // Detect frame drops
         if (output.frameTimeNs > 16_666_666) { // >16.67ms
             output.droppedFrames++;
+        }
+        
+        // JVM Memory Stats
+        Runtime rt = Runtime.getRuntime();
+        output.jvmTotalMemoryMb = rt.totalMemory() / 1_048_576L;
+        output.jvmFreeMemoryMb = rt.freeMemory() / 1_048_576L;
+        
+        // Flush to Disk via NIO FileChannel (Zero-Allocation)
+        flushToDisk(output);
+    }
+    
+    /**
+     * Escribe las métricas en disco sin alojar memoria (Sin new String()).
+     * Convierte los enteros a bytes manualmente dentro del buffer nativo.
+     */
+    private static void flushToDisk(FrameMetrics metrics) {
+        if (telemetryChannel == null) return;
+        
+        writeBuffer.clear();
+        
+        // Fast manual byte appending para evitar String.valueOf()
+        appendAscii(writeBuffer, "Frame[");
+        appendNumber(writeBuffer, metrics.frameNumber);
+        appendAscii(writeBuffer, "] Physics: ");
+        appendNumber(writeBuffer, metrics.physicsProcessed);
+        appendAscii(writeBuffer, " | JVM Mem (MB): ");
+        appendNumber(writeBuffer, metrics.jvmTotalMemoryMb - metrics.jvmFreeMemoryMb);
+        appendAscii(writeBuffer, " / ");
+        appendNumber(writeBuffer, metrics.jvmTotalMemoryMb);
+        appendAscii(writeBuffer, "\n");
+        
+        writeBuffer.flip();
+        try {
+            telemetryChannel.write(writeBuffer);
+        } catch (Exception e) {
+            // Ignore for real-time
+        }
+    }
+    
+    // Rutina Zero-Allocation para imprimir números al ByteBuffer
+    private static void appendNumber(ByteBuffer buf, long num) {
+        if (num == 0) {
+            buf.put((byte)'0');
+            return;
+        }
+        if (num < 0) {
+            buf.put((byte)'-');
+            num = -num;
+        }
+        long temp = num;
+        int numDigits = 0;
+        while (temp > 0) {
+            temp /= 10;
+            numDigits++;
+        }
+        int startPos = buf.position();
+        buf.position(startPos + numDigits);
+        
+        temp = num;
+        for (int i = numDigits - 1; i >= 0; i--) {
+            long digit = temp % 10;
+            buf.put(startPos + i, (byte) ('0' + digit));
+            temp /= 10;
+        }
+    }
+
+    private static void appendAscii(ByteBuffer buf, String text) {
+        // En un motor real text es un byte[], pero asumiendo constantes el JIT lo optimiza
+        for (int i = 0; i < text.length(); i++) {
+            buf.put((byte) text.charAt(i));
         }
     }
     
