@@ -81,7 +81,9 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkTelemetryUnit.jav
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkWebEditorSocket.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\MemoryMonitor.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkComputeCullingSystem.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredLightingSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredPipeline.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkFSRSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkKinematicsSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkTransformSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\state\DarkEngineMaster.java

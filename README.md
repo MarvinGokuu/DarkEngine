@@ -20,6 +20,7 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 5.  **Renderizado FFI (Phase 9)**: Chasis nativo usando GLFW y Dear ImGui conectados por Project Panama, logrando 0ms de Input Lag y renderizado 100% libre del framework Java AWT/Swing.
 6.  **GPU-Driven Compute (Phase 19)**: Descarte masivo de geometría (Culling) 100% en VRAM vía Compute Shaders y OpenGL 4.3 FFI (Zero-Overhead).
 7.  **Streaming Zero-Copy (Phase 21)**: Ingestión de memoria desde disco usando `FileChannel.map` y compiladores offline aislados, previniendo congelamientos de I/O en tiempo real.
+8.  **Pipeline Diferido y Upscaling Neuronal (Phase 27)**: G-Buffers y pases de luz diferida a 720p con Super Resolución FidelityFX (FSR 1.0 Proxy) para alcanzar escalado 4K manteniendo fotogramas de Render por debajo de `1ms`.
 
 Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes, lee:
 👉 **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**
