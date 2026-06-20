@@ -62,6 +62,9 @@ public final class EngineKernel {
     private WorldStateFrame currentState;
     private final DarkEventDispatcher eventDispatcher;
     private final DarkAtomicBus adminMetricsBus; // Control Plane: Metrics out of the hot-path
+    
+    // [ECS PHASE 30] Scene Orchestrator
+    private final sv.dark.ecs.DarkScene scene;
 
     // Pre-allocated array for event batching (Zero-Allocation hot path)
     private final long[] eventBatchBuffer = new long[2048];
@@ -117,6 +120,9 @@ public final class EngineKernel {
         
         // Create WorldStateFrame with Arena, segment, and timestamp
         this.currentState = new WorldStateFrame(frameArena, stateVault.getRawSegment(), System.nanoTime());
+
+        // [ECS PHASE 30] Init Scene Orchestrator with 1 Million entities
+        this.scene = new sv.dark.ecs.DarkScene(1_000_000);
 
         // [NEURONA_048 STEP 3] Admin Metrics Bus (Control Plane)
         // Capacity 1024: ~17 seconds of metrics at 60 FPS
@@ -183,6 +189,15 @@ public final class EngineKernel {
      */
     public DarkAtomicBus getAdminMetricsBus() {
         return adminMetricsBus;
+    }
+
+    /**
+     * Retrieves the global ECS Scene Graph.
+     * 
+     * @return DarkScene.
+     */
+    public sv.dark.ecs.DarkScene getScene() {
+        return scene;
     }
 
     public void start() {
@@ -697,6 +712,7 @@ public final class EngineKernel {
         sv.dark.core.DarkLogger.info("KERNEL", "[STEP 5/6] Closing State Vault...");
         try {
             stateArena.close();
+            scene.destroy(); // Libera la memoria SIMD del Scene Graph
             sv.dark.core.DarkLogger.info("KERNEL", "[STEP 5/6] State Vault Arena closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 5/6] Error closing State Vault: " + e.getMessage());
