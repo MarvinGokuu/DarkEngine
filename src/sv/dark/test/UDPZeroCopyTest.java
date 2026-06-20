@@ -22,8 +22,9 @@ public class UDPZeroCopyTest {
         long startMem = getUsedMemory();
 
         DarkNetworkClient client = new DarkNetworkClient(0, 65536); // Cliente efímero
+        client.connect(new java.net.InetSocketAddress("127.0.0.1", 27015));
         DarkScene scene = new DarkScene(1000);
-        NetworkReplicationSystem netSys = new NetworkReplicationSystem(client, scene);
+        NetworkReplicationSystem netSys = new NetworkReplicationSystem(new DarkNetworkClient[]{client}, scene);
 
         long memDiff = getUsedMemory() - startMem;
         System.out.printf("[RESULT] Heap Memory Footprint for Networking Subsystem: %d bytes.%n", memDiff);

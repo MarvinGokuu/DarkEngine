@@ -42,15 +42,28 @@ public final class DarkNetworkClient {
     }
 
     /**
-     * Envía una carga útil binaria pura.
+     * Fija el canal a un destinatario específico para habilitar Operaciones Zero-GC.
      */
-    public void sendRawPayload(MemorySegment payload, long bytes, InetSocketAddress target) {
+    public void connect(InetSocketAddress target) {
         try {
+            channel.connect(target);
+            DarkLogger.info("NETWORK", "DatagramChannel conectado en modo Fast-Path a " + target);
+        } catch (IOException e) {
+            DarkLogger.warning("NETWORK", "Error de conexion UDP: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envía una carga útil binaria pura (Solo funciona si connect() fue llamado).
+     */
+    public void sendRawPayload(MemorySegment payload, long bytes) {
+        try {
+            if (!channel.isConnected()) return;
             sendBuffer.clear();
             // Project Panama permite copiar de MemorySegment a ByteBuffer nativo directo
             MemorySegment.copy(payload, 0, MemorySegment.ofBuffer(sendBuffer), 0, bytes);
             sendBuffer.limit((int) bytes);
-            channel.send(sendBuffer, target);
+            channel.write(sendBuffer); // ZERO ALLOCATION NATIVE SYSCALL
         } catch (IOException e) {
             // Ignorar fallos de envío UDP
         }
@@ -62,14 +75,15 @@ public final class DarkNetworkClient {
      */
     public long pollPayload(MemorySegment destination) {
         try {
+            if (!channel.isConnected()) return 0;
             receiveBuffer.clear();
-            InetSocketAddress sender = (InetSocketAddress) channel.receive(receiveBuffer);
-            if (sender == null) return 0; // Sin paquetes
+            // ZERO ALLOCATION NATIVE SYSCALL
+            int bytesRead = channel.read(receiveBuffer);
+            if (bytesRead <= 0) return 0; // Sin paquetes
             
             receiveBuffer.flip();
-            int bytes = receiveBuffer.limit();
-            MemorySegment.copy(MemorySegment.ofBuffer(receiveBuffer), 0, destination, 0, bytes);
-            return bytes;
+            MemorySegment.copy(MemorySegment.ofBuffer(receiveBuffer), 0, destination, 0, bytesRead);
+            return bytesRead;
         } catch (IOException e) {
             return 0;
         }
