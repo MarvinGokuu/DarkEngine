@@ -20,28 +20,22 @@ import sv.dark.ecs.DarkScene;
 @AAACertified(date = "2026-06-20", maxLatencyNs = 50, minThroughput = 0, lockFree = true, offHeap = true, notes = "Phase 33: ECS State Serialization")
 public final class NetworkReplicationSystem implements GameSystem {
 
-    private final DarkNetworkClient client;
+    private final DarkNetworkClient[] clients;
     private final DarkScene scene;
     private final MemorySegment snapshotBuffer;
     private final Arena arena;
-    
-    // Lista estática de clientes tontos (En un juego real esto se maneja dinámicamente)
-    private final InetSocketAddress[] clients;
     
     // Tick Rate: 20Hz para replicación de red típica (Para ahorrar ancho de banda)
     private static final double TICK_RATE = 1.0 / 20.0;
     private double accumulator = 0.0;
 
-    public NetworkReplicationSystem(DarkNetworkClient client, DarkScene scene) {
-        this.client = client;
+    public NetworkReplicationSystem(DarkNetworkClient[] clients, DarkScene scene) {
+        this.clients = clients;
         this.scene = scene;
         this.arena = Arena.ofShared();
         
         // 1000 Entidades * 3 Floats (ID, X, Y) * 4 Bytes = 12 KB Payload Size
         this.snapshotBuffer = arena.allocate(1000 * 3 * 4);
-        
-        // Broadcast local por defecto
-        this.clients = new InetSocketAddress[] { new InetSocketAddress("127.0.0.1", 27015) };
     }
 
     @Override
@@ -70,9 +64,9 @@ public final class NetworkReplicationSystem implements GameSystem {
             snapshotBuffer.set(ValueLayout.JAVA_FLOAT, offset, py); offset += 4;
         }
 
-        // Disparar por UDP
-        for (InetSocketAddress target : clients) {
-            client.sendRawPayload(snapshotBuffer, offset, target);
+        // Disparar por UDP Conectado (Zero-GC)
+        for (int i = 0; i < clients.length; i++) {
+            clients[i].sendRawPayload(snapshotBuffer, offset);
         }
     }
 
@@ -83,6 +77,8 @@ public final class NetworkReplicationSystem implements GameSystem {
 
     public void cleanup() {
         arena.close();
-        client.close();
+        for (int i = 0; i < clients.length; i++) {
+            clients[i].close();
+        }
     }
 }

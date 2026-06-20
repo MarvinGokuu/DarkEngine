@@ -122,7 +122,10 @@ public final class DarkEngineMaster {
         // 9. Networking & State Replication (Phase 33)
         // Cliente UDP en el puerto 27015, con un buffer RX/TX de 64KB (Zero-Allocation)
         sv.dark.net.DarkNetworkClient netClient = new sv.dark.net.DarkNetworkClient(27015, 65536);
-        registry.registerGameSystem(new sv.dark.net.NetworkReplicationSystem(netClient, kernel.getScene()));
+        // Simulando una conexion entrante
+        netClient.connect(new java.net.InetSocketAddress("127.0.0.1", 27016));
+        sv.dark.net.DarkNetworkClient[] netClients = new sv.dark.net.DarkNetworkClient[]{ netClient };
+        registry.registerGameSystem(new sv.dark.net.NetworkReplicationSystem(netClients, kernel.getScene()));
 
         // Finalize Dependency Graph
         registry.buildDependencyGraph();
