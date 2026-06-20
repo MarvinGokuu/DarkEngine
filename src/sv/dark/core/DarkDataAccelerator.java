@@ -66,7 +66,7 @@ public final class DarkDataAccelerator {
         DarkLogger.info("TEST", "  DARK ENGINE - AAA+ SIMD DATA ACCELERATOR BENCHMARK");
         DarkLogger.info("TEST", "  Target Throughput: > 4.00 GB/s (Peak Bandwidth)");
         DarkLogger.info("TEST", "==========================================================");
-        System.out.println();
+        DarkLogger.info("TEST", "");
         DarkLogger.info("TEST", "Hardware: Vector Bit Size: " + SPECIES.vectorBitSize() + " bits | " + SPECIES.length() + " lanes");
 
         long dataSize = 250_000_000; // 250 millones de enteros (~1 GB)
