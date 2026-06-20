@@ -1,0 +1,42 @@
+#version 430 core
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+struct Particle {
+    vec2 position;
+    vec2 velocity;
+    vec4 color;
+    float life;
+    float maxLife;
+};
+
+// SSBO (Shader Storage Buffer Object) atado en el binding = 0
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
+
+uniform float deltaTime;
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    
+    // Si la partícula ya murió, no calculamos nada
+    if (particles[index].life <= 0.0) {
+        return;
+    }
+    
+    // Euler Integration
+    particles[index].position += particles[index].velocity * deltaTime;
+    
+    // Gravity / Fricción (quemado en shader por ahora)
+    particles[index].velocity.y += 9.8 * 100.0 * deltaTime; // Gravedad hacia abajo (Top-Down Y+)
+    
+    // Envejecimiento
+    particles[index].life -= deltaTime;
+    
+    // Fade out Alpha
+    if (particles[index].life > 0.0) {
+        particles[index].color.a = particles[index].life / particles[index].maxLife;
+    } else {
+        particles[index].color.a = 0.0;
+    }
+}

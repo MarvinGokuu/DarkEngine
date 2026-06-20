@@ -37,6 +37,7 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glBindBufferBase;
     public static MethodHandle glDispatchCompute;
     public static MethodHandle glMemoryBarrier;
+    public static MethodHandle glDrawArraysInstanced;
 
     // Phase 27 - Deferred Pipeline Bindings
     public static MethodHandle glGenTextures;
@@ -54,6 +55,7 @@ public final class DarkOpenGLLinker {
     // Phase 27 - Dynamic Uniforms & Bugfixes
     public static MethodHandle glGetUniformLocation;
     public static MethodHandle glUniform3f;
+    public static MethodHandle glUniform1f;
     public static MethodHandle glActiveTexture;
 
     // Constantes OpenGL
@@ -105,6 +107,7 @@ public final class DarkOpenGLLinker {
             glBindBufferBase = bind(arena, "glBindBufferBase", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glDispatchCompute = bind(arena, "glDispatchCompute", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glMemoryBarrier = bind(arena, "glMemoryBarrier", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glDrawArraysInstanced = bind(arena, "glDrawArraysInstanced", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
 
             // Phase 27 - Textures and FBOs
             glGenTextures = bind(arena, "glGenTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
@@ -125,6 +128,7 @@ public final class DarkOpenGLLinker {
             // Dynamic Uniforms & Bugfixes
             glGetUniformLocation = bind(arena, "glGetUniformLocation", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
+            glUniform1f = bind(arena, "glUniform1f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT));
             glActiveTexture = bind(arena, "glActiveTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
 
             DarkLogger.info("GRAPHICS", "Punteros de OpenGL 4.3 FFI mapeados exitosamente.");
