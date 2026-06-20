@@ -21,11 +21,15 @@ public final class DarkNetworkClient {
 
     private DatagramChannel channel;
     private final ByteBuffer receiveBuffer;
+    private final MemorySegment receiveSegment;
     private final ByteBuffer sendBuffer;
+    private final MemorySegment sendSegment;
 
     public DarkNetworkClient(int port, int bufferSize) {
         this.receiveBuffer = ByteBuffer.allocateDirect(bufferSize);
+        this.receiveSegment = MemorySegment.ofBuffer(this.receiveBuffer);
         this.sendBuffer = ByteBuffer.allocateDirect(bufferSize);
+        this.sendSegment = MemorySegment.ofBuffer(this.sendBuffer);
         
         try {
             this.channel = DatagramChannel.open();
@@ -61,7 +65,7 @@ public final class DarkNetworkClient {
             if (!channel.isConnected()) return;
             sendBuffer.clear();
             // Project Panama permite copiar de MemorySegment a ByteBuffer nativo directo
-            MemorySegment.copy(payload, 0, MemorySegment.ofBuffer(sendBuffer), 0, bytes);
+            MemorySegment.copy(payload, 0, sendSegment, 0, bytes);
             sendBuffer.limit((int) bytes);
             channel.write(sendBuffer); // ZERO ALLOCATION NATIVE SYSCALL
         } catch (IOException e) {
@@ -82,7 +86,7 @@ public final class DarkNetworkClient {
             if (bytesRead <= 0) return 0; // Sin paquetes
             
             receiveBuffer.flip();
-            MemorySegment.copy(MemorySegment.ofBuffer(receiveBuffer), 0, destination, 0, bytesRead);
+            MemorySegment.copy(receiveSegment, 0, destination, 0, bytesRead);
             return bytesRead;
         } catch (IOException e) {
             return 0;
