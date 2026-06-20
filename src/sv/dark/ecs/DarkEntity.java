@@ -90,4 +90,16 @@ public final class DarkEntity {
     public boolean hasComponent(Class<? extends DarkComponent> type) {
         return scene.hasComponent(this.id, type);
     }
+
+    // ==========================================
+    // GAME API: LIFECYCLE
+    // ==========================================
+
+    /**
+     * Destruye la entidad, eliminándola del mundo visual y devolviendo su ID al Pool (O(1)).
+     * Esta instancia de DarkEntity se vuelve inválida después de este llamado.
+     */
+    public void destroy() {
+        scene.destroyEntity(this.id);
+    }
 }
