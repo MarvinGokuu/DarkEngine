@@ -34,6 +34,7 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glGenBuffers;
     public static MethodHandle glBindBuffer;
     public static MethodHandle glBufferData;
+    public static MethodHandle glBufferSubData;
     public static MethodHandle glBindBufferBase;
     public static MethodHandle glDispatchCompute;
     public static MethodHandle glMemoryBarrier;
@@ -104,6 +105,7 @@ public final class DarkOpenGLLinker {
             glGenBuffers = bind(arena, "glGenBuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindBuffer = bind(arena, "glBindBuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glBufferData = bind(arena, "glBufferData", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+            glBufferSubData = bind(arena, "glBufferSubData", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
             glBindBufferBase = bind(arena, "glBindBufferBase", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glDispatchCompute = bind(arena, "glDispatchCompute", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glMemoryBarrier = bind(arena, "glMemoryBarrier", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));

@@ -112,6 +112,11 @@ public final class DarkEngineMaster {
         sv.dark.vfx.DarkParticleEmitterSoA emitterMemory = new sv.dark.vfx.DarkParticleEmitterSoA(512); // Soporta hasta 512 Spawners (que emiten N millones de particulas en GPU)
         registry.registerGameSystem(new sv.dark.vfx.GPUParticleSystem(emitterMemory));
 
+        // 8. Skeletal Animation System (Phase 32.2)
+        // Soporta 10,000 entidades con esqueletos de 64 huesos cada uno (Total VRAM: ~40 MB para matrices)
+        sv.dark.vfx.animation.DarkSkeletonSoA skeletonMemory = new sv.dark.vfx.animation.DarkSkeletonSoA(10000, 64);
+        registry.registerGameSystem(new sv.dark.vfx.animation.SkeletalAnimationSystem(skeletonMemory));
+
         // Finalize Dependency Graph
         registry.buildDependencyGraph();
         registry.setParallelMode(true);
