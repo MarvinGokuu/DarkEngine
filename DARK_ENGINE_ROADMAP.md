@@ -34,11 +34,11 @@ La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las
 - `[x]` **Narrowphase y Rigidbodies**: Resolución de penetración, masas, impulsos elásticos y repulsión (Fast-Path Euclidiano para Círculos).
 - `[x]` **GJK/EPA Collision Solver**: Arquitectura preparada para polígonos convexos (Tipo 2 en ColliderSoA).
 
-## 🎬 FASE 32: SISTEMA DE ANIMACIÓN Y VFX (90%)
+## 🎬 FASE 32: SISTEMA DE ANIMACIÓN Y VFX (100%)
 
-- `[ ]` **Skeletal Animation**: Cálculo de matrices de huesos y Skinning 100% en Compute Shaders.
-- `[ ]` **Animation Blending**: Transiciones suaves y árboles de estados en Off-Heap.
-- `[ ]` **Sistema de Partículas por GPU**: Spawners masivos de efectos controlados completamente en VRAM.
+- `[x]` **Skeletal Animation**: Cálculo de matrices de huesos y Skinning 100% en Compute Shaders (Vía `DarkSkeletonSoA`).
+- `[x]` **Animation Blending**: Transiciones suaves y árboles de estados en Off-Heap subidos por `glBufferSubData`.
+- `[x]` **Sistema de Partículas por GPU**: Spawners masivos de efectos controlados completamente en VRAM (`particles.comp`).
 
 ## 🎵 FASE 33: AUDIO ESPACIAL Y NETWORKING (95%)
 

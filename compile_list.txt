@@ -113,6 +113,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\MetricsAggregationTe
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ParticleSystemDeterminismTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\PowerSavingTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SimdPhysicsDemoTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SkeletalAnimationStressTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SpatialHashGridTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SummaryGenerator.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemDependencyTest.java
@@ -130,3 +131,5 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\EngineStateChannel.jav
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\validation\BusSymmetryValidator.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\DarkParticleEmitterSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\GPUParticleSystem.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\animation\DarkSkeletonSoA.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\animation\SkeletalAnimationSystem.java

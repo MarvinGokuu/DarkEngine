@@ -1,0 +1,61 @@
+#version 430 core
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+// Entradas desde RAM estática
+struct VertexData {
+    vec3 position;
+    vec3 normal;
+    vec2 texCoords;
+    vec4 boneWeights;   // Hasta 4 pesos (Suman 1.0)
+    ivec4 boneIndices;  // IDs de los 4 huesos asociados
+};
+
+// Vértice deformado de salida para el Render Pipeline
+struct SkinnedVertex {
+    vec3 position;
+    vec3 normal;
+};
+
+// SSBO 1: Vértices Originales
+layout(std430, binding = 0) readonly buffer OriginalVertices {
+    VertexData inVertices[];
+};
+
+// SSBO 2: Matrices de todos los esqueletos del mundo
+layout(std430, binding = 1) readonly buffer BoneMatrices {
+    mat4 bones[];
+};
+
+// SSBO 3: Vértices Finales (Este buffer será usado para dibujar `glDrawArrays`)
+layout(std430, binding = 2) writeonly buffer OutputVertices {
+    SkinnedVertex outVertices[];
+};
+
+// Offset del Esqueleto Actual (Para saber qué huesos usar del SSBO global)
+uniform int skeletonBoneOffset;
+uniform int totalVertices;
+
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= totalVertices) return;
+
+    VertexData v = inVertices[idx];
+    
+    // Skinning Math (Multiplicando la posición por la matriz del hueso ponderada)
+    mat4 skinMatrix = 
+        bones[skeletonBoneOffset + v.boneIndices.x] * v.boneWeights.x +
+        bones[skeletonBoneOffset + v.boneIndices.y] * v.boneWeights.y +
+        bones[skeletonBoneOffset + v.boneIndices.z] * v.boneWeights.z +
+        bones[skeletonBoneOffset + v.boneIndices.w] * v.boneWeights.w;
+        
+    vec4 localPos = vec4(v.position, 1.0);
+    vec4 skinnedPos = skinMatrix * localPos;
+    
+    // Lo mismo para las normales, usando la inversa transpuesta si hubiera escalas no uniformes,
+    // pero para AAA+ game engines a menudo se usa la misma matriz por rendimiento puro.
+    vec4 localNormal = vec4(v.normal, 0.0);
+    vec4 skinnedNormal = skinMatrix * localNormal;
+
+    outVertices[idx].position = skinnedPos.xyz;
+    outVertices[idx].normal = normalize(skinnedNormal.xyz);
+}

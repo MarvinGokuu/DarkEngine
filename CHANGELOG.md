@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Authored GLSL Compute Shader (`particles.comp`) to simulate massive particle physics directly on VRAM.
   - Engineered `DarkParticleEmitterSoA` native off-heap memory struct to define emitters structurally on the CPU without instantiating particle objects.
   - Orchestrated GPU logic with the new `GPUParticleSystem` GameSystem, reaching 0ms CPU overhead.
+- **Skeletal Animation System & GPU Skinning (Phase 32.2)**:
+  - Engineered `DarkSkeletonSoA`, a zero-allocation off-heap block holding up to 10,000 skeletons * 64 bones * 64 bytes natively aligned.
+  - Added `glBufferSubData` to `DarkOpenGLLinker` for hyper-fast uniform block uploads per frame.
+  - Authored `skinning.comp` Compute Shader to offload vertex transformation math fully to the VRAM.
+  - Created `SkeletalAnimationStressTest` ensuring zero-GC and stable 40MB native overhead.
 
 ---
 
