@@ -105,4 +105,14 @@ public final class DarkGraphicsLinker {
         GLFW.find("glfwTerminate").orElseThrow(),
         FunctionDescriptor.ofVoid()
     );
+
+    public static final MethodHandle glfwWindowHint = LINKER.downcallHandle(
+        GLFW.find("glfwWindowHint").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
+    );
+
+    public static final MethodHandle glfwDestroyWindow = LINKER.downcallHandle(
+        GLFW.find("glfwDestroyWindow").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
+    );
 }

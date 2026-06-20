@@ -107,6 +107,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemParallelismTes
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemRegistryCapacityTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemStateManagerTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemVRAMLeakTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\UltraFastBootTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkEngineWindow.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkImGuiLinker.java
