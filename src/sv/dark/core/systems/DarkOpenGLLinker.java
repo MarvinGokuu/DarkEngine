@@ -59,6 +59,25 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glUniform1f;
     public static MethodHandle glActiveTexture;
 
+    // Phase 35 - ImGui Rendering
+    public static MethodHandle glGenVertexArrays;
+    public static MethodHandle glBindVertexArray;
+    public static MethodHandle glEnableVertexAttribArray;
+    public static MethodHandle glVertexAttribPointer;
+    public static MethodHandle glDrawElements;
+    public static MethodHandle glScissor;
+    public static MethodHandle glEnable;
+    public static MethodHandle glDisable;
+    public static MethodHandle glBlendEquation;
+    public static MethodHandle glBlendFuncSeparate;
+    public static MethodHandle glBlendFunc;
+    public static MethodHandle glUniformMatrix4fv;
+    public static MethodHandle glUniform1i;
+    public static MethodHandle glViewport;
+    public static MethodHandle glGetIntegerv;
+    public static MethodHandle glIsProgram;
+    public static MethodHandle glPixelStorei;
+
     // Constantes OpenGL
     public static final int GL_COMPUTE_SHADER = 0x91B9;
     public static final int GL_COMPILE_STATUS = 0x8B81;
@@ -88,6 +107,22 @@ public final class DarkOpenGLLinker {
     public static final int GL_TEXTURE2 = 0x84C2;
     public static final int GL_TEXTURE3 = 0x84C3;
     public static final int GL_COLOR_ATTACHMENT2 = 0x8CE2;
+
+    // Phase 35 Constants
+    public static final int GL_BLEND = 0x0BE2;
+    public static final int GL_SCISSOR_TEST = 0x0C11;
+    public static final int GL_CULL_FACE = 0x0B44;
+    public static final int GL_DEPTH_TEST = 0x0B71;
+    public static final int GL_FUNC_ADD = 0x8006;
+    public static final int GL_SRC_ALPHA = 0x0302;
+    public static final int GL_ONE_MINUS_SRC_ALPHA = 0x0303;
+    public static final int GL_ARRAY_BUFFER = 0x8892;
+    public static final int GL_ELEMENT_ARRAY_BUFFER = 0x8893;
+    public static final int GL_TRIANGLES = 0x0004;
+    public static final int GL_UNSIGNED_SHORT = 0x1403;
+    public static final int GL_STREAM_DRAW = 0x88E0;
+    public static final int GL_VIEWPORT = 0x0BA2;
+    public static final int GL_UNPACK_ROW_LENGTH = 0x0CF2;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {
@@ -132,6 +167,25 @@ public final class DarkOpenGLLinker {
             glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
             glUniform1f = bind(arena, "glUniform1f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT));
             glActiveTexture = bind(arena, "glActiveTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+
+            // Phase 35 - ImGui Rendering
+            glGenVertexArrays = bind(arena, "glGenVertexArrays", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glBindVertexArray = bind(arena, "glBindVertexArray", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glEnableVertexAttribArray = bind(arena, "glEnableVertexAttribArray", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glVertexAttribPointer = bind(arena, "glVertexAttribPointer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
+            glDrawElements = bind(arena, "glDrawElements", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
+            glScissor = bind(arena, "glScissor", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glEnable = bind(arena, "glEnable", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glDisable = bind(arena, "glDisable", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glBlendEquation = bind(arena, "glBlendEquation", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glBlendFuncSeparate = bind(arena, "glBlendFuncSeparate", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glBlendFunc = bind(arena, "glBlendFunc", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glUniformMatrix4fv = bind(arena, "glUniformMatrix4fv", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS));
+            glUniform1i = bind(arena, "glUniform1i", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glViewport = bind(arena, "glViewport", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glGetIntegerv = bind(arena, "glGetIntegerv", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glIsProgram = bind(arena, "glIsProgram", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT));
+            glPixelStorei = bind(arena, "glPixelStorei", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
 
             DarkLogger.info("GRAPHICS", "Punteros de OpenGL 4.3 FFI mapeados exitosamente.");
         } catch (Throwable e) {

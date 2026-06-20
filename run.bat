@@ -4,7 +4,7 @@ setlocal
 set JVM_OPTS=--enable-preview --enable-native-access=ALL-UNNAMED --add-modules jdk.incubator.vector -XX:+UseZGC -Xms1G -Xmx1G
 
 echo [EXEC] Launching DarkEngine...
-java %JVM_OPTS% -cp bin sv.dark.state.DarkEngineMaster
+java %JVM_OPTS% -cp "bin;lib\imgui-java-binding.jar;lib\imgui-java-natives-windows.jar" sv.dark.state.DarkEngineMaster
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Engine crashed or failed to launch! Check the console output above.
