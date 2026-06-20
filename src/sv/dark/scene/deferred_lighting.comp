@@ -6,9 +6,10 @@ layout(binding = 0) uniform sampler2D albedoTex;
 layout(binding = 1) uniform sampler2D normalTex;
 layout(rgba16f, binding = 2) writeonly uniform image2D litImage;
 
-// Basic directional light mimicking the sun
-const vec3 sunDir = normalize(vec3(0.5, 1.0, 0.3));
-const vec3 sunColor = vec3(1.0, 0.95, 0.8) * 1.5;
+// Dynamic directional light from Game Loop
+uniform vec3 sunDir;
+uniform vec3 sunColor;
+
 const vec3 ambientLight = vec3(0.1, 0.1, 0.15);
 
 void main() {

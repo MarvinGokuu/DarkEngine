@@ -9,8 +9,8 @@ import sv.dark.core.DarkLogger;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.foreign.ValueLayout;
+import sv.dark.scene.DarkShaderLoader;
 
 /**
  * Deferred Lighting System (Phase 27).
@@ -20,6 +20,8 @@ import java.nio.file.Path;
 public final class DarkDeferredLightingSystem {
 
     private static int computeProgramId;
+    private static int sunDirLocation;
+    private static int sunColorLocation;
 
     public static void init() {
         try {
@@ -27,7 +29,7 @@ public final class DarkDeferredLightingSystem {
             
             int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
             
-            String source = Files.readString(Path.of("src/sv/dark/scene/deferred_lighting.comp"));
+            String source = DarkShaderLoader.loadShader("src/sv/dark/scene/deferred_lighting.comp");
             try (Arena arena = Arena.ofConfined()) {
                 MemorySegment srcPtr = arena.allocateFrom(source);
                 MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
@@ -40,6 +42,14 @@ public final class DarkDeferredLightingSystem {
             DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
             DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
             
+            try (Arena arenaLocal = Arena.ofConfined()) {
+                MemorySegment nameDir = arenaLocal.allocateFrom("sunDir");
+                sunDirLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameDir);
+                
+                MemorySegment nameColor = arenaLocal.allocateFrom("sunColor");
+                sunColorLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameColor);
+            }
+            
             DarkLogger.info("GRAPHICS", "Deferred Lighting Compute Shader compilado.");
 
         } catch (Throwable e) {
@@ -51,6 +61,18 @@ public final class DarkDeferredLightingSystem {
     public static void dispatchLighting() {
         try {
             DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
+
+            // Dynamic sun variables (future: link to ECS)
+            float sunX = (float) Math.sin(System.currentTimeMillis() * 0.001) * 0.5f;
+            float sunY = 1.0f;
+            float sunZ = (float) Math.cos(System.currentTimeMillis() * 0.001) * 0.5f;
+            
+            // Normalize
+            float length = (float) Math.sqrt(sunX*sunX + sunY*sunY + sunZ*sunZ);
+            sunX /= length; sunY /= length; sunZ /= length;
+            
+            DarkOpenGLLinker.glUniform3f.invokeExact(sunDirLocation, sunX, sunY, sunZ);
+            DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, 1.5f, 1.425f, 1.2f);
 
             // Bind Albedo (texture unit 0)
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getAlbedoTexture());

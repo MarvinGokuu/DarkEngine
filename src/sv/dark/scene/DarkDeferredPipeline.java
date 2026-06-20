@@ -31,8 +31,8 @@ public final class DarkDeferredPipeline {
     public static final int INTERNAL_HEIGHT = 720;
     
     // Resolución Final de Presentación (FSR Target)
-    public static final int TARGET_WIDTH = 3840;
-    public static final int TARGET_HEIGHT = 2160;
+    public static final int TARGET_WIDTH = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_WIDTH;
+    public static final int TARGET_HEIGHT = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_HEIGHT;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {

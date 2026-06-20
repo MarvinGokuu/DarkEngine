@@ -10,8 +10,8 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.foreign.ValueLayout;
+import sv.dark.scene.DarkShaderLoader;
 
 /**
  * Data-Oriented GPU Culling System (Phase 19%).
@@ -33,7 +33,7 @@ public final class DarkComputeCullingSystem {
             int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
             
             // 2. Leer código fuente
-            String source = Files.readString(Path.of("src/sv/dark/scene/culling_shader.comp"));
+            String source = DarkShaderLoader.loadShader("src/sv/dark/scene/culling_shader.comp");
             try (Arena arena = Arena.ofConfined()) {
                 MemorySegment srcPtr = arena.allocateFrom(source);
                 MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
