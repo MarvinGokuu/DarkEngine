@@ -51,9 +51,10 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glCheckFramebufferStatus;
     public static MethodHandle glBindImageTexture;
     
-    // Phase 27 - Dynamic Uniforms
+    // Phase 27 - Dynamic Uniforms & Bugfixes
     public static MethodHandle glGetUniformLocation;
     public static MethodHandle glUniform3f;
+    public static MethodHandle glActiveTexture;
 
     // Constantes OpenGL
     public static final int GL_COMPUTE_SHADER = 0x91B9;
@@ -79,6 +80,11 @@ public final class DarkOpenGLLinker {
     public static final int GL_COLOR_ATTACHMENT1 = 0x8CE1;
     public static final int GL_FRAMEBUFFER_COMPLETE = 0x8CD5;
     public static final int GL_READ_WRITE = 0x88BA;
+    public static final int GL_TEXTURE0 = 0x84C0;
+    public static final int GL_TEXTURE1 = 0x84C1;
+    public static final int GL_TEXTURE2 = 0x84C2;
+    public static final int GL_TEXTURE3 = 0x84C3;
+    public static final int GL_COLOR_ATTACHMENT2 = 0x8CE2;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {
@@ -116,9 +122,10 @@ public final class DarkOpenGLLinker {
             // Note: GLboolean is typically 1 byte in C, mapped to JAVA_BYTE, but Project Panama handles JAVA_BOOLEAN internally as 1 byte too.
             glBindImageTexture = bind(arena, "glBindImageTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
 
-            // Dynamic Uniforms
+            // Dynamic Uniforms & Bugfixes
             glGetUniformLocation = bind(arena, "glGetUniformLocation", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
+            glActiveTexture = bind(arena, "glActiveTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
 
             DarkLogger.info("GRAPHICS", "Punteros de OpenGL 4.3 FFI mapeados exitosamente.");
         } catch (Throwable e) {

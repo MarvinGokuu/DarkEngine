@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.7.0] - 2026-06-19
+
+### Architecture (Deferred PBR Rendering)
+- **Cook-Torrance BRDF**:
+  - Rewrote the `deferred_lighting.comp` compute shader to utilize a full Physically Based Rendering workflow.
+  - Implemented Trowbridge-Reitz GGX Normal Distribution, Schlick-GGX Geometry Function, and Fresnel-Schlick approximation.
+  - Scene now dynamically balances energy conservation between diffuse and specular reflections.
+- **PBR G-Buffer Storage**:
+  - Expanded `DarkDeferredPipeline.java` to allocate a 5th VRAM texture (`GL_COLOR_ATTACHMENT2`) packing Roughness (R) and Metallic (G) material data.
+  - Guaranteed Zero-Leak by expanding the `glDeleteTextures` FFI downcall.
+- **FFI Texture Binding Bugfix**:
+  - Fixed a silent bug in Phase 27 where Albedo and Normal textures were overwriting each other on the same OpenGL unit (`GL_TEXTURE0`).
+  - Implemented `DarkOpenGLLinker.glActiveTexture` via Project Panama and properly distributed textures across hardware units (`GL_TEXTURE0`, `GL_TEXTURE1`, `GL_TEXTURE2`).
+
+---
+
 ## [3.6.0] - 2026-06-18
 
 ### Architecture (Cross-Platform Compatibility & Legacy Prevention)
