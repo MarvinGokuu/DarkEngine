@@ -1,8 +1,8 @@
 # 🌌 DARK ENGINE ROADMAP (AAA+ LEVEL)
 
-> **Current Overall Progress:** `[██████████] 100%` (Fase 30 Completada)
+> **Current Overall Progress:** `[██████████] 100%` (Fases 1 a 33 Completadas)
 
-La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las fundaciones de bajo nivel ya están completadas (Fases 1-28), ahora nos movemos a la construcción de los subsistemas y características AAA del motor.
+La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las fundaciones de bajo nivel ya están completadas, ahora nos movemos a la construcción de los subsistemas y características AAA del motor.
 
 ---
 
@@ -45,11 +45,17 @@ La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las
 - `[x]` **OpenAL HRTF System**: Módulo delegado asíncrono para audio posicional con efecto Doppler y Reverb de entorno (`DarkAudioSystem`).
 - `[x]` **Arquitectura de Servidor Autoritario**: Networking Zero-Copy UDP para empaquetar el estado ECS directamente desde Off-Heap hacia un ByteBuffer (`NetworkReplicationSystem`).
 
-## 🛠️ FASE 34: EMPAQUETADO Y V1.0 RELEASE (100%)
+## 🛠️ FASE 34: EMPAQUETADO Y V1.0 RELEASE (0%)
 
+- `[ ]` **Script de Empaquetado**: Crear `build_release.bat` que limpie, recompile sin flags de debug, empaquete los assets y firme un ejecutable JAR optimizado.
+- `[ ]` **Lanzamiento V1.0**: Generar el release final AAA+ listo para uso comercial.
+
+---
+
+## 🎨 FASE 35: EDITOR FRONTEND (POST-V1.0)
+
+- `[ ]` **ImGui Native Integration**: Consola y Profiler visual anclado nativamente por FFI.
 - `[ ]` **Dark Editor Completo**: Escenas visuales operativas (Drag & Drop de assets 3D a la escena).
-- `[ ]` **Scripting Integrado**: Máquina virtual para scripts del usuario (Game Logic sin recompilar el núcleo).
-- `[ ]` **GraalVM Native Image / JPackage**: Emisión del ejecutable `DarkEngine.exe` final, comprimido y listo para distribución.
 
 ---
 
