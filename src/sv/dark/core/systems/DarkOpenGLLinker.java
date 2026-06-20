@@ -48,6 +48,10 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glFramebufferTexture2D;
     public static MethodHandle glCheckFramebufferStatus;
     public static MethodHandle glBindImageTexture;
+    
+    // Phase 27 - Dynamic Uniforms
+    public static MethodHandle glGetUniformLocation;
+    public static MethodHandle glUniform3f;
 
     // Constantes OpenGL
     public static final int GL_COMPUTE_SHADER = 0x91B9;
@@ -107,6 +111,10 @@ public final class DarkOpenGLLinker {
             
             // Note: GLboolean is typically 1 byte in C, mapped to JAVA_BYTE, but Project Panama handles JAVA_BOOLEAN internally as 1 byte too.
             glBindImageTexture = bind(arena, "glBindImageTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+
+            // Dynamic Uniforms
+            glGetUniformLocation = bind(arena, "glGetUniformLocation", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
 
             DarkLogger.info("GRAPHICS", "Punteros de OpenGL 4.3 FFI mapeados exitosamente.");
         } catch (Throwable e) {
