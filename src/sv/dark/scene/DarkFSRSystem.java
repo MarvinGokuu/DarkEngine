@@ -9,8 +9,8 @@ import sv.dark.core.DarkLogger;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.lang.foreign.ValueLayout;
+import sv.dark.scene.DarkShaderLoader;
 
 /**
  * Spatial Upscaling System FSR Proxy (Phase 27).
@@ -27,7 +27,7 @@ public final class DarkFSRSystem {
             
             int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
             
-            String source = Files.readString(Path.of("src/sv/dark/scene/fsr_upscale.comp"));
+            String source = DarkShaderLoader.loadShader("src/sv/dark/scene/fsr_upscale.comp");
             try (Arena arena = Arena.ofConfined()) {
                 MemorySegment srcPtr = arena.allocateFrom(source);
                 MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
