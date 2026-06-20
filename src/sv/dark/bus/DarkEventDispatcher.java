@@ -166,40 +166,7 @@ public final class DarkEventDispatcher {
     // EVENT PROCESSING
     // -------------------------------------------------------------------------
 
-    /**
-     * Processes all events in a specific lane.
-     * 
-     * @param type      Event type.
-     * @param processor Processing function.
-     * @return Number of processed events.
-     */
-    public int processLane(DarkEventType type, java.util.function.LongConsumer processor) {
-        DarkEventLane lane = laneArray[type.ordinal()];
-        if (lane == null) {
-            return 0;
-        }
-        return lane.processAll(processor);
-    }
 
-    /**
-     * Processes all events in all lanes based on structural priority.
-     * 
-     * @param processor Processing function.
-     * @return Total number of processed events.
-     */
-    public int processAll(java.util.function.LongConsumer processor) {
-        int total = 0;
-
-        for (int i= 0; i< PRIORITY_ORDER.length; i++) {
-            DarkEventType type = PRIORITY_ORDER[i];
-            DarkEventLane lane = laneArray[type.ordinal()];
-            if (lane != null) {
-                total += lane.processAll(processor);
-            }
-        }
-
-        return total;
-    }
 
     public int batchPollAll(long[] buffer) {
         int total = 0;
