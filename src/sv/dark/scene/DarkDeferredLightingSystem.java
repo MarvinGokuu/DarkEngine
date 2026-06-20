@@ -22,6 +22,7 @@ public final class DarkDeferredLightingSystem {
     private static int computeProgramId;
     private static int sunDirLocation;
     private static int sunColorLocation;
+    private static int camPosLocation;
 
     public static void init() {
         try {
@@ -48,6 +49,9 @@ public final class DarkDeferredLightingSystem {
                 
                 MemorySegment nameColor = arenaLocal.allocateFrom("sunColor");
                 sunColorLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameColor);
+
+                MemorySegment nameCamPos = arenaLocal.allocateFrom("camPos");
+                camPosLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameCamPos);
             }
             
             DarkLogger.info("GRAPHICS", "Deferred Lighting Compute Shader compilado.");
@@ -73,14 +77,22 @@ public final class DarkDeferredLightingSystem {
             
             DarkOpenGLLinker.glUniform3f.invokeExact(sunDirLocation, sunX, sunY, sunZ);
             DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, 1.5f, 1.425f, 1.2f);
+            DarkOpenGLLinker.glUniform3f.invokeExact(camPosLocation, 0.0f, 5.0f, 10.0f); // TODO: Ligar ECS Camera Position
 
             // Bind Albedo (texture unit 0)
+            DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE0);
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getAlbedoTexture());
+            
             // Bind Normal (texture unit 1)
+            DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE1);
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getNormalTexture());
 
-            // Bind Lit output image (image unit 2)
-            DarkOpenGLLinker.glBindImageTexture.invokeExact(2, DarkDeferredPipeline.getLitTexture(), 0, false, 0, DarkOpenGLLinker.GL_READ_WRITE, DarkOpenGLLinker.GL_RGBA16F);
+            // Bind PBR (texture unit 2)
+            DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE2);
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getPbrTexture());
+
+            // Bind Lit output image (image unit 3)
+            DarkOpenGLLinker.glBindImageTexture.invokeExact(3, DarkDeferredPipeline.getLitTexture(), 0, false, 0, DarkOpenGLLinker.GL_READ_WRITE, DarkOpenGLLinker.GL_RGBA16F);
 
             // Dispatch 1280x720 in 16x16 work groups
             int groupsX = (DarkDeferredPipeline.INTERNAL_WIDTH + 15) / 16;
