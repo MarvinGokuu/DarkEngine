@@ -40,14 +40,21 @@ public final class DarkOpenGLLinker {
 
     // Phase 27 - Deferred Pipeline Bindings
     public static MethodHandle glGenTextures;
+    public static MethodHandle glDeleteTextures;
     public static MethodHandle glBindTexture;
     public static MethodHandle glTexImage2D;
     public static MethodHandle glTexParameteri;
     public static MethodHandle glGenFramebuffers;
+    public static MethodHandle glDeleteFramebuffers;
     public static MethodHandle glBindFramebuffer;
     public static MethodHandle glFramebufferTexture2D;
     public static MethodHandle glCheckFramebufferStatus;
     public static MethodHandle glBindImageTexture;
+    
+    // Phase 27 - Dynamic Uniforms & Bugfixes
+    public static MethodHandle glGetUniformLocation;
+    public static MethodHandle glUniform3f;
+    public static MethodHandle glActiveTexture;
 
     // Constantes OpenGL
     public static final int GL_COMPUTE_SHADER = 0x91B9;
@@ -73,6 +80,11 @@ public final class DarkOpenGLLinker {
     public static final int GL_COLOR_ATTACHMENT1 = 0x8CE1;
     public static final int GL_FRAMEBUFFER_COMPLETE = 0x8CD5;
     public static final int GL_READ_WRITE = 0x88BA;
+    public static final int GL_TEXTURE0 = 0x84C0;
+    public static final int GL_TEXTURE1 = 0x84C1;
+    public static final int GL_TEXTURE2 = 0x84C2;
+    public static final int GL_TEXTURE3 = 0x84C3;
+    public static final int GL_COLOR_ATTACHMENT2 = 0x8CE2;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {
@@ -96,17 +108,24 @@ public final class DarkOpenGLLinker {
 
             // Phase 27 - Textures and FBOs
             glGenTextures = bind(arena, "glGenTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteTextures = bind(arena, "glDeleteTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindTexture = bind(arena, "glBindTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glTexImage2D = bind(arena, "glTexImage2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glTexParameteri = bind(arena, "glTexParameteri", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             
             glGenFramebuffers = bind(arena, "glGenFramebuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteFramebuffers = bind(arena, "glDeleteFramebuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindFramebuffer = bind(arena, "glBindFramebuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glFramebufferTexture2D = bind(arena, "glFramebufferTexture2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glCheckFramebufferStatus = bind(arena, "glCheckFramebufferStatus", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             
             // Note: GLboolean is typically 1 byte in C, mapped to JAVA_BYTE, but Project Panama handles JAVA_BOOLEAN internally as 1 byte too.
             glBindImageTexture = bind(arena, "glBindImageTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+
+            // Dynamic Uniforms & Bugfixes
+            glGetUniformLocation = bind(arena, "glGetUniformLocation", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
+            glActiveTexture = bind(arena, "glActiveTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
 
             DarkLogger.info("GRAPHICS", "Punteros de OpenGL 4.3 FFI mapeados exitosamente.");
         } catch (Throwable e) {

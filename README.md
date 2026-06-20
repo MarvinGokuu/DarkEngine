@@ -20,6 +20,7 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 6.  **GPU-Driven Compute (Phase 19)**: Descarte masivo de geometría (Culling) 100% en VRAM vía Compute Shaders y OpenGL 4.3 FFI (Zero-Overhead).
 7.  **Streaming Zero-Copy (Phase 21)**: Ingestión de memoria desde disco usando `FileChannel.map` y compiladores offline aislados, previniendo congelamientos de I/O en tiempo real.
 8.  **Pipeline Diferido y Upscaling Neuronal (Phase 27)**: G-Buffers y pases de luz diferida a 720p con Super Resolución FidelityFX (FSR 1.0 Proxy) para alcanzar escalado 4K manteniendo fotogramas de Render por debajo de `1ms`.
+9.  **0 Deuda Técnica y VRAM Safe (Phase 28)**: Destrucción de recursos gráficos (FBO Lifecycle) a través de FFI, Telemetría I/O 100% Zero-Allocation (NIO FileChannel), y escalado Vector SIMD ajustado al máximo límite físico del Bus RAM.
 
 Para entender la motivación y cómo planeamos revolucionar el mercado a $1/mes, lee:
  **[EL MANIFIESTO DARK ENGINE](docs/vision/DARK_ENGINE_MANIFESTO.md)**

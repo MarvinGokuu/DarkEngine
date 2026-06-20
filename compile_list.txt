@@ -85,6 +85,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredLightin
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredPipeline.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkFSRSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkKinematicsSystem.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkShaderLoader.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkTransformSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\state\DarkEngineMaster.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\state\DarkStateLayout.java
@@ -106,6 +107,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemParallelismTes
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemRegistryCapacityTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemStateManagerTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemVRAMLeakTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\UltraFastBootTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkEngineWindow.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkImGuiLinker.java

@@ -107,6 +107,13 @@ public final class DarkEngineConfig {
     public static final boolean PERFORMANCE_GC_ZGC;
 
     // ==========================================================================
+    // GRAPHICS CONFIGURATION
+    // ==========================================================================
+
+    public static final int GRAPHICS_TARGET_WIDTH;
+    public static final int GRAPHICS_TARGET_HEIGHT;
+
+    // ==========================================================================
     // STATIC INITIALIZATION (Executed ONCE at class load)
     // ==========================================================================
 
@@ -175,6 +182,12 @@ public final class DarkEngineConfig {
     // ==========================================================================
         PERFORMANCE_JIT_WARMUP = Boolean.parseBoolean(props.getProperty("dark.performance.jit.warmup", "true"));
         PERFORMANCE_GC_ZGC = Boolean.parseBoolean(props.getProperty("dark.performance.gc.zgc", "true"));
+
+    // ==========================================================================
+        // GRAPHICS
+    // ==========================================================================
+        GRAPHICS_TARGET_WIDTH = Integer.parseInt(props.getProperty("dark.graphics.target.width", "3840"));
+        GRAPHICS_TARGET_HEIGHT = Integer.parseInt(props.getProperty("dark.graphics.target.height", "2160"));
 
         // Print configuration summary
         printConfigSummary();
