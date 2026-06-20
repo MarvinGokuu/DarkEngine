@@ -28,18 +28,25 @@ public final class DarkImGuiLinker {
     private static SymbolLookup IMGUI;
     private static boolean isLoaded = false;
     
-    public static void init() {
-        File cimguiDll = new File("lib/cimgui.dll");
+    static {
+        // Load the cimgui native library dynamically using cross-platform resolver
+        File cimguiDll = sv.dark.core.util.NativeLibraryResolver.resolveLibrary("cimgui");
         if (!cimguiDll.exists()) {
-            DarkLogger.error("IMGUI", "lib/cimgui.dll NOT FOUND. Native Editor UI will be disabled.");
-            return;
-        }
-        try {
+            DarkLogger.error("IMGUI", "lib/" + cimguiDll.getName() + " NOT FOUND. Native Editor UI will be disabled.");
+            IMGUI = null;
+        } else {
             System.load(cimguiDll.getAbsolutePath());
             IMGUI = SymbolLookup.loaderLookup();
             isLoaded = true;
-            DarkLogger.info("IMGUI", "Project Panama FFI: cimgui.dll loaded successfully.");
-            
+            DarkLogger.info("IMGUI", "Project Panama FFI: " + cimguiDll.getName() + " loaded successfully.");
+        }
+    }
+
+    public static void init() {
+        if (!isLoaded) {
+            return;
+        }
+        try {
             // Initialize MethodHandles dynamically
             igCreateContext = LINKER.downcallHandle(IMGUI.find("igCreateContext").orElseThrow(), FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
             igNewFrame = LINKER.downcallHandle(IMGUI.find("igNewFrame").orElseThrow(), FunctionDescriptor.ofVoid());

@@ -39,7 +39,13 @@ public class GracefulShutdownTest {
 
     public static void main(String[] args) {
         System.setProperty("sv.dark.test.nohalt", "true");
-        System.out.print("[TEST] Running Graceful Shutdown & Baseline Protocol... ");
+        System.out.print("[TEST] Preloading subsystems to stabilize baseline... ");
+        try {
+            Class.forName("javax.imageio.ImageIO");
+            Class.forName("sv.dark.editor.DarkAssetCompiler");
+        } catch (ClassNotFoundException e) {}
+        
+        System.out.print("\n[TEST] Running Graceful Shutdown & Baseline Protocol... ");
 
         MemorySnapshot stateA = BaselineValidator.captureStateA();
 

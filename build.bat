@@ -18,6 +18,10 @@ for /f "tokens=2 delims=," %%p in ('wmic process where "Name='java.exe' or Name=
 if not exist bin mkdir bin
 
 <nul set /p="[BUILD] Compiling kernel and subsystems (JDK %JAVAC_VER%)... "
+
+:: Auto-discover all Java files to prevent missing dependencies or OS command-line limits
+dir /s /B src\*.java > compile_list.txt
+
 javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
     -Xlint:-incubating ^
@@ -25,18 +29,7 @@ javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     -J-XX:+UseZGC ^
     -J-Xms4G -J-Xmx4G ^
     -J-XX:+AlwaysPreTouch ^
-    src\sv\dark\state\DarkEngineMaster.java ^
-    src\sv\dark\kernel\*.java ^
-    src\sv\dark\core\*.java ^
-    src\sv\dark\core\memory\*.java ^
-    src\sv\dark\core\systems\*.java ^
-    src\sv\dark\state\*.java ^
-    src\sv\dark\bus\*.java ^
-    src\sv\dark\scene\*.java ^
-    src\sv\dark\net\*.java ^
-    src\sv\dark\test\*.java ^
-    src\sv\dark\ui\*.java ^
-    src\sv\dark\admin\*.java > compile.log 2>&1
+    @compile_list.txt > compile.log 2>&1
 
 if %errorlevel% neq 0 (
     echo [ERROR] BUILD FAILED. Critical compilation errors found.
