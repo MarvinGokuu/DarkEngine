@@ -1,0 +1,50 @@
+#version 430 core
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D albedoTex;
+layout(binding = 1) uniform sampler2D normalTex;
+layout(rgba16f, binding = 2) writeonly uniform image2D litImage;
+
+// Basic directional light mimicking the sun
+const vec3 sunDir = normalize(vec3(0.5, 1.0, 0.3));
+const vec3 sunColor = vec3(1.0, 0.95, 0.8) * 1.5;
+const vec3 ambientLight = vec3(0.1, 0.1, 0.15);
+
+void main() {
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 texSize = imageSize(litImage);
+
+    // Bounds check
+    if(pixelCoords.x >= texSize.x || pixelCoords.y >= texSize.y) {
+        return;
+    }
+
+    // Convert pixel coords to normalized UVs
+    vec2 uv = (vec2(pixelCoords) + vec2(0.5)) / vec2(texSize);
+
+    // Read G-Buffer
+    vec4 albedoData = texture(albedoTex, uv);
+    vec4 normalData = texture(normalTex, uv);
+
+    vec3 albedo = albedoData.rgb;
+    vec3 normal = normalData.xyz;
+
+    // Default to background if normal length is 0 (sky)
+    if (length(normal) < 0.1) {
+        imageStore(litImage, pixelCoords, vec4(albedo * ambientLight, 1.0));
+        return;
+    }
+
+    // Normalize normal vector
+    normal = normalize(normal);
+
+    // Simple N.L diffuse lighting
+    float nDotL = max(dot(normal, sunDir), 0.0);
+    vec3 diffuse = albedo * sunColor * nDotL;
+
+    vec3 finalColor = diffuse + (albedo * ambientLight);
+
+    // Write to lit output image
+    imageStore(litImage, pixelCoords, vec4(finalColor, 1.0));
+}

@@ -533,6 +533,10 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
+        // [Fase 27] GPU Compute Shader Dispatch: Pipeline Diferido y Upscaling FSR
+        sv.dark.scene.DarkDeferredLightingSystem.dispatchLighting();
+        sv.dark.scene.DarkFSRSystem.dispatchFSR();
+
         if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
             try {
                 // New Frame

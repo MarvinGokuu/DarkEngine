@@ -23,10 +23,16 @@ public final class DarkDeferredPipeline {
     private static int gBufferFBO;
     private static int albedoTexture;
     private static int normalTexture;
+    private static int litTexture;
+    private static int presentationTexture;
     
     // Resolución Base (Ajustable para performance vs calidad)
-    private static final int INTERNAL_WIDTH = 1280;
-    private static final int INTERNAL_HEIGHT = 720;
+    public static final int INTERNAL_WIDTH = 1280;
+    public static final int INTERNAL_HEIGHT = 720;
+    
+    // Resolución Final de Presentación (FSR Target)
+    public static final int TARGET_WIDTH = 3840;
+    public static final int TARGET_HEIGHT = 2160;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {
@@ -38,27 +44,41 @@ public final class DarkDeferredPipeline {
             gBufferFBO = fboPtr.get(ValueLayout.JAVA_INT, 0);
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, gBufferFBO);
 
-            // 2. Generate Textures
-            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT, 2); // 2 texturas
-            DarkOpenGLLinker.glGenTextures.invokeExact(2, texPtr);
+            // 2. Generate Textures (4 texturas ahora)
+            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT, 4);
+            DarkOpenGLLinker.glGenTextures.invokeExact(4, texPtr);
             albedoTexture = texPtr.get(ValueLayout.JAVA_INT, 0);
-            normalTexture = texPtr.get(ValueLayout.JAVA_INT, 4); // Offset 4 bytes para el segundo int
+            normalTexture = texPtr.get(ValueLayout.JAVA_INT, 4);
+            litTexture = texPtr.get(ValueLayout.JAVA_INT, 8);
+            presentationTexture = texPtr.get(ValueLayout.JAVA_INT, 12);
 
-            // 3. Configure Albedo Texture (Color)
+            // 3. Configure Albedo Texture (Color - 720p)
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, albedoTexture);
             DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
             DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_COLOR_ATTACHMENT0, DarkOpenGLLinker.GL_TEXTURE_2D, albedoTexture, 0);
 
-            // 4. Configure Normal Texture (Geometría / Vectores)
+            // 4. Configure Normal Texture (Geometría / Vectores - 720p)
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, normalTexture);
             DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA16F, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
             DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_COLOR_ATTACHMENT1, DarkOpenGLLinker.GL_TEXTURE_2D, normalTexture, 0);
 
-            // 5. Verify FBO
+            // 5. Configure Lit Texture (Salida Iluminada Computada - 720p)
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, litTexture);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA16F, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_LINEAR);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_LINEAR);
+
+            // 6. Configure Presentation Texture (Salida Final Upscaled FSR - 4K)
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, presentationTexture);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, TARGET_WIDTH, TARGET_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_LINEAR);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_LINEAR);
+
+            // 7. Verify FBO
             int status = (int) DarkOpenGLLinker.glCheckFramebufferStatus.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER);
             if (status != DarkOpenGLLinker.GL_FRAMEBUFFER_COMPLETE) {
                 DarkLogger.fatal("GRAPHICS", "G-Buffer Framebuffer is not complete. Status: " + status, null);
@@ -68,7 +88,7 @@ public final class DarkDeferredPipeline {
             // Unbind to return to default screen framebuffer
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
 
-            DarkLogger.info("GRAPHICS", "Deferred Pipeline Chassis Ready (VRAM Pre-allocated).");
+            DarkLogger.info("GRAPHICS", "Deferred Pipeline Chassis Ready. Targets: Base 720p -> Presentation 4K");
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Failed to initialize Deferred Pipeline FFI.", e);
         }
@@ -80,5 +100,13 @@ public final class DarkDeferredPipeline {
 
     public static int getNormalTexture() {
         return normalTexture;
+    }
+
+    public static int getLitTexture() {
+        return litTexture;
+    }
+
+    public static int getPresentationTexture() {
+        return presentationTexture;
     }
 }
