@@ -122,11 +122,6 @@ void main() {
     
     vec3 finalColor = ambient + Lo;
 
-    // HDR Tonemapping (Reinhard) y Corrección Gamma se asume que ocurren en el paso de Post/Presentación, 
-    // pero aplicaremos un HDR simple aquí para evitar quemar el blanco.
-    finalColor = finalColor / (finalColor + vec3(1.0));
-    // Corrección Gamma (2.2)
-    finalColor = pow(finalColor, vec3(1.0/2.2));
-
+    // HDR Output puro (ToneMapping y Gamma ocurren en el pase de Post-Procesado)
     imageStore(litImage, pixelCoords, vec4(finalColor, 1.0));
 }

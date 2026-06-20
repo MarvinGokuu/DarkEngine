@@ -76,6 +76,7 @@ public final class DarkEngineWindow {
             // WHY: Must run AFTER OpenGLLinker and CullingSystem.
             sv.dark.scene.DarkDeferredPipeline.init();
             sv.dark.scene.DarkDeferredLightingSystem.init();
+            sv.dark.scene.DarkPostProcessSystem.init();
             sv.dark.scene.DarkFSRSystem.init();
 
             // Initialize Native ImGui Chassis (Phase 9)
