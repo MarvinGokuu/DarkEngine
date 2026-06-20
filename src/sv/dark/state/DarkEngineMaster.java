@@ -97,6 +97,9 @@ public final class DarkEngineMaster {
         registry.registerGameSystem(new DarkInputSystem(memoryVault));
         registry.registerGameSystem(new DarkAudioSystem(memoryVault));
 
+        // [ECS PHASE 30] Register High-Level Scene Kinematics (Runs in parallel via Graph)
+        registry.registerGameSystem(new sv.dark.ecs.SceneKinematicsSystem(kernel.getScene()));
+
         // Finalize Dependency Graph
         registry.buildDependencyGraph();
         registry.setParallelMode(true);

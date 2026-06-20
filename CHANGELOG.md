@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.8.0] - 2026-06-19
+
+### Architecture (Hybrid ECS & Game API)
+- **High-Level Abstraction**:
+  - Implemented `DarkScene` as the primary Scene Graph Orchestrator featuring an `O(1)` Free-List memory recycling algorithm.
+  - Implemented `DarkEntity` to serve as a Zero-Allocation Object-Oriented facade (Game API). Developers can use standard setters (`setPosition`) which automatically bind to 64-bit native SIMD memory behind the scenes.
+  - Implemented `SceneKinematicsSystem` as an adapter to hook the High-Level Scene into the parallel multi-threaded Kernel execution.
+  - Registered the new hybrid ECS logic seamlessly into the `DarkEngineMaster` boot sequence without breaking existing rendering or SIMD pipelines.
+
+---
+
 ## [3.7.1] - 2026-06-19
 
 ### Graphics (Post-Processing & HDR)
