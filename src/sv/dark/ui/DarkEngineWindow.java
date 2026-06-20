@@ -72,10 +72,11 @@ public final class DarkEngineWindow {
             // Must run AFTER OpenGLLinker (needs glfwGetProcAddress pointers active).
             sv.dark.scene.DarkComputeCullingSystem.init();
             
-            // Inicializar G-Buffers del Deferred Pipeline (Phase 27)
+            // Inicializar G-Buffers del Deferred Pipeline y Shaders (Phase 27)
             // WHY: Must run AFTER OpenGLLinker and CullingSystem.
             sv.dark.scene.DarkDeferredPipeline.init();
-
+            sv.dark.scene.DarkDeferredLightingSystem.init();
+            sv.dark.scene.DarkFSRSystem.init();
 
             // Initialize Native ImGui Chassis (Phase 9)
             sv.dark.ui.DarkImGuiLinker.init();
