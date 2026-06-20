@@ -19,13 +19,15 @@ public final class DarkEntity {
 
     private final int id;
     private final DarkTransformSoA soaMemory;
+    private final DarkScene scene;
 
     /**
      * Instantiated exclusively by DarkScene.spawnEntity().
      */
-    DarkEntity(int id, DarkTransformSoA soa) {
+    DarkEntity(int id, DarkTransformSoA soa, DarkScene scene) {
         this.id = id;
         this.soaMemory = soa;
+        this.scene = scene;
     }
 
     public int getId() {
@@ -67,5 +69,25 @@ public final class DarkEntity {
 
     public float getVelocityY() {
         return soaMemory.velY.get(ValueLayout.JAVA_FLOAT, id * 4L);
+    }
+
+    // ==========================================
+    // GAME API: COMPONENT SYSTEM
+    // ==========================================
+
+    public <T extends DarkComponent> void addComponent(T component) {
+        scene.addComponent(this.id, component);
+    }
+
+    public <T extends DarkComponent> void removeComponent(Class<T> type) {
+        scene.removeComponent(this.id, type);
+    }
+
+    public <T extends DarkComponent> T getComponent(Class<T> type) {
+        return scene.getComponent(this.id, type);
+    }
+
+    public boolean hasComponent(Class<? extends DarkComponent> type) {
+        return scene.hasComponent(this.id, type);
     }
 }

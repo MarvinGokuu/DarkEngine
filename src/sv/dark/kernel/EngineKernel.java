@@ -121,8 +121,9 @@ public final class EngineKernel {
         // Create WorldStateFrame with Arena, segment, and timestamp
         this.currentState = new WorldStateFrame(frameArena, stateVault.getRawSegment(), System.nanoTime());
 
-        // [ECS PHASE 30] Init Scene Orchestrator with 1 Million entities
-        this.scene = new sv.dark.ecs.DarkScene(1_000_000);
+        // [ECS PHASE 30] Init Scene Orchestrator with default capacity
+        // Se usa 50_000 por defecto para no asfixiar el Heap Base en tests de Boot
+        this.scene = new sv.dark.ecs.DarkScene(50_000);
 
         // [NEURONA_048 STEP 3] Admin Metrics Bus (Control Plane)
         // Capacity 1024: ~17 seconds of metrics at 60 FPS

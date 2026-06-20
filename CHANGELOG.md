@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented `SceneKinematicsSystem` as an adapter to hook the High-Level Scene into the parallel multi-threaded Kernel execution.
   - Registered the new hybrid ECS logic seamlessly into the `DarkEngineMaster` boot sequence without breaking existing rendering or SIMD pipelines.
 
+- **Data-Oriented Component System**:
+  - Engineered `DarkComponent` marker interface for inline memory expansion.
+  - Developed `ComponentRegistry` to map classes to integer IDs at Runtime statically, achieving O(1) reflection-less fetching.
+  - Engineered `ComponentArray` to store component references in parallel Object[] arrays strictly mapped by Entity ID.
+  - Integrated a 64-bit `Bitmask` into `DarkScene` for cache-friendly O(1) component querying without accessing RAM arrays.
+
 ---
 
 ## [3.7.1] - 2026-06-19

@@ -1,6 +1,6 @@
 # 🌌 DARK ENGINE ROADMAP (AAA+ LEVEL)
 
-> **Current Overall Progress:** `[████████▓░] 85%` (Fase 30 En Progreso)
+> **Current Overall Progress:** `[█████████░] 90%` (Fase 30 En Progreso)
 
 La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las fundaciones de bajo nivel ya están completadas (Fases 1-28), ahora nos movemos a la construcción de los subsistemas y características AAA del motor.
 
@@ -19,10 +19,10 @@ La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las
 - `[ ]` **Shadow Mapping Pipeline**: Sombras dinámicas en cascada (CSM) aprovechando los SSBO culling arrays.
 - `[ ]` **ImGui Native Integration**: Consola y Profiler visual anclado nativamente por FFI.
 
-## 🧠 FASE 30: ARQUITECTURA DE ALTO NIVEL Y ECS (85%)
+## 🧠 FASE 30: ARQUITECTURA DE ALTO NIVEL Y ECS (90%)
 - `[x]` **DarkScene & EntityMap**: La abstracción de Scene Graph que traduce lógica orientada a objetos hacia la memoria plana SoA.
-- `[ ]` **Component System**: Arquitectura de componentes 100% Data-Oriented. línea de Java 26 (Cero apuntadores en el Heap).
-- `[ ]` **GameLoop a 144Hz Seguros**: Separar el ciclo lógico de actualización del ciclo de pintado por interpolación.
+- `[x]` **Component System**: Arquitectura de componentes 100% Data-Oriented (Bitmasks, Registry de O(1), Component Arrays Cero-Allocation).
+- `[ ]` **Game API**: El punto de entrada para el desarrollador (Spawn, Destroy, AddComponent).
 
 ## 💥 FASE 31: FÍSICAS AVANZADAS Y COLISIONES (85%)
 - `[ ]` **Broadphase Culling**: Árboles BVH (Bounding Volume Hierarchy) o Quadtrees integrados vía SIMD.

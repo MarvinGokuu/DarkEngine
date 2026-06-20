@@ -57,6 +57,9 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\systems\PlayerSystem
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\systems\RenderSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\systems\SpriteSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\core\util\NativeLibraryResolver.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\ComponentArray.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\ComponentRegistry.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\DarkComponent.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\DarkEntity.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\DarkScene.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ecs\SceneKinematicsSystem.java
