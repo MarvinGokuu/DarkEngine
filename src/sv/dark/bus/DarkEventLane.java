@@ -4,6 +4,10 @@
 
 package sv.dark.bus;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.concurrent.locks.LockSupport;
+
 import sv.dark.core.AAACertified;
 
 /**
@@ -19,13 +23,13 @@ import sv.dark.core.AAACertified;
  * @since 2.0
  */
 @AAACertified(
-    date         = "2026-06-12",
+    date         = "2026-06-20",
     maxLatencyNs = 100,
     minThroughput = 20_000_000,
     alignment    = 64,
     lockFree     = true,
     offHeap      = false,
-    notes        = "Optimized for single-thread metrics using primitive long fields and infinite BLOCK retries"
+    notes        = "Optimized with VarHandle metrics and controlled Spin-Wait degradation"
 )
 public final class DarkEventLane {
 
@@ -35,7 +39,7 @@ public final class DarkEventLane {
     private final BackpressureStrategy strategy;
 
     // -------------------------------------------------------------------------
-    // METRICS (Zero-Allocation Primitive Counters)
+    // METRICS (Zero-Allocation Primitive Counters via VarHandle)
     // -------------------------------------------------------------------------
 
     // Padding to prevent False Sharing (L1 Cache Line = 64 bytes)
@@ -43,21 +47,38 @@ public final class DarkEventLane {
             headShield_L1_slot4, headShield_L1_slot5, headShield_L1_slot6,
             headShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
 
-    private long totalOffered = 0;
-    private long totalAccepted = 0;
-    private long totalDropped = 0;
+    private volatile long totalOffered = 0;
+    private volatile long totalAccepted = 0;
+    private volatile long totalDropped = 0;
 
     // Inter-thread padding to isolate producer metrics from consumer metrics
     private long midShield_L1_slot1, midShield_L1_slot2, midShield_L1_slot3,
             midShield_L1_slot4, midShield_L1_slot5, midShield_L1_slot6,
             midShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
 
-    private long totalPolled = 0;
+    private volatile long totalPolled = 0;
 
     // Tail padding to prevent false sharing at the end of the object
     private long tailShield_L1_slot1, tailShield_L1_slot2, tailShield_L1_slot3,
             tailShield_L1_slot4, tailShield_L1_slot5, tailShield_L1_slot6,
             tailShield_L1_slot7; // 7 slots × 8 bytes = 56 bytes
+
+    private static final VarHandle OFFERED_H;
+    private static final VarHandle ACCEPTED_H;
+    private static final VarHandle DROPPED_H;
+    private static final VarHandle POLLED_H;
+
+    static {
+        try {
+            var lookup = MethodHandles.lookup();
+            OFFERED_H = lookup.findVarHandle(DarkEventLane.class, "totalOffered", long.class);
+            ACCEPTED_H = lookup.findVarHandle(DarkEventLane.class, "totalAccepted", long.class);
+            DROPPED_H = lookup.findVarHandle(DarkEventLane.class, "totalDropped", long.class);
+            POLLED_H = lookup.findVarHandle(DarkEventLane.class, "totalPolled", long.class);
+        } catch (ReflectiveOperationException e) {
+            throw new Error("Critical failure in Dark Event Lane: Could not map VarHandles.");
+        }
+    }
 
     /**
      * Creates a specialized lane with a backpressure strategy.
@@ -85,45 +106,53 @@ public final class DarkEventLane {
      * @return true if the event was accepted.
      */
     public boolean offer(long event) {
-        totalOffered++;
+        OFFERED_H.getAndAdd(this, 1L);
 
         boolean accepted = bus.offer(event);
 
         if (accepted) {
-            totalAccepted++;
+            ACCEPTED_H.getAndAdd(this, 1L);
             return true;
         }
 
         // Handle backpressure according to strategy
         switch (strategy) {
             case DROP:
-                totalDropped++;
+                DROPPED_H.getAndAdd(this, 1L);
                 return false;
 
             case BLOCK:
-                // Infinite spin-wait retry to avoid discarding vital core signals
+                // Controlled spin-wait retry to avoid discarding vital core signals and preventing deadlocks
+                int spins = 0;
                 while (!bus.offer(event)) {
                     if (Thread.currentThread().isInterrupted()) {
-                        totalDropped++;
+                        DROPPED_H.getAndAdd(this, 1L);
                         return false;
                     }
-                    Thread.onSpinWait(); // CPU hint to reduce power consumption and allow memory sync
+                    if (spins < 100) {
+                        Thread.onSpinWait(); // CPU hint to reduce power consumption
+                    } else if (spins < 200) {
+                        Thread.yield(); // Degrade to OS scheduler
+                    } else {
+                        LockSupport.parkNanos(100); // Desperate mitigation: Sleep 100ns
+                    }
+                    spins++;
                 }
-                totalAccepted++;
+                ACCEPTED_H.getAndAdd(this, 1L);
                 return true;
 
             case OVERWRITE:
                 // Discard the oldest event and retry
                 bus.poll();
-                totalDropped++;
+                DROPPED_H.getAndAdd(this, 1L);
                 boolean retryAccepted = bus.offer(event);
                 if (retryAccepted) {
-                    totalAccepted++;
+                    ACCEPTED_H.getAndAdd(this, 1L);
                 }
                 return retryAccepted;
 
             default:
-                totalDropped++;
+                DROPPED_H.getAndAdd(this, 1L);
                 return false;
         }
     }
@@ -136,7 +165,7 @@ public final class DarkEventLane {
     public long poll() {
         long event = bus.poll();
         if (event != -1) {
-            totalPolled++;
+            POLLED_H.getAndAdd(this, 1L);
         }
         return event;
     }
@@ -150,21 +179,7 @@ public final class DarkEventLane {
         return bus.peek();
     }
 
-    /**
-     * Processes all available events in the lane.
-     * 
-     * @param processor Function that processes each event.
-     * @return Number of events processed.
-     */
-    public int processAll(java.util.function.LongConsumer processor) {
-        int count = 0;
-        long event;
-        while ((event = poll()) != -1) {
-            processor.accept(event);
-            count++;
-        }
-        return count;
-    }
+
 
     /**
      * Extracts up to buffer.length events into a primitive array (Zero-Allocation).
