@@ -9,6 +9,7 @@ import sv.dark.core.DarkLogger;
 import sv.dark.memory.SectorMemoryVault;
 import sv.dark.state.DarkStateLayout;
 import sv.dark.state.WorldStateFrame;
+import sv.dark.audio.DarkAudioSourceSoA;
 
 /**
  * RESPONSIBILITY: Manage Spatial 3D Audio Context via OpenAL.
@@ -23,11 +24,13 @@ import sv.dark.state.WorldStateFrame;
 public final class DarkAudioSystem implements GameSystem {
 
     private final SectorMemoryVault vault;
+    private final DarkAudioSourceSoA sources;
     private MemorySegment device;
     private MemorySegment context;
 
-    public DarkAudioSystem(SectorMemoryVault vault) {
+    public DarkAudioSystem(SectorMemoryVault vault, DarkAudioSourceSoA sources) {
         this.vault = vault;
+        this.sources = sources;
         initOpenAL();
     }
 
@@ -49,7 +52,11 @@ public final class DarkAudioSystem implements GameSystem {
 
             // Make context current (must capture the byte return value for invokeExact)
             byte result = (byte) DarkAudioLinker.alcMakeContextCurrent.invokeExact(context);
-            DarkLogger.info("AUDIO", "OpenAL Context Initialized. Spatial Audio Active.");
+            
+            // Inicializar las 1024 fuentes de OpenAL de golpe
+            DarkAudioLinker.alGenSources.invokeExact(sources.getCapacity(), sources.sourceIds);
+            
+            DarkLogger.info("AUDIO", "OpenAL Context Initialized. Spatial Audio Active (1024 Sources).");
 
         } catch (Throwable t) {
             DarkLogger.warning("AUDIO", "OpenAL Initialization Exception: " + t.getMessage());
@@ -67,6 +74,24 @@ public final class DarkAudioSystem implements GameSystem {
 
             // Update OpenAL Listener Position in 3D Space natively (Z = 0 for 2D Engine)
             DarkAudioLinker.alListener3f.invokeExact(DarkAudioLinker.AL_POSITION, px, py, 0.0f);
+            
+            // Phase 33: Sincronizar Físicas de Fuentes de Audio para Doppler y HRTF
+            int cap = sources.getCapacity();
+            for (int i = 0; i < cap; i++) {
+                int sourceId = sources.sourceIds.get(java.lang.foreign.ValueLayout.JAVA_INT, i * 4L);
+                if (sourceId == 0) continue; // Fuente inactiva
+                
+                float spx = sources.posX.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                float spy = sources.posY.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                float spz = sources.posZ.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                
+                float svx = sources.velX.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                float svy = sources.velY.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                float svz = sources.velZ.get(java.lang.foreign.ValueLayout.JAVA_FLOAT, i * 4L);
+                
+                DarkAudioLinker.alSource3f.invokeExact(sourceId, DarkAudioLinker.AL_POSITION, spx, spy, spz);
+                DarkAudioLinker.alSource3f.invokeExact(sourceId, DarkAudioLinker.AL_VELOCITY, svx, svy, svz);
+            }
 
         } catch (Throwable e) {
             // Ignore in hot path
