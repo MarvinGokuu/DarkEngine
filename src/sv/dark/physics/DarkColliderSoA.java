@@ -16,8 +16,10 @@ import sv.dark.core.AAACertified;
 @AAACertified(date = "2026-06-19", maxLatencyNs = 1, minThroughput = 0, lockFree = true, offHeap = true, notes = "Native Memory for Bounds")
 public final class DarkColliderSoA {
     
-    public final MemorySegment radius; // Float (4 bytes)
-    public final MemorySegment mass;   // Float (4 bytes)
+    public final MemorySegment radius;      // Float (4 bytes)
+    public final MemorySegment mass;        // Float (4 bytes)
+    public final MemorySegment restitution; // Float (4 bytes) - Bounciness [0.0 = clay, 1.0 = rubber]
+    public final MemorySegment shapeType;   // Byte (1 byte) - 0: Circle, 1: AABB, 2: Polygon
     
     private final Arena arena;
     private final int capacity;
@@ -29,6 +31,8 @@ public final class DarkColliderSoA {
         long bytesRequired = capacity * 4L;
         this.radius = arena.allocate(bytesRequired, 64);
         this.mass = arena.allocate(bytesRequired, 64);
+        this.restitution = arena.allocate(bytesRequired, 64);
+        this.shapeType = arena.allocate(capacity, 64); // 1 byte per entity
     }
 
     public int getCapacity() {

@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `DarkColliderSoA` to store physics shapes like radii in contiguous off-heap native memory for SIMD processing.
   - Engineered `BroadphaseSystem` to group entities into spatial buckets in `O(N)` time inside the engine boot lifecycle.
   - Reached Sub-millisecond hashing throughput for 100,000 entities in `SpatialHashGridTest`.
+- **Narrowphase & RigidBody Dynamics**:
+  - Expanded `DarkColliderSoA` with memory slots for `restitution` (bounciness), `mass`, and `shapeType`.
+  - Engineered `DarkCollisionSolver` to resolve elastic bounces natively acting on linear momentum via SIMD-ready structures.
+  - Built `NarrowphaseSystem` to query spatial buckets and resolve massive physics interactions with strict zero-allocation limits.
 
 ---
 

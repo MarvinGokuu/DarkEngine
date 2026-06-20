@@ -88,6 +88,8 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkWebEditorSocket.j
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\MemoryMonitor.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\BroadphaseSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\DarkColliderSoA.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\DarkCollisionSolver.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\NarrowphaseSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\SpatialHashGrid.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkComputeCullingSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredLightingSystem.java
@@ -103,6 +105,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\state\DarkStateVault.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\state\WorldStateFrame.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\BusBenchmarkTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\DependencyGraphPerformanceTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ElasticCollisionTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\GovernorTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\GracefulShutdownTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\MetricsAggregationTest.java

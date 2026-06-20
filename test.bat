@@ -83,7 +83,10 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "18/19" "VRAM Lifecycle (FBO Leak Test)" "sv.dark.test.SystemVRAMLeakTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "19/19" "Broadphase Culling Benchmark" "sv.dark.test.SpatialHashGridTest" ""
+call :run_test "19/20" "Broadphase Culling Benchmark" "sv.dark.test.SpatialHashGridTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "20/20" "Elastic Collision Dynamics" "sv.dark.test.ElasticCollisionTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
