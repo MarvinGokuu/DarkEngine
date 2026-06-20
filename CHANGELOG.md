@@ -45,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Authored `skinning.comp` Compute Shader to offload vertex transformation math fully to the VRAM.
   - Created `SkeletalAnimationStressTest` ensuring zero-GC and stable 40MB native overhead.
 
+### Audio & Networking (Phase 33)
+- **Spatial Audio (HRTF)**:
+  - Engineered `DarkAudioSourceSoA` to handle 1024 native audio instances off-heap.
+  - Linked advanced OpenAL Soft bounds (`alSource3f`, `alGenSources`, `alBufferData`) in `DarkAudioLinker`.
+  - Expanded `DarkAudioSystem` to sync positional and velocity vectors natively for true Doppler and 3D HRTF effects.
+- **Data-Oriented Networking (UDP)**:
+  - Authored `DarkNetworkClient` mapping non-blocking NIO `DatagramChannel` to Project Panama `MemorySegments`.
+  - Created `NetworkReplicationSystem` to pack raw ECS State (`WorldStateFrame`) and broadcast it as pure binary payloads at tick rate (20-60Hz).
+  - Validated Zero-Allocation stability via `SpatialAudioStressTest` and `UDPZeroCopyTest`.
+
 ---
 
 ## [3.7.1] - 2026-06-19

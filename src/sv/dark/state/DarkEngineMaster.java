@@ -95,7 +95,9 @@ public final class DarkEngineMaster {
         
         // Register Core Phase 2 Systems
         registry.registerGameSystem(new DarkInputSystem(memoryVault));
-        registry.registerGameSystem(new DarkAudioSystem(memoryVault));
+        
+        sv.dark.audio.DarkAudioSourceSoA audioSources = new sv.dark.audio.DarkAudioSourceSoA(1024);
+        registry.registerGameSystem(new DarkAudioSystem(memoryVault, audioSources));
 
         // [ECS PHASE 30] Register High-Level Scene Kinematics (Runs in parallel via Graph)
         registry.registerGameSystem(new sv.dark.ecs.SceneKinematicsSystem(kernel.getScene()));
@@ -116,6 +118,11 @@ public final class DarkEngineMaster {
         // Soporta 10,000 entidades con esqueletos de 64 huesos cada uno (Total VRAM: ~40 MB para matrices)
         sv.dark.vfx.animation.DarkSkeletonSoA skeletonMemory = new sv.dark.vfx.animation.DarkSkeletonSoA(10000, 64);
         registry.registerGameSystem(new sv.dark.vfx.animation.SkeletalAnimationSystem(skeletonMemory));
+
+        // 9. Networking & State Replication (Phase 33)
+        // Cliente UDP en el puerto 27015, con un buffer RX/TX de 64KB (Zero-Allocation)
+        sv.dark.net.DarkNetworkClient netClient = new sv.dark.net.DarkNetworkClient(27015, 65536);
+        registry.registerGameSystem(new sv.dark.net.NetworkReplicationSystem(netClient, kernel.getScene()));
 
         // Finalize Dependency Graph
         registry.buildDependencyGraph();

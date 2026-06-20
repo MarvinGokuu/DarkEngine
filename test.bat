@@ -89,10 +89,16 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "20/21" "Elastic Collision Dynamics" "sv.dark.test.ElasticCollisionTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "21/22" "GPU Particle Emitter Structure" "sv.dark.test.GPUParticleStressTest" ""
+call :run_test "21/24" "GPU Particle Emitter Structure" "sv.dark.test.GPUParticleStressTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "22/22" "Skeletal Animation Structure" "sv.dark.test.SkeletalAnimationStressTest" ""
+call :run_test "22/24" "Skeletal Animation Structure" "sv.dark.test.SkeletalAnimationStressTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "23/24" "Spatial Audio Structure" "sv.dark.test.SpatialAudioStressTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "24/24" "UDP Networking Structure" "sv.dark.test.UDPZeroCopyTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.

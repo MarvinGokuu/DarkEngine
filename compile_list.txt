@@ -1,4 +1,5 @@
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\admin\AdminController.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\audio\DarkAudioSourceSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\bus\BackpressureStrategy.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\bus\BusCoordinationTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\bus\BusHardwareTest.java
@@ -81,11 +82,13 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\memory\DarkAsset.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\memory\DarkAssetStreamer.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\memory\SectorMemoryVault.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkMetricsServer.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkNetworkClient.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkSaturationProbe.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkTelemetryStream.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkTelemetryUnit.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkWebEditorSocket.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\MemoryMonitor.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\NetworkReplicationSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\BroadphaseSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\DarkColliderSoA.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\DarkCollisionSolver.java
@@ -114,6 +117,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ParticleSystemDeterm
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\PowerSavingTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SimdPhysicsDemoTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SkeletalAnimationStressTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SpatialAudioStressTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SpatialHashGridTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SummaryGenerator.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemDependencyTest.java
@@ -124,6 +128,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemRegistryCapaci
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemSIMDKinematicsTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemStateManagerTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemVRAMLeakTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\UDPZeroCopyTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\UltraFastBootTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkEngineWindow.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkImGuiLinker.java
