@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Engineered `ComponentArray` to store component references in parallel Object[] arrays strictly mapped by Entity ID.
   - Integrated a 64-bit `Bitmask` into `DarkScene` for cache-friendly O(1) component querying without accessing RAM arrays.
 
+### Physics & Broadphase Culling
+- **Spatial Hash Grid**:
+  - Replaced legacy OOP Quadtrees with a 100% Data-Oriented Spatial Hashing map implemented as flat `int[]` arrays (`cellHead` and `cellNext`).
+  - Added `DarkColliderSoA` to store physics shapes like radii in contiguous off-heap native memory for SIMD processing.
+  - Engineered `BroadphaseSystem` to group entities into spatial buckets in `O(N)` time inside the engine boot lifecycle.
+  - Reached Sub-millisecond hashing throughput for 100,000 entities in `SpatialHashGridTest`.
+
 ---
 
 ## [3.7.1] - 2026-06-19

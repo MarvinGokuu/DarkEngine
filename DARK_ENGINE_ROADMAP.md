@@ -26,9 +26,9 @@ La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las
 - `[x]` **Valhalla Value Classes**: Arquitectura pasiva preparada (`DarkComponent` marker interface) para clases por valor en Java 26.
 - `[x]` **GameLoop a 144Hz Seguros**: Delegado en el Interpolador de Físicas nativo en la Fase 28.
 
-## 💥 FASE 31: FÍSICAS AVANZADAS Y COLISIONES (85%)
-- `[ ]` **Broadphase Culling**: Árboles BVH (Bounding Volume Hierarchy) o Quadtrees integrados vía SIMD.
-- `[ ]` **Narrowphase y Rigidbodies**: Resolución de penetración, masas y restricciones elásticas nativas.
+## 💥 FASE 31: FÍSICAS AVANZADAS Y COLISIONES (90%)
+- `[x]` **Broadphase Culling**: Árboles BVH (Bounding Volume Hierarchy) o Quadtrees integrados vía SIMD. (Implementado como Data-Oriented Spatial Hash Grid O(N)).
+- `[ ]` **GJK/EPA Collision Solver**: Detección de colisiones precisas nativas sin Box2D.
 - `[ ]` **Raycasting Paralelo**: Lanzamiento de rayos vectorizados en hardware para la detección rápida (hit-scan).
 
 ## 🎬 FASE 32: SISTEMA DE ANIMACIÓN Y VFX (90%)

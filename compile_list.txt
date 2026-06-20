@@ -86,6 +86,9 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkTelemetryStream.j
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkTelemetryUnit.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\DarkWebEditorSocket.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\net\MemoryMonitor.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\BroadphaseSystem.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\DarkColliderSoA.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\physics\SpatialHashGrid.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkComputeCullingSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredLightingSystem.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\scene\DarkDeferredPipeline.java
@@ -106,6 +109,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\MetricsAggregationTe
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ParticleSystemDeterminismTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\PowerSavingTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SimdPhysicsDemoTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SpatialHashGridTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SummaryGenerator.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemDependencyTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\SystemExecutionTest.java

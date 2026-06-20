@@ -99,6 +99,9 @@ public final class DarkEngineMaster {
 
         // [ECS PHASE 30] Register High-Level Scene Kinematics (Runs in parallel via Graph)
         registry.registerGameSystem(new sv.dark.ecs.SceneKinematicsSystem(kernel.getScene()));
+        
+        // 5. Physics Broadphase Culling (Data-Oriented Spatial Hash)
+        registry.registerGameSystem(new sv.dark.physics.BroadphaseSystem(kernel.getScene()));
 
         // Finalize Dependency Graph
         registry.buildDependencyGraph();
