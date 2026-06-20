@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.0.0] - 2026-06-20
+
+### Dark Engine V1.0 (Core Backend Release)
+- **Standalone JPackage Executable**:
+  - Developed `build_release.bat` script utilizing `jpackage` to bundle a custom JVM runtime (`runtime/`) targeting Zero-Garbage execution.
+  - Injected strictly required Java modules (`jdk.incubator.vector`, `jdk.httpserver`, `jdk.unsupported`) bypassing module encapsulation errors for `sun.misc.Unsafe`.
+- **Zero-Debug Mode Configuration**:
+  - Activated `-g:none` aggressive compiler flag for maximum instruction locality and minimal binary size.
+- **End-User Distribution**:
+  - Successfully generated `Dark-Engine.exe`, the first completely decoupled standalone native Windows artifact of the engine. Phase 34 officially completed.
+
+---
+
 ## [3.8.1] - 2026-06-20
 
 ### Security, Performance & CEO Audit

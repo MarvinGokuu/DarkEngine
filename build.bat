@@ -25,7 +25,7 @@ dir /s /B src\*.java > compile_list.txt
 javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
     -Xlint:-incubating ^
-    -cp src ^
+    -cp "src;lib\imgui-java-binding.jar" ^
     -J-XX:+UseZGC ^
     -J-Xms4G -J-Xmx4G ^
     -J-XX:+AlwaysPreTouch ^

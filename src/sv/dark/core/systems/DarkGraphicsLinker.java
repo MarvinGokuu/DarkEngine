@@ -79,6 +79,16 @@ public final class DarkGraphicsLinker {
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
     );
 
+    public static final MethodHandle glfwGetWindowSize = LINKER.downcallHandle(
+        GLFW.find("glfwGetWindowSize").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
+    );
+
+    public static final MethodHandle glfwGetMouseButton = LINKER.downcallHandle(
+        GLFW.find("glfwGetMouseButton").orElseThrow(),
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+    );
+
     public static final MethodHandle glfwWindowShouldClose = LINKER.downcallHandle(
         GLFW.find("glfwWindowShouldClose").orElseThrow(),
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
