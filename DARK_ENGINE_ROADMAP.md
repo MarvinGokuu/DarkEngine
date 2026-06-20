@@ -1,6 +1,6 @@
 # 🌌 DARK ENGINE ROADMAP (AAA+ LEVEL)
 
-> **Current Overall Progress:** `[████████░░] 75%` (Fase 29 Iniciada)
+> **Current Overall Progress:** `[████████░░] 80%` (Fase 29 En Progreso)
 
 La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las fundaciones de bajo nivel ya están completadas (Fases 1-28), ahora nos movemos a la construcción de los subsistemas y características AAA del motor.
 
@@ -13,11 +13,11 @@ La siguiente es la ruta absoluta y definitiva hacia la V1.0 del Dark Engine. Las
 
 ---
 
-## 🚀 FASE 29: RENDERIZADO AAA (EN PROGRESO - 75%)
+## 🚀 FASE 29: RENDERIZADO AAA (EN PROGRESO - 80%)
 - `[x]` **PBR Deferred Materials**: Implementar texturas Albedo, Normal, Roughness y Metallic en `deferred_lighting.comp`.
+- `[x]` **Post-Procesado Avanzado**: Bloom y Tone Mapping Cinematográfico (ACES HDR).
 - `[ ]` **Shadow Mapping Pipeline**: Sombras dinámicas en cascada (CSM) aprovechando los SSBO culling arrays.
 - `[ ]` **ImGui Native Integration**: Consola y Profiler visual anclado nativamente por FFI.
-- `[ ]` **Post-Procesado Avanzado**: Bloom, Ambient Occlusion (SSAO) y Tone Mapping (HDR).
 
 ## 🧠 FASE 30: ARQUITECTURA DE ALTO NIVEL Y ECS (80%)
 - `[ ]` **DarkScene & EntityMap**: La abstracción de Scene Graph que traduce lógica orientada a objetos hacia la memoria plana SoA.

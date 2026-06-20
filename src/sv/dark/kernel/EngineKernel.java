@@ -533,8 +533,13 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
-        // [Fase 27] GPU Compute Shader Dispatch: Pipeline Diferido y Upscaling FSR
+        // 2. Dispatch Lighting Compute Shader (Translates G-Buffer to Lit Texture)
         sv.dark.scene.DarkDeferredLightingSystem.dispatchLighting();
+
+        // 3. Dispatch Post-Processing Compute Shader (Bloom & ACES ToneMapping on Lit Texture)
+        sv.dark.scene.DarkPostProcessSystem.dispatchPostProcess();
+
+        // 4. Dispatch FSR Upscale Compute Shader (Translates Lit 720p to Presentation 4K)
         sv.dark.scene.DarkFSRSystem.dispatchFSR();
 
         if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {

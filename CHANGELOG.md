@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.7.1] - 2026-06-19
+
+### Graphics (Post-Processing & HDR)
+- **Cinematic Pipeline**:
+  - Implemented `DarkPostProcessSystem` running entirely in native memory via FFI.
+  - Injected an intermediate pass between Deferred Lighting and FSR Upscaling.
+  - Implemented `post_process.comp` featuring ACES (Academy Color Encoding System) Tone Mapping to gracefully map linear HDR values to LDR.
+  - Added a Pseudo-Bloom threshold pass to isolate and saturate highly reflective pixels (Metals and Lights) within a single pass.
+  - Removed outdated Reinhard Tonemapping from `deferred_lighting.comp`, strictly enforcing Linear HDR workflow.
+
+---
+
 ## [3.7.0] - 2026-06-19
 
 ### Architecture (Deferred PBR Rendering)
