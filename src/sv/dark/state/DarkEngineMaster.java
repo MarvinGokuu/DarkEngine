@@ -108,6 +108,10 @@ public final class DarkEngineMaster {
         sv.dark.physics.DarkColliderSoA colliderMemory = new sv.dark.physics.DarkColliderSoA(kernel.getScene().getSoA().getCapacity());
         registry.registerGameSystem(new sv.dark.physics.NarrowphaseSystem(kernel.getScene(), broadphase.getGrid(), colliderMemory));
 
+        // 7. GPU Particle System (Phase 32)
+        sv.dark.vfx.DarkParticleEmitterSoA emitterMemory = new sv.dark.vfx.DarkParticleEmitterSoA(512); // Soporta hasta 512 Spawners (que emiten N millones de particulas en GPU)
+        registry.registerGameSystem(new sv.dark.vfx.GPUParticleSystem(emitterMemory));
+
         // Finalize Dependency Graph
         registry.buildDependencyGraph();
         registry.setParallelMode(true);

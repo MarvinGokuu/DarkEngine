@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Engineered `DarkCollisionSolver` to resolve elastic bounces natively acting on linear momentum via SIMD-ready structures.
   - Built `NarrowphaseSystem` to query spatial buckets and resolve massive physics interactions with strict zero-allocation limits.
 
+### VFX & Graphics (Phase 32)
+- **GPU Particle System & Compute Shaders**:
+  - Bound OpenGL 4.3 `glDispatchCompute`, `glMemoryBarrier`, and `glDrawArraysInstanced` via Project Panama FFI in `DarkOpenGLLinker`.
+  - Authored GLSL Compute Shader (`particles.comp`) to simulate massive particle physics directly on VRAM.
+  - Engineered `DarkParticleEmitterSoA` native off-heap memory struct to define emitters structurally on the CPU without instantiating particle objects.
+  - Orchestrated GPU logic with the new `GPUParticleSystem` GameSystem, reaching 0ms CPU overhead.
+
 ---
 
 ## [3.7.1] - 2026-06-19

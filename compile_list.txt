@@ -107,6 +107,7 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\BusBenchmarkTest.jav
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\DependencyGraphPerformanceTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ElasticCollisionTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\GovernorTest.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\GPUParticleStressTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\GracefulShutdownTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\MetricsAggregationTest.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\test\ParticleSystemDeterminismTest.java
@@ -127,3 +128,5 @@ C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkEngineWindow.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\DarkImGuiLinker.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\ui\EngineStateChannel.java
 C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\validation\BusSymmetryValidator.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\DarkParticleEmitterSoA.java
+C:\Users\theca\Documents\GitHub\DarkEngine\src\sv\dark\vfx\GPUParticleSystem.java
