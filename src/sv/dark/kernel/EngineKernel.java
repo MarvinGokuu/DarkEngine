@@ -142,9 +142,9 @@ public final class EngineKernel {
         // - No memory leaks.
 
         this.shutdownHook = new Thread(() -> {
-            System.out.println(">>> INITIATING GRACEFUL SHUTDOWN SEQUENCE...");
+            sv.dark.core.DarkLogger.info("KERNEL", ">>> INITIATING GRACEFUL SHUTDOWN SEQUENCE...");
             gracefulShutdown();
-            System.out.println(">>> DARK ENGINE OFFLINE. GRAPHICS RELEASED.");
+            sv.dark.core.DarkLogger.info("KERNEL", ">>> DARK ENGINE OFFLINE. GRAPHICS RELEASED.");
         }, "DarkShutdownHook");
 
         Runtime.getRuntime().addShutdownHook(this.shutdownHook);
@@ -158,6 +158,13 @@ public final class EngineKernel {
     @Deprecated
     public EngineKernel() {
         this(DarkEventDispatcher.createDefault(14), new SectorMemoryVault(1024));
+    }
+
+    // Phase 21: Cross-Thread Asset Upload Queue
+    private static final java.util.concurrent.ConcurrentLinkedQueue<sv.dark.memory.DarkAsset> pendingAssets = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    public static void queueAssetForUpload(sv.dark.memory.DarkAsset asset) {
+        pendingAssets.offer(asset);
     }
 
     /**
@@ -179,23 +186,23 @@ public final class EngineKernel {
     }
 
     public void start() {
-        System.out.println("[KERNEL] STARTUP SEQUENCE START");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] STARTUP SEQUENCE START");
 
         // [NEURONA_048] STEP 2: CPU PINNING
         // Pin logic thread to Core 1 to eliminate jitter (Target: <35us)
         ThreadPinning.pinToCore(1);
 
         ExecutionValidator.verify();
-        System.out.println("[KERNEL] INTEGRITY CHECK PASSED");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] INTEGRITY CHECK PASSED");
 
         // -------------------------------------------------------------------------
         // AAA++ JIT WARM-UP (Structural Integration)
         // -------------------------------------------------------------------------
-        System.out.println("[KERNEL] EXECUTING JIT WARM-UP...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING JIT WARM-UP...");
         UltraFastBootSequence.warmUpWithStructuralIntegrity();
 
         // [NEURONA_048 STEP 2.5] NATIVE WINDOW INIT (Main Thread FFI)
-        System.out.println("[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
         sv.dark.ui.DarkEngineWindow.initNativeWindow();
 
         // [APP EDITOR PAUSED] 
@@ -204,7 +211,7 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // ULTRA FAST BOOT SEQUENCE
         // -------------------------------------------------------------------------
-        System.out.println("[KERNEL] EXECUTING BOOT SEQUENCE...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING BOOT SEQUENCE...");
         BootResult bootResult = UltraFastBootSequence.execute(
                 controlRegister,
                 sectorVault,
@@ -286,6 +293,10 @@ public final class EngineKernel {
             // -------------------------------------------------------------------------
             long phase2Start = System.nanoTime();
             int eventsProcessed = phaseBusProcessing();
+            
+            // [PHASE 21] VRAM INJECTION: Cross-Thread Asset Upload
+            processPendingAssets();
+            
             long phase2End = System.nanoTime();
             timeKeeper.recordPhaseTime(2, phase2End - phase2Start);
 
@@ -399,7 +410,7 @@ public final class EngineKernel {
         }
 
         // Loop terminated: verify reason
-        System.out.println("[KERNEL] Loop terminated");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] Loop terminated");
 
         // [CRITICAL FIX] Release resources IMMEDIATELY upon exiting the run loop.
         // This allows tests to validate memory deallocation without waiting for the JVM shutdown.
@@ -454,12 +465,12 @@ public final class EngineKernel {
                     break;
                 case 2: // SYS_PAUSE_SIGNAL
                     this.paused = !this.paused; // Toggle pause state
-                    System.out.println("[KERNEL] Pause State: " + this.paused);
+                    DarkLogger.info("KERNEL", "Pause State toggled");
                     break;
                 case sv.dark.bus.DarkSignalCommands.SYS_ENGINE_ROLLBACK:
                     if (this.timeControlUnit != null) {
                         this.timeControlUnit.rollback(stateVault.getRawSegment());
-                        System.out.println("[KERNEL] Rollback / Time Travel Executed!");
+                        DarkLogger.info("KERNEL", "Rollback / Time Travel Executed");
                     }
                     break;
                 case 100: // INPUT_KEY_PRESS
@@ -555,7 +566,7 @@ public final class EngineKernel {
 
     public void shutdown() {
         this.running = false;
-        System.out.println("[KERNEL] SHUTDOWN SEQUENCE");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] SHUTDOWN SEQUENCE");
     }
 
     // -------------------------------------------------------------------------
@@ -589,7 +600,7 @@ public final class EngineKernel {
 
         // Prevent multiple calls
         if (shutdownInProgress) {
-            System.out.println("[KERNEL] Shutdown already in progress, ignoring...");
+            sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] Shutdown already in progress, ignoring...");
             return;
         }
         shutdownInProgress = true;
@@ -609,15 +620,26 @@ public final class EngineKernel {
             System.err.println("[KERNEL] Error stopping Control Plane: " + t.getMessage());
         }
 
-        System.out.println("-------------------------------------------------------------------------");
-        System.out.println("[KERNEL] GRACEFUL SHUTDOWN SEQUENCE");
-        System.out.println("-------------------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "-------------------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] GRACEFUL SHUTDOWN SEQUENCE");
+        sv.dark.core.DarkLogger.info("KERNEL", "-------------------------------------------------------------------------");
 
         // -------------------------------------------------------------------------
-        // STEP 1: STOP MAIN LOOP
+        // STEP 1: STOP MAIN LOOP & SUBSYSTEMS
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 1/6] Stopping main loop...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 1/6] Stopping main loop and subsystems...");
         running = false;
+
+        ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
+        if (executor != null) {
+            // 1. Apagamos los hilos del Game System de forma segura para que terminen de escribir
+            executor.shutdown(); 
+            
+            // 2. Cerramos el dispositivo de audio nativo (OpenAL) para vaciar el búfer de la tarjeta de sonido
+            if (executor.getDarkAudioSystem() != null) {
+                executor.getDarkAudioSystem().cleanup();
+            }
+        }
 
         // Wait for loop to finish (maximum 1 second)
         try {
@@ -625,15 +647,15 @@ public final class EngineKernel {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        System.out.println("[STEP 1/6] Main loop stopped [OK]");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 1/6] Main loop and subsystems stopped [OK]");
 
         // -------------------------------------------------------------------------
         // STEP 2: CLOSE EVENT DISPATCHER (All priority buses)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 2/6] Closing Event Dispatcher...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 2/6] Closing Event Dispatcher...");
         try {
             eventDispatcher.shutdown();
-            System.out.println("[STEP 2/6] Event Dispatcher closed [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 2/6] Event Dispatcher closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 2/6] Error closing Event Dispatcher: " + e.getMessage());
         }
@@ -641,10 +663,10 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 3: CLOSE ADMIN METRICS BUS (Control Plane)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 3/6] Closing Admin Metrics Bus...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 3/6] Closing Admin Metrics Bus...");
         try {
             adminMetricsBus.gracefulShutdown();
-            System.out.println("[STEP 3/6] Admin Metrics Bus closed [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 3/6] Admin Metrics Bus closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 3/6] Error closing Admin Metrics Bus: " + e.getMessage());
         }
@@ -652,10 +674,10 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 4: CLOSE FRAME ARENA (WorldStateFrame)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 4/6] Closing Frame Arena...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 4/6] Closing Frame Arena...");
         try {
             frameArena.close();
-            System.out.println("[STEP 4/6] Frame Arena closed [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 4/6] Frame Arena closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 4/6] Error closing Frame Arena: " + e.getMessage());
         }
@@ -663,10 +685,10 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 5: CLOSE STATE VAULT ARENA (MemorySegments)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 5/6] Closing State Vault...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 5/6] Closing State Vault...");
         try {
             stateArena.close();
-            System.out.println("[STEP 5/6] State Vault Arena closed [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 5/6] State Vault Arena closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 5/6] Error closing State Vault: " + e.getMessage());
         }
@@ -674,10 +696,10 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 6: CLOSE SECTOR VAULT (Off-heap memory)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 6/7] Closing Sector Vault...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6/7] Closing Sector Vault...");
         try {
             sectorVault.close();
-            System.out.println("[STEP 6/7] Sector Vault closed [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6/7] Sector Vault closed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 6/7] Error closing Sector Vault: " + e.getMessage());
         }
@@ -685,17 +707,17 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         // STEP 7: TERMINATE NATIVE FFI (GLFW)
         // -------------------------------------------------------------------------
-        System.out.println("[STEP 7/7] Terminating FFI Native Graphics...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[STEP 7/7] Terminating FFI Native Graphics...");
         try {
             sv.dark.core.systems.DarkGraphicsLinker.glfwTerminate.invokeExact();
-            System.out.println("[STEP 7/7] Native Graphics terminated [OK]");
+            sv.dark.core.DarkLogger.info("KERNEL", "[STEP 7/7] Native Graphics terminated [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 7/7] Error terminating GLFW: " + e.getMessage());
         }
 
-        System.out.println("-------------------------------------------------------------------------");
-        System.out.println("[KERNEL] GRACEFUL SHUTDOWN COMPLETED");
-        System.out.println("-------------------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "-------------------------------------------------------------------------");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] GRACEFUL SHUTDOWN COMPLETED");
+        sv.dark.core.DarkLogger.info("KERNEL", "-------------------------------------------------------------------------");
 
         // -------------------------------------------------------------------------
         // RESTORE SYSTEM STATE AND VALIDATE (Milestone 1)
@@ -708,21 +730,77 @@ public final class EngineKernel {
 
         // [SHUTDOWN GUARANTEE]
         // Force Windows kernel to clear native memory descriptors and CPU Pinning
-        System.out.println("[KERNEL] EXECUTING LOW-LEVEL SHUTDOWN (HALT)...");
+        sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING LOW-LEVEL SHUTDOWN (HALT)...");
         if (System.getProperty("sv.dark.test.nohalt") == null) {
             Runtime.getRuntime().halt(0);
         } else {
-            System.out.println("[KERNEL] HALT bypassed for test execution.");
+            sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] HALT bypassed for test execution.");
         }
 
         // EXTRA CLEANUP: Remove shutdown hook to prevent thread leaks if manual
         try {
             Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
-            System.out.println("[KERNEL] Shutdown Hook removed (CLEANUP");
+            sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] Shutdown Hook removed (CLEANUP");
         } catch (IllegalStateException e) {
             // Ignore: Shutdown in progress
         } catch (Exception e) {
             System.err.println("[KERNEL] Warning: Could not remove Shutdown Hook");
         }
     }
+
+    /**
+     * Executes Phase 21: VRAM Injection.
+     * Uploads pending assets to OpenGL via FFI directly from Zero-Copy MemorySegments.
+     */
+    private void processPendingAssets() {
+        sv.dark.memory.DarkAsset asset;
+        while ((asset = pendingAssets.poll()) != null) {
+            try {
+                // Generate Texture
+                java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined();
+                java.lang.foreign.MemorySegment texPtr = tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+                sv.dark.core.systems.DarkOpenGLLinker.glGenTextures.invokeExact(1, texPtr);
+                int textureId = texPtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+                
+                // Bind and Upload
+                sv.dark.core.systems.DarkOpenGLLinker.glBindTexture.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    textureId
+                );
+                
+                // Set parameters (Linear filtering)
+                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    0x2801, // GL_TEXTURE_MIN_FILTER
+                    0x2601  // GL_LINEAR
+                );
+                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
+                    0x2800, // GL_TEXTURE_MAG_FILTER
+                    0x2601  // GL_LINEAR
+                );
+
+                // Direct DMA from mapped file payload to VRAM
+                sv.dark.core.systems.DarkOpenGLLinker.glTexImage2D.invokeExact(
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D,
+                    0,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA8,
+                    asset.width(),
+                    asset.height(),
+                    0,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA,
+                    sv.dark.core.systems.DarkOpenGLLinker.GL_UNSIGNED_BYTE,
+                    asset.payload()
+                );
+                
+                tempArena.close();
+                sv.dark.core.DarkLogger.info("RENDERER", "Successfully uploaded texture to VRAM (ID: " + textureId + ") [" + asset.width() + "x" + asset.height() + "]");
+                
+            } catch (Throwable t) {
+                sv.dark.core.DarkLogger.error("RENDERER", "Failed to upload asset to VRAM: " + t.getMessage());
+            }
+        }
+    }
 }
+
+

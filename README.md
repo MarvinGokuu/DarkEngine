@@ -63,6 +63,8 @@ Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para c
 
 > ⚠️ **Nota de Arquitecto**: Al modificar código, respeta los estándares AAA+. Nunca inyectes clases `new String()` ni reservas de Heap en el hot-path del motor. Todo se ejecuta `Off-Heap`.
 
+> ℹ️ **Nota sobre ImGui (UI del Editor)**: Es normal ver el mensaje `[ERROR] [IMGUI] lib/cimgui.dll NOT FOUND` en los logs. Esto simplemente indica que la interfaz visual nativa del editor está deshabilitada intencionalmente en producción, permitiendo que el motor corra en modo puramente *headless* o "juego final".
+
 ---
 
 **Licencia**: [GNU Lesser General Public License v3.0](LICENSE)  

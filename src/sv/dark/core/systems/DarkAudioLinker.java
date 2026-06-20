@@ -28,15 +28,15 @@ public final class DarkAudioLinker {
     private static final SymbolLookup OPENAL;
     
     static {
-        // Load the OpenAL Soft native library downloaded in the 'lib' folder
-        File oalDll = new File("lib/soft_oal.dll");
+        // Load the OpenAL Soft native library dynamically using cross-platform resolver
+        File oalDll = sv.dark.core.util.NativeLibraryResolver.resolveLibrary("soft_oal");
         if (!oalDll.exists()) {
-            DarkLogger.fatal("AUDIO", "Missing lib/soft_oal.dll! Spatial Audio disabled.", null);
-            throw new RuntimeException("Missing lib/soft_oal.dll");
+            DarkLogger.fatal("AUDIO", "Missing " + oalDll.getName() + "! Spatial Audio disabled.", null);
+            throw new RuntimeException("Missing " + oalDll.getName());
         }
         System.load(oalDll.getAbsolutePath());
         OPENAL = SymbolLookup.loaderLookup();
-        DarkLogger.info("AUDIO", "Project Panama FFI: soft_oal.dll loaded successfully.");
+        DarkLogger.info("AUDIO", "Project Panama FFI: " + oalDll.getName() + " loaded successfully.");
     }
     
     // =========================================================================

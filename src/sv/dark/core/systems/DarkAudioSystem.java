@@ -47,8 +47,8 @@ public final class DarkAudioSystem implements GameSystem {
                 return;
             }
 
-            // Make context current
-            DarkAudioLinker.alcMakeContextCurrent.invokeExact(context);
+            // Make context current (must capture the byte return value for invokeExact)
+            byte result = (byte) DarkAudioLinker.alcMakeContextCurrent.invokeExact(context);
             DarkLogger.info("AUDIO", "OpenAL Context Initialized. Spatial Audio Active.");
 
         } catch (Throwable t) {
@@ -76,7 +76,7 @@ public final class DarkAudioSystem implements GameSystem {
     public void cleanup() {
         try {
             if (context != null && !context.equals(MemorySegment.NULL)) {
-                DarkAudioLinker.alcMakeContextCurrent.invokeExact(MemorySegment.NULL);
+                byte result = (byte) DarkAudioLinker.alcMakeContextCurrent.invokeExact(MemorySegment.NULL);
                 DarkAudioLinker.alcDestroyContext.invokeExact(context);
             }
             if (device != null && !device.equals(MemorySegment.NULL)) {

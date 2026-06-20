@@ -66,6 +66,16 @@ public final class DarkEngineWindow {
 
             // Cargar funciones de OpenGL a través del contexto activo (Phase 19)
             sv.dark.core.systems.DarkOpenGLLinker.init();
+            
+            // Inicializar GPU Compute Culling System (Phase 19 - WIRED)
+            // WHY: Compiles the GLSL Compute Shader into VRAM and allocates SSBOs.
+            // Must run AFTER OpenGLLinker (needs glfwGetProcAddress pointers active).
+            sv.dark.scene.DarkComputeCullingSystem.init();
+            
+            // Inicializar G-Buffers del Deferred Pipeline (Phase 27)
+            // WHY: Must run AFTER OpenGLLinker and CullingSystem.
+            sv.dark.scene.DarkDeferredPipeline.init();
+
 
             // Initialize Native ImGui Chassis (Phase 9)
             sv.dark.ui.DarkImGuiLinker.init();
@@ -134,9 +144,11 @@ public final class DarkEngineWindow {
     }
 
     public static void onDrop(MemorySegment window, int count, MemorySegment pathsArray) {
+        // Reinterpret the zero-length C pointer array to its actual size in bytes
+        MemorySegment safeArray = pathsArray.reinterpret(count * java.lang.foreign.ValueLayout.ADDRESS.byteSize());
         for (int i = 0; i < count; i++) {
-            MemorySegment pathPtr = pathsArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
-            String path = pathPtr.getString(0);
+            MemorySegment pathPtr = safeArray.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+            String path = pathPtr.reinterpret(Long.MAX_VALUE).getString(0);
             sv.dark.editor.DarkAssetCompiler.compileAsync(path);
         }
     }

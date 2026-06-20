@@ -26,19 +26,28 @@ public final class SectorMemoryVault {
 
     /**
      * RESPONSIBILITY: Define the standard page size for memory alignment.
-     * WHY: Memory pages in x86-64 architecture are 4KB. Aligning to 4KB eliminates TLB Misses.
-     * TECHNIQUE: Use a power of 2 (4096 bytes) for hardware optimization.
-     * GUARANTEES: Avoids ~100ns of overhead per TLB miss.
+     * WHY: Memory pages in x86-64 are 4KB, but Apple Silicon/ARM uses 16KB. Aligning to the correct page size eliminates TLB Misses.
      */
-    private static final int PAGE_SIZE = 4096; // 4KB
+    private static final int PAGE_SIZE;
+    
+    static {
+        int size = 4096; // Default to 4KB
+        try {
+            java.lang.reflect.Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            sun.misc.Unsafe unsafe = (sun.misc.Unsafe) f.get(null);
+            size = unsafe.pageSize();
+        } catch (Exception e) {
+            // Fallback to 4KB if Unsafe is completely locked down
+        }
+        PAGE_SIZE = size;
+    }
 
     /**
      * RESPONSIBILITY: Define the size of a sector.
-     * WHY: A sector is the minimum allocation unit. 16 pages (64KB) is optimal for L2 cache.
-     * TECHNIQUE: 16 pages x 4KB = 64KB, which fits entirely in L2 cache for SIMD operations.
-     * GUARANTEES: Reduces memory fragmentation and maximizes cache locality.
+     * WHY: A sector is the minimum allocation unit. 16 pages is optimal for L2 cache.
      */
-    private static final int SECTOR_SIZE = PAGE_SIZE * 16; // 64KB
+    private static final int SECTOR_SIZE = PAGE_SIZE * 16;
 
     // ========================================================================================================================================================
     // VAULT STATE

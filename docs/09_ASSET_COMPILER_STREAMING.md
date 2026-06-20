@@ -17,14 +17,15 @@ Para mantener nuestra filosofía de *Latencia Cero* y *Zero-GC*, separamos el pr
 ### 2.1. El Compilador Offline (DarkAssetCompiler)
 En lugar de forzar al motor a entender archivos complejos en tiempo real, construimos un compilador que se ejecuta en un hilo virtual aislado (Project Loom). 
 Cuando el creador arrastra y suelta un archivo a la ventana GLFW, este compilador:
-- Extrae el payload crudo del modelo/imagen.
-- Elimina cabeceras y metadatos basura.
-- Escribe un binario plano de extensión `.darkasset` que representa bloques de memoria lineal exactos a como los lee la GPU.
+- Utiliza la API nativa de `FileChannel.transferTo()` para mover los datos puros desde el archivo origen al archivo binario `.darkasset` de destino.
+- Elude completamente la clase destructiva `Files.readAllBytes()`, evitando así subir *Arreglos de Bytes* masivos a la memoria Heap de Java, manteniendo un GC (Garbage Collection) en cero absoluto durante la compilación.
+- Concatena una firma de metadatos `DARK\0` (9 bytes de cabecera) antes del payload puro.
 
 ### 2.2. Zero-Copy Streaming (DarkAssetStreamer)
 Cuando el motor necesita el asset, **nunca** crea un objeto en Java. Utiliza `java.nio.channels.FileChannel.map` acoplado a un `MemorySegment` de *Project Panama*.
 - El sistema operativo mapea el archivo físico del disco NVMe directamente a la memoria virtual del proceso (Direct Memory Access).
-- El motor obtiene un puntero nativo (`MemorySegment`) listo para ser consumido por Vulkan u OpenGL.
+- El Streamer realiza una validación ultra rápida de la firma de metadatos de los primeros 9 bytes, y posteriormente aplica un `MemorySegment.asSlice(9)` para aislar el *Payload* gráfico.
+- El motor envía a la tarjeta gráfica (VRAM) **exclusivamente** el segmento cortado, evitando corromper texturas y modelos con metadatos ajenos.
 - Cero recolección de basura, carga instantánea y cero uso de CPU para parsear bytes.
 
 ## 3. Integración con Interfaz (FFI Drag & Drop)

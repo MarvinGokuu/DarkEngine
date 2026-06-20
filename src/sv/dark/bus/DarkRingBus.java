@@ -410,16 +410,7 @@ public final class DarkRingBus implements IEventBus {
      */
     public void gracefulShutdown() {
         offer(TOMBSTONE_EVENT);
-        
-        int backoff = 0;
-        while (tail != head) {
-            Thread.onSpinWait();
-            backoff++;
-            if (backoff > 1_000_000) {
-                Thread.yield();
-                backoff = 0;
-            }
-        }
+        clear();
     }
 
     // -------------------------------------------------------------------------

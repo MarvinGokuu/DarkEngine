@@ -7,7 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.6.0] - 2026-06-18
+
+### Architecture (Cross-Platform Compatibility & Legacy Prevention)
+- **NativeLibraryResolver (OS Dynamic Linker)**:
+  - Created `NativeLibraryResolver.java` to dynamically detect OS (Windows, Linux, MacOS).
+  - Refactored `DarkGraphicsLinker`, `DarkAudioLinker`, and `DarkImGuiLinker` to load `.dll`, `.so`, or `.dylib` dynamically, removing Windows-only hardcoding.
+- **Hardware Affinity Fallback**:
+  - Modified `ThreadPinning.java` to safely bypass `kernel32.dll` execution if the host OS is not Windows, preventing instant crashes on Linux/Mac.
+- **Flexible SIMD Mathematics (Vector API)**:
+  - Refactored `DarkKinematicsSystem.java` to use `FloatVector.SPECIES_PREFERRED` instead of hardcoded 256-bit and 128-bit limits.
+  - Ensures SIMD math scales perfectly across Intel AVX-512, older AVX2, and ARM NEON architectures without `IndexOutOfBoundsException`.
+- **Dynamic Memory Pagination**:
+  - Replaced hardcoded 4KB `PAGE_SIZE` in `SectorMemoryVault.java` with dynamic OS page size detection using `sun.misc.Unsafe.pageSize()`, preventing `Segmentation Faults` on ARM/Apple Silicon architectures (16KB pages).
+
+### Architecture (Production Readiness & Build Infrastructure)
+- **Automated Dependency Crawler**:
+  - Rewrote `build.bat` binary compilation script. Replaced fragile manual wildcards with an automated `dir /s /B` crawler that dynamically generates `compile_list.txt`.
+  - Guarantees 100% inclusion of all new modules (`NativeLibraryResolver`, `DarkAssetCompiler`, etc.) and eliminates silent compilation failures.
+- **Global Logging Subsystem (DarkLogger)**:
+  - Purged all synchronous `System.out.println` calls from Core Engine components (Kernel, Validation, Memory, Network Probes).
+  - Rerouted all engine telemetry through `DarkLogger` for true decoupled execution, keeping the OS standard output completely silent outside of the testing suite.
+- **Architectural Encapsulation (AAA+ Tests)**:
+  - Validated and preserved the `sv.dark.bus` package-private encapsulation for hardware-level L1 Cache padding tests (`BusHardwareTest`, `BusCoordinationTest`). Update `test.bat` runner paths to match.
+
+---
+
+## [3.5.0] - 2026-06-17
+
+### Architecture (Deferred Rendering Pipeline — Phase 27)
+- **G-Buffer Infrastructure (Fase 27 — Mission A)**:
+  - Built `DarkDeferredPipeline.java` — Allocates a 1280×720 G-Buffer fully in VRAM at boot via FFI.
+  - **Albedo Buffer**: `GL_RGBA8` texture (`GL_COLOR_ATTACHMENT0`) — stores per-pixel color.
+  - **Normal Buffer**: `GL_RGBA16F` texture (`GL_COLOR_ATTACHMENT1`) — stores geometric surface vectors for lighting passes.
+  - FBO completeness verified via `glCheckFramebufferStatus` — fails fast if VRAM allocation fails.
+  - Unbound after init to restore default framebuffer. Zero GC. Pre-allocated at startup.
+- **OpenGL 4.3 FFI Bindings (Phase 27)**:
+  - Extended `DarkOpenGLLinker.java` with 9 new Panama downcall handles:
+    `glGenTextures`, `glBindTexture`, `glTexImage2D`, `glTexParameteri`,
+    `glGenFramebuffers`, `glBindFramebuffer`, `glFramebufferTexture2D`,
+    `glCheckFramebufferStatus`, `glBindImageTexture`.
+
+### Architecture (GPU Compute Culling — Phase 19 Wiring COMPLETED)
+- **Missing Wiring Resolved**:
+  - `DarkComputeCullingSystem.init()` was implemented in Phase 19 but never called at boot.
+  - Injected into `DarkEngineWindow.initNativeWindow()` in correct order:
+    `OpenGL FFI → GPU Culling init → Deferred Pipeline init`.
+  - Now compiles `culling_shader.comp` to VRAM and pre-allocates 3 SSBOs on every engine start.
+
+### Architecture (Zero-Copy Asset Pipeline — Phase 21 Refactor)
+- **Zero-GC DMA Transfers**:
+  - Rewrote `DarkAssetCompiler.java` to use `FileChannel.transferTo()`. Discarded destructive `Files.readAllBytes` that previously forced full-file allocations into the Java Heap.
+- **Payload Isolation (Streaming)**:
+  - Fixed `DarkAssetStreamer.java` mapping the entire file. Now actively slices the `MemorySegment` to exclude the 9-byte `"DARK\0"` header before sending the data payload to VRAM, avoiding texture/buffer corruption.
+
+### Architecture (Graceful Shutdown Integrity)
+- **Zero-Zombie Processes & Audio Underflow Fix**:
+  - `EngineKernel.gracefulShutdown()` now explicitly shuts down `ParallelSystemExecutor` to prevent game threads from writing to Off-Heap `WorldStateFrame` during native memory deallocation.
+  - Shutting down now triggers `DarkAudioSystem.cleanup()` explicitly via FFI `alcMakeContextCurrent`, flushing the native audio buffers to prevent OpenAL underflow (infinite buzzing sound) and hanging threads in `audiodg`.
+
+### Infrastructure
+- `compile_list.txt`: Removed full duplicate block (was 192 lines with 2x every entry). Normalized.
+- `.gitignore`: Deduplicated entries + added protection for `repomix-output.xml` dump files.
+- `DarkGraphicsLinker.java`: Removed duplicate `glfwMakeContextCurrent` MethodHandle that caused compile error.
+
+---
+
 ## [3.4.0] - 2026-06-15
+
 
 ### Architecture (Zero-Copy Asset Pipeline)
 - **Offline Asset Compiler (Phase 21)**:

@@ -189,19 +189,17 @@ public final class SystemDependencyGraph {
      * Prints the dependency graph (debug).
      */
     public void printGraph() {
-        if (!validated) {
-            System.out.println("[GRAPH] Not validated yet");
+        if (executionLayers == null || executionLayers.isEmpty()) {
+            DarkLogger.info("GRAPH", "Not validated yet");
             return;
         }
-
-        System.out.println("[GRAPH] Execution Layers: " + executionLayers.size());
-        for (int i= 0; i< executionLayers.size(); i++) {
-            List<GameSystem> layer = executionLayers.get(i);
-            System.out.println("[GRAPH] Layer " + i+ ": ");
-            for (GameSystem system : layer) {
-                System.out.print(system.getName() + " ");
+        DarkLogger.info("GRAPH", "Execution Layers: " + executionLayers.size());
+        for (int i = 0; i < executionLayers.size(); i++) {
+            StringBuilder sb = new StringBuilder("[GRAPH] Layer ").append(i).append(": ");
+            for (GameSystem system : executionLayers.get(i)) {
+                sb.append(system.getName()).append(' ');
             }
-            System.out.println(" ");
+            DarkLogger.info("GRAPH", sb.toString());
         }
     }
 }
