@@ -21,12 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Marvin Alexander Flores Canales
  * @since 1.0
  */
-/**
- * RESPONSIBILITY: Core component.
- * WHY: Critical for DarkEngine deterministic execution.
- * TECHNIQUE: Low-latency focused implementation.
- * GUARANTEES: Lock-free execution where applicable.
- */
 @AAACertified(date = "2026-06-11",
      maxLatencyNs = 0,
      minThroughput = 0, 
@@ -44,6 +38,7 @@ public final class AdminController {
     private static final AtomicReference<byte[]> latestSnapshot = new AtomicReference<>(DEFAULT_SNAPSHOT);
 
     private static sv.dark.net.DarkMetricsServer metricsServer = null;
+    private static Thread adminConsumerThread = null;
 
     private AdminController() {
     } // Utility Class
@@ -85,11 +80,11 @@ public final class AdminController {
             metricsServer.start();
 
             // 2. Start AdminConsumer (Zero-Garbage Translator)
-            Thread adminConsumer = new Thread(() -> runAdminLoop(kernel), "AdminConsumer");
-            adminConsumer.setDaemon(true);
-            adminConsumer.start();
+            adminConsumerThread = new Thread(() -> runAdminLoop(kernel), "AdminConsumer");
+            adminConsumerThread.setDaemon(true);
+            adminConsumerThread.start();
 
-        } catch (java.io.IOException e) {
+        } catch (Exception e) {
             DarkLogger.error("Admin", "Failed to start Control Plane: " + e.getMessage());
         }
     }
@@ -102,6 +97,15 @@ public final class AdminController {
             DarkLogger.info("Admin", "Stopping DarkMetricsServer...");
             metricsServer.stop();
             metricsServer = null;
+        }
+        if (adminConsumerThread != null) {
+            try {
+                // Wait for the Poison Pill to finish processing
+                adminConsumerThread.join(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            adminConsumerThread = null;
         }
     }
 
@@ -119,41 +123,57 @@ public final class AdminController {
             try {
                 long metric = adminBus.poll();
                 if (metric != -1L) {
-                    // 1. Unpack hot-path data
-                    long frameCount = sv.dark.kernel.MetricsPacker.unpackFrameCount(metric);
-                    long timeMicros = sv.dark.kernel.MetricsPacker.unpackTimeMicros(metric);
-                    long frameLatencyNs = timeMicros * 1000;
-                    long targetFps = sv.dark.kernel.MetricsPacker.unpackTargetFps(metric);
-                    long actualFps = sv.dark.kernel.MetricsPacker.unpackActualFps(metric);
-                    long headroomNs = sv.dark.kernel.MetricsPacker.unpackHeadroomNs(metric);
+                    long metricType = sv.dark.kernel.MetricsPacker.getMetricType(metric);
+                    
+                    if (metricType == sv.dark.kernel.MetricsPacker.TYPE_FRAME_STATS) {
+                        // 1. Unpack hot-path data
+                        long frameCount = sv.dark.kernel.MetricsPacker.unpackFrameCount(metric);
+                        long timeMicros = sv.dark.kernel.MetricsPacker.unpackTimeMicros(metric);
+                        long frameLatencyNs = timeMicros * 1000;
+                        long targetFps = sv.dark.kernel.MetricsPacker.unpackTargetFps(metric);
+                        long actualFps = sv.dark.kernel.MetricsPacker.unpackActualFps(metric);
+                        long headroomNs = sv.dark.kernel.MetricsPacker.unpackHeadroomNs(metric);
 
-                    // 1.5 Write beautifully formatted metrics to darkengine_metrics.log
-                    DarkLogger.info("METRICS", String.format("Frame: %d | Time: %dus | FPS: %d (Target: %d) | Headroom: %.2fms", 
-                                    frameCount, timeMicros, actualFps, targetFps, headroomNs / 1_000_000.0));
+                        // 1.5 Write beautifully formatted metrics to darkengine_metrics.log
+                        DarkLogger.info("METRICS", String.format("Frame: %d | Time: %dus | FPS: %d (Target: %d) | Headroom: %.2fms", 
+                                        frameCount, timeMicros, actualFps, targetFps, headroomNs / 1_000_000.0));
 
-                    // 2. Obtain slow state (Slow-Path safe here)
-                    boolean isParallel = kernel.getSystemRegistry().isParallelMode();
-                    int systemCount = kernel.getSystemRegistry().getGameSystemCount();
-                    String executionMode = isParallel ? "Parallel" : "Sequential";
-                    String executionOrder = isParallel ? "DAG" : "Linear";
+                        // 2. Obtain slow state (Slow-Path safe here)
+                        boolean isParallel = kernel.getSystemRegistry().isParallelMode();
+                        int systemCount = kernel.getSystemRegistry().getGameSystemCount();
+                        String executionMode = isParallel ? "Parallel" : "Sequential";
+                        String executionOrder = isParallel ? "DAG" : "Linear";
 
-                    // 3. Build JSON (Builder Pattern - AAA+ Compliant)
-                    jsonBuilder.setLength(0);
-                    jsonBuilder.append("{")
-                            .append("\"frameLatency\":").append(frameLatencyNs).append(",")
-                            .append("\"cpuCore\":1,")
-                            .append("\"executionMode\":\"").append(executionMode).append("\",")
-                            .append("\"systems\":").append(systemCount).append(",")
-                            .append("\"executionOrder\":\"").append(executionOrder).append("\",")
-                            .append("\"parallelism\":\"").append(isParallel ? "ON (Automatic)" : "OFF").append("\",")
-                            .append("\"frameCount\":").append(frameCount).append(",")
-                            .append("\"targetFps\":").append(targetFps).append(",")
-                            .append("\"actualFps\":").append(actualFps).append(",")
-                            .append("\"headroomNs\":").append(headroomNs)
-                            .append("}");
+                        // 3. Build JSON (Builder Pattern - AAA+ Compliant)
+                        jsonBuilder.setLength(0);
+                        jsonBuilder.append("{")
+                                .append("\"frameLatency\":").append(frameLatencyNs).append(",")
+                                .append("\"cpuCore\":1,")
+                                .append("\"executionMode\":\"").append(executionMode).append("\",")
+                                .append("\"systems\":").append(systemCount).append(",")
+                                .append("\"executionOrder\":\"").append(executionOrder).append("\",")
+                                .append("\"parallelism\":\"").append(isParallel ? "ON (Automatic)" : "OFF").append("\",")
+                                .append("\"frameCount\":").append(frameCount).append(",")
+                                .append("\"targetFps\":").append(targetFps).append(",")
+                                .append("\"actualFps\":").append(actualFps).append(",")
+                                .append("\"headroomNs\":").append(headroomNs)
+                                .append("}");
 
-                    // 4. Publish to Atomic Snapshot
-                    updateSnapshot(jsonBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                        // 4. Publish to Atomic Snapshot
+                        updateSnapshot(jsonBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                    } else {
+                        // Not a frame stat, possibly a packed command ID
+                        int commandId = sv.dark.bus.DarkSignalPacker.unpackCommandId(metric);
+                        if (commandId == 2) {
+                            DarkLogger.info("KERNEL", "Pause State toggled");
+                        } else if (commandId == sv.dark.bus.DarkSignalCommands.SYS_ENGINE_ROLLBACK) {
+                            DarkLogger.info("KERNEL", "Rollback / Time Travel Executed");
+                        } else if (commandId == sv.dark.bus.DarkSignalCommands.SYS_TERMINATE_LOG_SIGNAL) {
+                            DarkLogger.info("Admin", "Poison Pill Received. Terminating logger.");
+                            DarkLogger.flushAndClose();
+                            break;
+                        }
+                    }
 
                 } else {
                     try {
