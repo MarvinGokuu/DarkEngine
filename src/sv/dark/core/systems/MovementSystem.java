@@ -61,7 +61,7 @@ public final class MovementSystem implements GameSystem {
      * OPTIMIZATION: Sequential access (stride-based) for CPU prefetching
      */
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         // SSOT: We read entityCount from state (not as a parameter)
         int entityCount = state.readInt(DarkStateLayout.ENTITY_COUNT);
 

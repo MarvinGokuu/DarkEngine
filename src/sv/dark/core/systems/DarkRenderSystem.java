@@ -5,13 +5,13 @@ package sv.dark.core.systems;
 
 import sv.dark.core.AAACertified;
 
-import java.awt.Graphics2D;
+
 import sv.dark.state.WorldStateFrame;
 
 /**
  * RESPONSIBILITY: Define the base interface for all visual rendering systems.
  * WHY: To strictly separate game logic from presentation, ensuring rendering is read-only.
- * TECHNIQUE: Method injection of the WorldStateFrame and Graphics2D context.
+ * TECHNIQUE: Method injection of the WorldStateFrame.
  * GUARANTEES: Zero-allocation render loop and read-only memory access.
  * 
  * @author Marvin Alexander Flores Canales
@@ -42,16 +42,13 @@ public interface DarkRenderSystem {
      * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
      * PRECONDITIONS (what the Kernel guarantees):
-     * 1. g2d != null and is configured for the current frame
-     * 2. state != null and is consistent (does not change during render)
+     * 1. state != null and is consistent (does not change during render)
      * 3. Called from the AWT/Swing thread
      * 4. State was already updated by all GameSystems
      * 
      * POSTCONDITIONS (what the system must guarantee):
      * 1. Only READS data from the state (does not modify)
-     * 2. Draws using g2d (screen projection)
-     * 3. Returns fast (< 5ms ideally for 60 FPS)
-     * 4. Does not create unnecessary objects (minimize GC)
+     * 2. Does not create unnecessary objects (minimize GC)
      * 
      * = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * PERFORMANCE
@@ -76,7 +73,7 @@ public interface DarkRenderSystem {
      * public class SpriteSystem implements DarkRenderSystem {
      * 
      * @Override
-     *           public void render(Graphics2D g2d, WorldStateFrame state) {
+     *           public void render(WorldStateFrame state) {
      *           int entityCount = state.readInt(DarkStateLayout.ENTITY_COUNT);
      * 
      *           for (int i= 0; i< entityCount; i++) {
@@ -84,8 +81,7 @@ public interface DarkRenderSystem {
      *           double x = state.readDouble(base + EntityLayout.X_OFFSET);
      *           double y = state.readDouble(base + EntityLayout.Y_OFFSET);
      * 
-     *           // Draw sprite at (x, y)
-     *           g2d.drawImage(sprite, (int)x, (int)y, null);
+     *           // Use FFI Native rendering instead of g2d
      *           }
      *           }
      *           }
@@ -93,14 +89,6 @@ public interface DarkRenderSystem {
      * 
      *           = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
      * 
-     * @param g2d   Java2D graphic context for drawing.
-     *              Configured with transformations, clipping, and compositing.
-     * 
-     *              COMMON OPERATIONS:
-     *              - g2d.drawImage(): Draw textures
-     *              - g2d.fillRect(): Draw solid rectangles
-     *              - g2d.drawString(): Draw text
-     *              - g2d.setColor(): Change drawing color
      * 
      * @param state Immutable snapshot of the world state (Read-Only).
      *              Contains ALL game data in Off-Heap memory.
@@ -116,7 +104,7 @@ public interface DarkRenderSystem {
      * @see EntityLayout For entity offsets
      * @see GameSystem For game logic systems
      */
-    void render(Graphics2D g2d, WorldStateFrame state);
+    void render(WorldStateFrame state);
 
     /**
      * Returns the name of the rendering system for debugging.

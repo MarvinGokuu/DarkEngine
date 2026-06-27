@@ -7,6 +7,7 @@ import sv.dark.core.systems.DarkGraphicsLinker;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 
 /**
  * RESPONSIBILITY: Visual layer of the Dark-Engine — Native Window.
@@ -80,14 +81,9 @@ public final class DarkEngineWindow {
             sv.dark.scene.DarkFSRSystem.init();
 
             // Initialize Native ImGui Chassis (Phase 9)
-            sv.dark.ui.DarkImGuiLinker.init();
-            if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
-                sv.dark.ui.DarkImGuiLinker.igCreateContext.invokeExact(MemorySegment.NULL);
-                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL != null) {
-                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_InitForOpenGL.invokeExact(windowPointer, true);
-                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_Init.invokeExact(MemorySegment.NULL);
-                }
-            }
+            imgui.ImGui.createContext();
+            sv.dark.ui.DarkImGuiInput.init();
+            sv.dark.ui.DarkImGuiRenderer.init();
 
             DarkLogger.info("GRAPHICS", "Native Window successfully created (0ms Input Lag).");
 
@@ -97,11 +93,33 @@ public final class DarkEngineWindow {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // INPUT LATCH SHADOW BUFFER (Phase 4 Refactor)
+    // -------------------------------------------------------------------------
+    private static final Arena inputArena = Arena.ofShared();
+    private static final MemorySegment shadowBuffer = inputArena.allocate(16);
+    private static final MemorySegment xPtr = inputArena.allocate(ValueLayout.JAVA_DOUBLE);
+    private static final MemorySegment yPtr = inputArena.allocate(ValueLayout.JAVA_DOUBLE);
+
     /** Polls hardware events synchronously (O(1) Hot-Path). */
-    public static void pollOS() {
+    public static void pollOS(MemorySegment vaultSegment) {
         if (windowPointer == null || windowPointer.equals(MemorySegment.NULL)) return;
         try {
             DarkGraphicsLinker.glfwPollEvents.invokeExact();
+
+            // Capturar estado en el Shadow Buffer
+            DarkGraphicsLinker.glfwGetCursorPos.invokeExact(windowPointer, xPtr, yPtr);
+            int mx = (int) xPtr.get(ValueLayout.JAVA_DOUBLE, 0);
+            int my = (int) yPtr.get(ValueLayout.JAVA_DOUBLE, 0);
+            
+            shadowBuffer.set(ValueLayout.JAVA_INT, 0, mx); // x
+            shadowBuffer.set(ValueLayout.JAVA_INT, 4, my); // y
+
+            // SIMD Vectorized Bulk Copy to ECS Vault (Zero-Contention Snapshot)
+            if (vaultSegment != null) {
+                // Copiar 8 bytes (x, y) desde offset 0 del shadow buffer hacia el offset 1200 del Vault (INPUT_MOUSE_X)
+                MemorySegment.copy(shadowBuffer, 0, vaultSegment, 1200, 8);
+            }
         } catch (Throwable e) {
             // Ignore for robust loop execution
         }

@@ -28,7 +28,7 @@ public final class BroadphaseSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         // En cada tick, reconstruimos el árbol/grid por completo.
         // O(N) usando SoA nativo y listas enlazadas en arreglo.
         grid.buildGrid(scene.getSoA(), scene.getSoA().getCapacity());

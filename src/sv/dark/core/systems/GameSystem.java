@@ -150,7 +150,7 @@ public interface GameSystem {
      * @see EntityLayout For entity offsets
      * @see DarkStateLayout For kernel state offsets
      */
-    void update(WorldStateFrame state, double deltaTime);
+    void update(WorldStateFrame state, float deltaTime);
 
     /**
      * Returns the system name for debugging and telemetry.

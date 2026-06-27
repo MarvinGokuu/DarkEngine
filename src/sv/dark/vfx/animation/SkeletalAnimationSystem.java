@@ -31,7 +31,7 @@ public final class SkeletalAnimationSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         // En un entorno de Produccion, aqui mezclariamos frames de animacion (Animation Blending)
         // para calcular la matriz local y multiplicarla por su padre, dejandola en skeletonMemory.
         

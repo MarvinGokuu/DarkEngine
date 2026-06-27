@@ -2,8 +2,8 @@
 cd /d "%~dp0"
 setlocal
 
-set LOG_FILE=aaa_test_report.log
-set TMP_LOG=test_temp.log
+set LOG_FILE=logs\aaa_test_report.log
+set TMP_LOG=logs\test_temp.log
 
 echo ==============================================
 echo  DARK ENGINE - AAA+ TEST SUITE EXECUTOR
@@ -98,7 +98,10 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "23/24" "Spatial Audio Structure" "sv.dark.test.SpatialAudioStressTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "24/24" "UDP Networking Structure" "sv.dark.test.UDPZeroCopyTest" ""
+call :run_test "24/25" "UDP Networking Structure" "sv.dark.test.UDPZeroCopyTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "25/25" "Telemetry Backpressure Stress" "sv.dark.test.TelemetryBackpressureStressTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.
@@ -117,7 +120,7 @@ exit /b 0
 echo. >> %LOG_FILE%
 echo [%~1] %~2 >> %LOG_FILE%
 
-%JAVA_CMD% %~4 -cp bin %~3 > %TMP_LOG% 2>&1
+%JAVA_CMD% %~4 -cp "bin;lib\imgui-java-binding.jar;lib\imgui-java-natives-windows.jar" %~3 > %TMP_LOG% 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [OK] 0 errors
     type %TMP_LOG% >> %LOG_FILE%

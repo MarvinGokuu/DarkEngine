@@ -7,6 +7,8 @@ package sv.dark.kernel;
 import sv.dark.core.DarkLogger;
 import sv.dark.core.AAACertified;
 import sv.dark.config.DarkEngineConfig;
+import sv.dark.ui.DarkImGuiInput;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * RESPONSIBILITY: Sensory neuron for temporal determinism and Quad-Lane timestep regulation.
@@ -22,13 +24,13 @@ import sv.dark.config.DarkEngineConfig;
  * @since 2026-06-13
  */
 @AAACertified(
-    date = "2026-06-13",
+    date = "2026-06-23",
     maxLatencyNs = 1,
     minThroughput = 30,
     alignment = 64,
     lockFree = true,
     offHeap = false,
-    notes = "Quad-Lane Governor with Asymmetric Hysteresis"
+    notes = "Quad-Lane Governor with Modern Hybrid-Pacing and Rockstar-style AFK Anti-Stutter"
 )
 public final class TimeKeeper {
 
@@ -62,6 +64,9 @@ public final class TimeKeeper {
     private volatile long currentTargetFps;
     private volatile long currentFrameTimeNs;
     private int stabilityFrames = 0; 
+    
+    // AFK State Tracking
+    private int lastAFKTier = 1;
 
     // 1% Low Ring Buffer
     private static final int BUFFER_SIZE = 60;
@@ -103,8 +108,11 @@ public final class TimeKeeper {
             setTargetFps(60); // Default start for CVT
         }
 
-        // Pre-fill ring buffer
-        long initialTarget = (this.currentFrameTimeNs == 0) ? 1_000_000_000L / 60 : this.currentFrameTimeNs;
+        resetRingBuffer();
+    }
+    
+    private void resetRingBuffer() {
+        long initialTarget = (this.currentFrameTimeNs <= 0) ? 1_000_000_000L / 60 : this.currentFrameTimeNs;
         for (int i = 0; i < BUFFER_SIZE; i++) {
             frameTimeBuffer[i] = initialTarget;
         }
@@ -113,23 +121,31 @@ public final class TimeKeeper {
     public void startFrame() {
         currentFrameTime = System.nanoTime();
         frameCount++;
+        
+        // --- Rockstar/AAA AFK Logic & Anti-Stutter ---
+        int currentAFKTier = DarkImGuiInput.getAFKTier();
+        if (currentAFKTier < lastAFKTier) {
+            // Waking up from AFK/Minimized! Prevent stutter death-spiral.
+            resetRingBuffer();
+            lastFrameTime = currentFrameTime; // Erase history to prevent massive DeltaTime
+        }
+        lastAFKTier = currentAFKTier;
     }
 
     /**
      * Delta Time adapts precisely to the active Lane to guarantee determinism.
      */
-    public double getDeltaTime() {
+    public float getDeltaTime() {
         if (currentMode == EngineMode.SCIENTIFIC_SYMMETRIC) {
-            // Lane 4: Absolute mathematical determinism (Fixed Delta)
-            return 1.0 / customDebugFps; 
+            return 1.0f / customDebugFps; 
         }
         if (currentMode == EngineMode.UNBOUNDED_RAW || currentTargetFps == UNBOUNDED_FPS) {
             long deltaNs = currentFrameTime - lastFrameTime;
             if (deltaNs <= 0) deltaNs = 1;
-            return deltaNs / 1_000_000_000.0;
+            // Cap delta to prevent physics explosions on hiccups (max 100ms)
+            return Math.min(deltaNs / 1_000_000_000.0f, 0.1f);
         }
-        // Lane 1 & 3: Floating delta based on current target
-        return 1.0 / currentTargetFps;
+        return 1.0f / currentTargetFps;
     }
 
     public long getFrameCount() {
@@ -140,103 +156,96 @@ public final class TimeKeeper {
         return currentFrameTime;
     }
 
-    /**
-     * QUAD-LANE ROUTER
-     * Routes the waiting logic depending on the active architectural lane.
-     * Switch statement overhead is 0ns (Compiled as internal tableswitch/lookupswitch).
-     */
     public void waitForNextFrame() {
         long actualWorkNs = System.nanoTime() - currentFrameTime;
 
-        // Save real work time to the 1% Low ring buffer
         frameTimeBuffer[bufferIndex] = actualWorkNs;
         bufferIndex = (bufferIndex + 1) % BUFFER_SIZE;
 
         switch (currentMode) {
             case UNBOUNDED_RAW:
-                // Lane 2: 0-Wait Compute. Do absolutely nothing. Run fast.
                 lastFrameTime = currentFrameTime;
                 return;
 
             case SCIENTIFIC_SYMMETRIC:
-                // Lane 4: Strict fixed step. Sleep if early, slow motion if late.
-                enforceRigidTarget();
-                break;
-
             case DEBUG_LOCK:
-                // Lane 3: Legacy Fixed FPS lock for testing.
                 enforceRigidTarget();
                 break;
 
             case GAMING_CVT:
             default:
-                // Lane 1: Asymmetric Hysteresis for buttery smooth gameplay.
                 enforceGamingCVT(actualWorkNs);
                 break;
         }
     }
 
-    /**
-     * [LANE 1] Asymmetric Hysteresis CVT
-     */
     private void enforceGamingCVT(long actualWorkNs) {
+        // Enforce AFK Power-Saving Targets
+        if (lastAFKTier == 3) {
+            setTargetFps(5); // Deep sleep / Minimized
+            executeHybridWait();
+            return;
+        } else if (lastAFKTier == 2) {
+            setTargetFps(30); // AFK but visible
+            executeHybridWait();
+            return;
+        }
+
         long headroomNs = currentFrameTimeNs - actualWorkNs;
         this.lastHeadroomNs = headroomNs;
 
-        // 1. Banda Muerta (Histéresis 5%) - Ignorar fluctuaciones
-        // [AUDIT FIX] Optimizacion: Evitar casteo a 'double' usando division entera (/20 = 5%)
         if (Math.abs(headroomNs) < (currentFrameTimeNs / 20)) {
             stabilityFrames++;
         } 
-        // 2. Caída Defensiva Asimétrica (Stutter Protection)
         else if (headroomNs < 0) {
             long worstFrameNs = getWorstFrameInRingBuffer();
-            // [AUDIT FIX] Seguro contra division por cero en caso de saltos cuanticos
             long actualFps = 1_000_000_000L / Math.max(1, worstFrameNs);
             this.lastActualFps = actualFps;
             
-            // Magia Torvalds: Truncar hacia abajo a múltiplo par (Bloques de 4)
             long newTarget = (actualFps / 4) * 4; 
             
-            // Anclaje al 1% Low
             setTargetFps(Math.max(MIN_FPS, newTarget));
             stabilityFrames = 0; 
         } 
-        // 3. Subida Cautelosa (+20% Headroom)
-        // [AUDIT FIX] Optimizacion: Evitar casteo a 'double' usando division entera (/5 = 20%)
         else if (headroomNs > (currentFrameTimeNs / 5)) {
             stabilityFrames++;
-            // Exigimos 300 frames de estabilidad absoluta (Aprox 5 segundos)
             if (stabilityFrames >= 300) { 
                 setTargetFps(Math.min(MAX_FPS, currentTargetFps + 4));
                 stabilityFrames = 0;
             }
         }
 
-        // Spin-wait based on current dynamic target
-        executeSpinWait();
+        executeHybridWait();
     }
 
-    /**
-     * [LANE 3 & 4] Rigid static lock
-     */
     private void enforceRigidTarget() {
-        executeSpinWait();
+        executeHybridWait();
     }
 
     /**
-     * Unified hardware spin-wait core.
+     * Modern Hybrid-Wait Frame Pacing.
+     * Replaces the dead Spin-Wait with OS-friendly Parking (Work-Stealing ready).
      */
-    private void executeSpinWait() {
+    private void executeHybridWait() {
         long targetTime = lastFrameTime + currentFrameTimeNs;
         long now = System.nanoTime();
 
         while (now < targetTime) {
-            Thread.onSpinWait();
+            long remainingNs = targetTime - now;
+            
+            // If we have more than 1.5ms of headroom, yield to OS to prevent 100% CPU lock
+            if (remainingNs > 1_500_000) {
+                // Here we would hook Work-Stealing (e.g. parallelExecutor.stealWork())
+                // For now, we park the thread (micro-sleep) to drastically reduce CPU thermals
+                LockSupport.parkNanos(1_000_000); // 1ms sleep
+            } else {
+                // Micro-spin for the last millisecond to guarantee AAA precision
+                Thread.onSpinWait();
+            }
             now = System.nanoTime();
         }
 
-        // Slip compensation (Max 2 frames of stutter debt)
+        // Slip compensation
         if (now - targetTime > currentFrameTimeNs * 2) {
             lastFrameTime = now;
         } else {
@@ -262,7 +271,6 @@ public final class TimeKeeper {
         if (fps == this.currentTargetFps) return;
         this.currentTargetFps = fps;
         this.currentFrameTimeNs = (fps == 0) ? 0 : 1_000_000_000 / fps;
-        DarkLogger.info("TIME", "Governor shifted to: " + fps + " FPS (" + currentMode.name() + ")");
     }
 
     public void recordPhaseTime(int phase, long timeNs) {
@@ -285,14 +293,7 @@ public final class TimeKeeper {
     }
 
     public void printStats() {
-        DarkLogger.info("TIME", String.format("Mode: %s | FPS Target: %d | Frame %d: Total=%.2fms",
-                currentMode.name(),
-                currentTargetFps,
-                frameCount,
-                getLastFrameTimeMs()));
-
-        if (isOverBudget()) {
-            DarkLogger.warning("TIME", "⚠️ WARNING: Frame exceeded budget (" + currentMode.name() + ")!");
-        }
+        // [AUDIT AAA+]: Mover estadísticas a consumidor asíncrono (Metrics Bus)
+        // Eliminado para evitar asignación en hot-path (String.format)
     }
 }

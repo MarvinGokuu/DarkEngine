@@ -100,10 +100,21 @@ public final class DarkDeferredLightingSystem {
             DarkOpenGLLinker.glDispatchCompute.invokeExact(groupsX, groupsY, 1);
 
             // Synchronize memory before FSR reads it
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando Deferred Lighting", e);
+        }
+    }
+
+    public static void destroy() {
+        try {
+            if (computeProgramId != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+                computeProgramId = 0;
+            }
+        } catch (Throwable e) {
+            DarkLogger.fatal("GRAPHICS", "Error al destruir shader de Deferred Lighting", e);
         }
     }
 }

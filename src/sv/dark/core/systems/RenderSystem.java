@@ -45,7 +45,7 @@ public final class RenderSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         processedCount.incrementAndGet(); // Increment local metric on each update
     }
 }

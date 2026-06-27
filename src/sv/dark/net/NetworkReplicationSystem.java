@@ -39,7 +39,7 @@ public final class NetworkReplicationSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         accumulator += deltaTime;
         if (accumulator >= TICK_RATE) {
             accumulator = 0.0;

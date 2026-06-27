@@ -1,11 +1,11 @@
 package sv.dark.ui;
 
 import imgui.ImDrawData;
-import imgui.ImDrawList;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImFontAtlas;
 import imgui.type.ImInt;
+import imgui.ImVec4;
 import sv.dark.core.systems.DarkOpenGLLinker;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -16,24 +16,18 @@ import sv.dark.core.DarkLogger;
 public final class DarkImGuiRenderer {
     
     private static int g_ShaderHandle = 0;
-    private static int g_VertHandle = 0;
-    private static int g_FragHandle = 0;
     private static int g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-    private static int g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_AttribLocationVtxColor = 0;
     private static int g_VboHandle = 0, g_ElementsHandle = 0;
     private static int g_FontTexture = 0;
 
     public static void init() {
         createDeviceObjects();
-        DarkLogger.info("IMGUI", "Renderer Nativo Inicializado (Project Panama).");
+        DarkLogger.info("IMGUI", "Renderer Nativo Inicializado (Project Panama + imgui-java).");
     }
 
     private static void createDeviceObjects() {
-        try (Arena arena = Arena.ofConfined()) {
-            int lastTexture = getIntegerv(arena, DarkOpenGLLinker.GL_TEXTURE_BINDING_2D);
-            int lastArrayBuffer = getIntegerv(arena, DarkOpenGLLinker.GL_ARRAY_BUFFER_BINDING);
-            int lastVertexArray = getIntegerv(arena, DarkOpenGLLinker.GL_VERTEX_ARRAY_BINDING);
-
+        try {
+            Arena arena = Arena.ofAuto();
             String vertexShader = 
                 "#version 330 core\n" +
                 "layout (location = 0) in vec2 Position;\n" +
@@ -71,10 +65,6 @@ public final class DarkImGuiRenderer {
             g_ElementsHandle = buffers.getAtIndex(ValueLayout.JAVA_INT, 1);
 
             createFontsTexture(arena);
-
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, lastTexture);
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_ARRAY_BUFFER, lastArrayBuffer);
-            // DarkOpenGLLinker.glBindVertexArray.invokeExact(lastVertexArray);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -106,7 +96,8 @@ public final class DarkImGuiRenderer {
     public static void renderDrawData(ImDrawData drawData) {
         if (drawData.getCmdListsCount() == 0) return;
         
-        try (Arena arena = Arena.ofConfined()) {
+        try {
+            Arena arena = Arena.ofAuto();
             int fbWidth = (int) (drawData.getDisplaySizeX() * drawData.getFramebufferScaleX());
             int fbHeight = (int) (drawData.getDisplaySizeY() * drawData.getFramebufferScaleY());
             if (fbWidth <= 0 || fbHeight <= 0) return;
@@ -114,7 +105,7 @@ public final class DarkImGuiRenderer {
             // Setup Render State
             DarkOpenGLLinker.glEnable.invokeExact(DarkOpenGLLinker.GL_BLEND);
             DarkOpenGLLinker.glBlendEquation.invokeExact(DarkOpenGLLinker.GL_FUNC_ADD);
-            DarkOpenGLLinker.glBlendFuncSeparate.invokeExact(DarkOpenGLLinker.GL_SRC_ALPHA, DarkOpenGLLinker.GL_ONE_MINUS_SRC_ALPHA, DarkOpenGLLinker.GL_ONE, DarkOpenGLLinker.GL_ONE_MINUS_SRC_ALPHA);
+            DarkOpenGLLinker.glBlendFuncSeparate.invokeExact(DarkOpenGLLinker.GL_SRC_ALPHA, DarkOpenGLLinker.GL_ONE_MINUS_SRC_ALPHA, 1 /*GL_ONE*/, DarkOpenGLLinker.GL_ONE_MINUS_SRC_ALPHA);
             DarkOpenGLLinker.glDisable.invokeExact(DarkOpenGLLinker.GL_CULL_FACE);
             DarkOpenGLLinker.glDisable.invokeExact(DarkOpenGLLinker.GL_DEPTH_TEST);
             DarkOpenGLLinker.glEnable.invokeExact(DarkOpenGLLinker.GL_SCISSOR_TEST);
@@ -154,53 +145,67 @@ public final class DarkImGuiRenderer {
             DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle);
             
             for (int n = 0; n < drawData.getCmdListsCount(); n++) {
-                ImDrawList cmdList = drawData.getCmdLists()[n];
+                ByteBuffer vtxBuffer = drawData.getCmdListVtxBufferData(n);
+                ByteBuffer idxBuffer = drawData.getCmdListIdxBufferData(n);
                 
-                ByteBuffer vtxBuffer = cmdList.getVtxBufferData();
-                ByteBuffer idxBuffer = cmdList.getIdxBufferData();
+                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_ARRAY_BUFFER, (long) vtxBuffer.remaining(), MemorySegment.ofBuffer(vtxBuffer), 0x88E0 /* GL_STREAM_DRAW */);
+                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_ELEMENT_ARRAY_BUFFER, (long) idxBuffer.remaining(), MemorySegment.ofBuffer(idxBuffer), 0x88E0 /* GL_STREAM_DRAW */);
                 
-                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_ARRAY_BUFFER, (long) vtxBuffer.remaining(), MemorySegment.ofBuffer(vtxBuffer), DarkOpenGLLinker.GL_STREAM_DRAW);
-                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_ELEMENT_ARRAY_BUFFER, (long) idxBuffer.remaining(), MemorySegment.ofBuffer(idxBuffer), DarkOpenGLLinker.GL_STREAM_DRAW);
-                
-                long idxBufferOffset = 0;
-                for (int cmd_i = 0; cmd_i < cmdList.getCmdBufferSize(); cmd_i++) {
-                    // Extract Texture
-                    int texId = cmdList.getCmdBufferTextureId(cmd_i);
+                for (int cmd_i = 0; cmd_i < drawData.getCmdListCmdBufferSize(n); cmd_i++) {
+                    int texId = drawData.getCmdListCmdBufferTextureId(n, cmd_i);
                     DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, texId);
                     
-                    // Scissor
-                    float clipX = cmdList.getCmdBufferClipRectX(cmd_i) - drawData.getDisplayPosX();
-                    float clipY = cmdList.getCmdBufferClipRectY(cmd_i) - drawData.getDisplayPosY();
-                    float clipZ = cmdList.getCmdBufferClipRectZ(cmd_i) - drawData.getDisplayPosX();
-                    float clipW = cmdList.getCmdBufferClipRectW(cmd_i) - drawData.getDisplayPosY();
+                    ImVec4 clipRect = drawData.getCmdListCmdBufferClipRect(n, cmd_i);
+                    float clipX = clipRect.x - drawData.getDisplayPosX();
+                    float clipY = clipRect.y - drawData.getDisplayPosY();
+                    float clipZ = clipRect.z - drawData.getDisplayPosX();
+                    float clipW = clipRect.w - drawData.getDisplayPosY();
                     
                     if (clipX < fbWidth && clipY < fbHeight && clipZ >= 0.0f && clipW >= 0.0f) {
                         DarkOpenGLLinker.glScissor.invokeExact((int)(clipX * drawData.getFramebufferScaleX()), 
                                                                (int)((drawData.getDisplaySizeY() - clipW) * drawData.getFramebufferScaleY()), 
                                                                (int)((clipZ - clipX) * drawData.getFramebufferScaleX()), 
                                                                (int)((clipW - clipY) * drawData.getFramebufferScaleY()));
-                        DarkOpenGLLinker.glDrawElements.invokeExact(DarkOpenGLLinker.GL_TRIANGLES, cmdList.getCmdBufferElemCount(cmd_i), DarkOpenGLLinker.GL_UNSIGNED_SHORT, idxBufferOffset);
+                        int idxOffset = drawData.getCmdListCmdBufferIdxOffset(n, cmd_i);
+                        int elemCount = drawData.getCmdListCmdBufferElemCount(n, cmd_i);
+                        DarkOpenGLLinker.glDrawElements.invokeExact(DarkOpenGLLinker.GL_TRIANGLES, elemCount, DarkOpenGLLinker.GL_UNSIGNED_SHORT, (long)(idxOffset * 2));
                     }
-                    idxBufferOffset += cmdList.getCmdBufferElemCount(cmd_i) * 2L;
                 }
             }
-            
-            // Cleanup state
-            // ... omitting for brevity
+            DarkOpenGLLinker.glDeleteVertexArrays.invokeExact(1, vaoPtr);
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
     private static int compileProgram(Arena arena, String vtx, String frag) throws Throwable {
-        int v = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER - 2); // Vertex Shader is 0x8B31
-        // We need 0x8B31 for vertex and 0x8B30 for fragment.
-        return 0; // TEMPORARY
+        int vertexShader = (int) DarkOpenGLLinker.glCreateShader.invokeExact(0x8B31);
+        MemorySegment vtxPtr = arena.allocateFrom(vtx);
+        MemorySegment vtxArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, vtxPtr);
+        DarkOpenGLLinker.glShaderSource.invokeExact(vertexShader, 1, vtxArrayPtr, MemorySegment.NULL);
+        DarkOpenGLLinker.glCompileShader.invokeExact(vertexShader);
+
+        int fragmentShader = (int) DarkOpenGLLinker.glCreateShader.invokeExact(0x8B30);
+        MemorySegment fragPtr = arena.allocateFrom(frag);
+        MemorySegment fragArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, fragPtr);
+        DarkOpenGLLinker.glShaderSource.invokeExact(fragmentShader, 1, fragArrayPtr, MemorySegment.NULL);
+        DarkOpenGLLinker.glCompileShader.invokeExact(fragmentShader);
+
+        int program = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
+        DarkOpenGLLinker.glAttachShader.invokeExact(program, vertexShader);
+        DarkOpenGLLinker.glAttachShader.invokeExact(program, fragmentShader);
+        DarkOpenGLLinker.glLinkProgram.invokeExact(program);
+        return program;
     }
 
-    private static int getIntegerv(Arena arena, int pname) throws Throwable {
-        MemorySegment val = arena.allocate(ValueLayout.JAVA_INT);
-        // DarkOpenGLLinker.glGetIntegerv.invokeExact(pname, val);
-        return val.get(ValueLayout.JAVA_INT, 0);
+    public static void destroy() {
+        try {
+            if (g_ShaderHandle != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(g_ShaderHandle);
+                g_ShaderHandle = 0;
+            }
+        } catch (Throwable e) {
+            DarkLogger.fatal("IMGUI", "Error al destruir shader de ImGui", e);
+        }
     }
 }

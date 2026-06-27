@@ -60,10 +60,21 @@ public final class DarkPostProcessSystem {
             DarkOpenGLLinker.glDispatchCompute.invokeExact(groupsX, groupsY, 1);
 
             // Synchronize memory before FSR Upscaler
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando Post-Processing", e);
+        }
+    }
+
+    public static void destroy() {
+        try {
+            if (computeProgramId != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+                computeProgramId = 0;
+            }
+        } catch (Throwable e) {
+            DarkLogger.fatal("GRAPHICS", "Error al destruir shader de Post-Processing", e);
         }
     }
 }

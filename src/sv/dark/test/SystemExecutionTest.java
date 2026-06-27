@@ -39,7 +39,7 @@ public class SystemExecutionTest implements GameSystem {
     private long executionCount = 0;
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         executionCount++;
 
         // Simulate work: write a value to the state

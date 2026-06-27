@@ -75,6 +75,7 @@ public final class EngineKernel {
 
     // Metrics
     private long totalFrames = 0;
+    private final MetricsCollector.FrameMetrics pooledFrameMetrics = new MetricsCollector.FrameMetrics();
 
     private final SystemSnapshot initialSystemState;
 
@@ -155,6 +156,29 @@ public final class EngineKernel {
         }, "DarkShutdownHook");
 
         Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+
+        // -------------------------------------------------------------------------
+        // ANTI-ZOMBIE SHIELD (Cross-Platform Daemon Polling)
+        // -------------------------------------------------------------------------
+        // Polling a 1 Hz out of the hot-path to detect orphaned JVMs without overhead.
+        Thread zombieShield = new Thread(() -> {
+            while (running) {
+                try {
+                    Thread.sleep(1000);
+                    // Java 9+ ProcessHandle API
+                    if (!ProcessHandle.current().parent().isPresent()) {
+                        sv.dark.core.DarkLogger.error("KERNEL", "[ZOMBIE SHIELD] Parent process died! Triggering Poison Pill...");
+                        gracefulShutdown();
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }, "ZombieShield");
+        zombieShield.setDaemon(true);
+        zombieShield.start();
     }
 
     /**
@@ -271,8 +295,8 @@ public final class EngineKernel {
     private void runMainLoop() {
         sv.dark.ui.EngineStateChannel.STATE.set(sv.dark.ui.EngineStateChannel.STATE_RUNNING);
 
-        // Off-critical-path telemetry
-        MetricsCollector.FrameMetrics frameMetrics = new MetricsCollector.FrameMetrics();
+        // Off-critical-path telemetry (Pooled to avoid Zero-Garbage violation)
+        // We reuse the pre-allocated this.pooledFrameMetrics
 
         // Variables for sleep scaling (3 tiers)
         long lastActivityTime = System.nanoTime();
@@ -404,9 +428,9 @@ public final class EngineKernel {
             // -------------------------------------------------------------------------
             // PHASE 5: METRICS AGGREGATION (Off-Critical-Path)
             // -------------------------------------------------------------------------
-            frameMetrics.frameTimeNs = System.nanoTime() - frameStart;
-            frameMetrics.frameNumber = totalFrames;
-            frameMetrics.systemsExecutionNs = phase3End - phase3Start;
+            pooledFrameMetrics.frameTimeNs = System.nanoTime() - frameStart;
+            pooledFrameMetrics.frameNumber = totalFrames;
+            pooledFrameMetrics.systemsExecutionNs = phase3End - phase3Start;
 
             if (MetricsCollector.shouldCollectMetrics(totalFrames)) {
                 ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
@@ -417,7 +441,7 @@ public final class EngineKernel {
                             executor.getPhysicsSystem(),
                             executor.getAudioSystem(),
                             adminMetricsBus,
-                            frameMetrics);
+                            pooledFrameMetrics);
                 }
             }
 
@@ -441,7 +465,7 @@ public final class EngineKernel {
      */
     private void phaseInputLatch() {
         // [FFI BINDING] Poll Native OS Events synchronously (Spatial Slicing)
-        sv.dark.ui.DarkEngineWindow.pollOS();
+        sv.dark.ui.DarkEngineWindow.pollOS(currentState.getRawSegment());
 
         // Simulating input buffer read (avoids empty TODOs)
         @SuppressWarnings("unused")
@@ -481,12 +505,10 @@ public final class EngineKernel {
                     break;
                 case 2: // SYS_PAUSE_SIGNAL
                     this.paused = !this.paused; // Toggle pause state
-                    DarkLogger.info("KERNEL", "Pause State toggled");
                     break;
                 case sv.dark.bus.DarkSignalCommands.SYS_ENGINE_ROLLBACK:
                     if (this.timeControlUnit != null) {
                         this.timeControlUnit.rollback(stateVault.getRawSegment());
-                        DarkLogger.info("KERNEL", "Rollback / Time Travel Executed");
                     }
                     break;
                 case 100: // INPUT_KEY_PRESS
@@ -514,7 +536,7 @@ public final class EngineKernel {
      * </ul>
      */
     private void phaseSystemsExecution() {
-        double deltaTime = timeKeeper.getDeltaTime();
+        float deltaTime = timeKeeper.getDeltaTime();
         systemRegistry.executeGameSystems(currentState, deltaTime);
     }
 
@@ -558,25 +580,16 @@ public final class EngineKernel {
         // 4. Dispatch FSR Upscale Compute Shader (Translates Lit 720p to Presentation 4K)
         sv.dark.scene.DarkFSRSystem.dispatchFSR();
 
-        if (sv.dark.ui.DarkImGuiLinker.isLoaded()) {
-            try {
-                // New Frame
-                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_NewFrame != null) sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_NewFrame.invokeExact();
-                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_NewFrame != null) sv.dark.ui.DarkImGuiLinker.ImGui_ImplGlfw_NewFrame.invokeExact();
-                sv.dark.ui.DarkImGuiLinker.igNewFrame.invokeExact();
-                
-                // Build UI (Demo Window for now)
-                sv.dark.ui.DarkImGuiLinker.igShowDemoWindow.invokeExact(java.lang.foreign.MemorySegment.NULL);
-                
-                // Render
-                sv.dark.ui.DarkImGuiLinker.igRender.invokeExact();
-                java.lang.foreign.MemorySegment drawData = (java.lang.foreign.MemorySegment) sv.dark.ui.DarkImGuiLinker.igGetDrawData.invokeExact();
-                if (sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_RenderDrawData != null) {
-                    sv.dark.ui.DarkImGuiLinker.ImGui_ImplOpenGL3_RenderDrawData.invokeExact(drawData);
-                }
-            } catch (Throwable t) {
-                // Ignore render errors to avoid crashing the kernel
+        try {
+            if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
+                sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
+                imgui.ImGui.newFrame();
+                imgui.ImGui.showDemoWindow();
+                imgui.ImGui.render();
+                sv.dark.ui.DarkImGuiRenderer.renderDrawData(imgui.ImGui.getDrawData());
             }
+        } catch (Throwable t) {
+            sv.dark.core.DarkLogger.error("IMGUI", "Native exception rendering ImGui: " + t.getMessage());
         }
         
         // Swap buffers to display the frame
@@ -584,7 +597,7 @@ public final class EngineKernel {
             try {
                 sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
             } catch (Throwable t) {
-                // Ignore
+                sv.dark.core.DarkLogger.error("GRAPHICS", "Native panic during glfwSwapBuffers: " + t.getMessage());
             }
         }
     }
@@ -638,7 +651,14 @@ public final class EngineKernel {
         terminator.setDaemon(true);
         terminator.start();
 
-        // Stop the Control Plane (Metrics Server & Admin Consumer)
+        // [POISON PILL] Instruct AdminConsumer to flush logs and terminate gracefully
+        try {
+            adminMetricsBus.offer(sv.dark.bus.DarkSignalPacker.packCmd(sv.dark.bus.DarkSignalCommands.SYS_TERMINATE_LOG_SIGNAL));
+        } catch (Throwable t) {
+            System.err.println("[KERNEL] Error sending Poison Pill to metrics bus: " + t.getMessage());
+        }
+
+        // Stop the Control Plane (Metrics Server & Admin Consumer) - this will now block until the consumer dies
         try {
             sv.dark.admin.AdminController.stopControlPlane();
         } catch (Throwable t) {
@@ -731,11 +751,16 @@ public final class EngineKernel {
         }
 
         // -------------------------------------------------------------------------
-        // STEP 6.5: DESTROY DEFERRED PIPELINE VRAM OBJECTS
+        // STEP 6.5: DESTROY DEFERRED PIPELINE VRAM OBJECTS AND SHADERS
         // -------------------------------------------------------------------------
         sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6.5/7] Destroying VRAM objects...");
         try {
             sv.dark.scene.DarkDeferredPipeline.destroy();
+            sv.dark.scene.DarkComputeCullingSystem.destroy();
+            sv.dark.scene.DarkDeferredLightingSystem.destroy();
+            sv.dark.scene.DarkPostProcessSystem.destroy();
+            sv.dark.scene.DarkFSRSystem.destroy();
+            sv.dark.ui.DarkImGuiRenderer.destroy();
             sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6.5/7] VRAM objects destroyed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 6.5/7] Error destroying VRAM objects: " + e.getMessage());

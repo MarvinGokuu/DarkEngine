@@ -24,6 +24,7 @@ public final class DarkComputeCullingSystem {
 
     private static int computeProgramId;
     private static int ssboX, ssboY, ssboVisible;
+    private static int allocatedCapacity = 0;
 
     public static void init() {
         try {
@@ -81,17 +82,28 @@ public final class DarkComputeCullingSystem {
 
             // Transferir PosX a VRAM
             DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboX);
-            DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, soa.posX, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+            if (capacity > allocatedCapacity) {
+                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, soa.posX, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+            } else {
+                DarkOpenGLLinker.glBufferSubData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, bytes, soa.posX);
+            }
             DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0, ssboX);
 
             // Transferir PosY a VRAM
             DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboY);
-            DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, soa.posY, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+            if (capacity > allocatedCapacity) {
+                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, soa.posY, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+            } else {
+                DarkOpenGLLinker.glBufferSubData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, bytes, soa.posY);
+            }
             DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 1, ssboY);
 
             // Alojar Buffer de Visibilidad
             DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboVisible);
-            DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, MemorySegment.NULL, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+            if (capacity > allocatedCapacity) {
+                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, bytes, MemorySegment.NULL, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
+                allocatedCapacity = capacity;
+            }
             DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 2, ssboVisible);
 
             // Despachar el Compute Shader (Grupos de 256 hilos)
@@ -103,6 +115,17 @@ public final class DarkComputeCullingSystem {
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando Compute Culling", e);
+        }
+    }
+
+    public static void destroy() {
+        try {
+            if (computeProgramId != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+                computeProgramId = 0;
+            }
+        } catch (Throwable e) {
+            DarkLogger.fatal("GRAPHICS", "Error al destruir shader de Culling", e);
         }
     }
 }

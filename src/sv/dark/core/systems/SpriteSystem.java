@@ -8,7 +8,7 @@ import sv.dark.core.AAACertified;
 import sv.dark.state.WorldStateFrame;
 import sv.dark.state.DarkStateLayout;
 import sv.dark.core.EntityLayout;
-import java.awt.Graphics2D;
+
 
 /**
  * RESPONSIBILITY: Provide massive 2D rendering using Sprite Batching.
@@ -46,7 +46,7 @@ public final class SpriteSystem implements DarkRenderSystem {
      * [TECHNICAL NOTE]: Sequential access to native memory to maximize Cache Hit Rate.
      */
     @Override
-    public void render(Graphics2D g2d, WorldStateFrame state) {
+    public void render(WorldStateFrame state) {
         // SSOT: We read entityCount from state (not as a parameter)
         int entityCount = state.readInt(DarkStateLayout.ENTITY_COUNT);
 
@@ -62,14 +62,14 @@ public final class SpriteSystem implements DarkRenderSystem {
 
             // Drawing is done using a single shared "Atlas" texture
             // (Zero-Switching)
-            this.drawFromAtlas(g2d, x, y, glow);
+            this.drawFromAtlas(x, y, glow);
         }
     }
 
     /**
      * Visual injection into the screen buffer.
      */
-    private void drawFromAtlas(Graphics2D g2d, double x, double y, double glow) {
+    private void drawFromAtlas(double x, double y, double glow) {
         // Atomic drawing implementation (Render Control)
         // Assumes the existence of a pre-loaded Atlas.
     }

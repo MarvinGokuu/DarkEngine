@@ -46,7 +46,7 @@ public final class DarkInputSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         MemorySegment window = DarkEngineWindow.getWindowPointer();
         if (window == null || window.equals(MemorySegment.NULL)) {
             return; // Window not ready or headless
