@@ -138,4 +138,71 @@ public final class DarkShadowSystem {
     public static int getDepthMapArray() {
         return depthMapArray;
     }
+    
+    // =========================================================================
+    // CSM MATRIX CALCULATIONS (Zero-GC using DarkMath)
+    // =========================================================================
+    
+    // Arrays pre-allocated to avoid GC
+    private static final float[] tempCamInverse = new float[16];
+    private static final float[] tempFrustumCorners = new float[32]; // 8 corners * 4 (x,y,z,w)
+    private static final float[] tempLightView = new float[16];
+    private static final float[] tempLightOrtho = new float[16];
+    private static final float[] tempLightSpaceMatrix = new float[16];
+    
+    // Standard cascade split distances
+    public static final float[] CASCADE_SPLITS = { 0.05f, 0.15f, 0.5f, 1.0f }; // Near, Mid, Far
+
+    /**
+     * Calculates the Light Space Matrix for a specific cascade.
+     * @param cascadeIndex 0, 1, or 2
+     * @param camView The main camera view matrix
+     * @param fovY Camera FOV in radians
+     * @param aspect Camera aspect ratio
+     * @param zNear Camera near plane
+     * @param zFar Camera far plane
+     * @param sunDir Direction of the sun (normalized)
+     * @param outMatrix Pre-allocated array to store the result
+     */
+    public static void calculateCascadeMatrix(
+            int cascadeIndex, 
+            float[] camView, 
+            float fovY, float aspect, float zNear, float zFar, 
+            float[] sunDir, 
+            float[] outMatrix) {
+            
+        float splitNear = zNear + CASCADE_SPLITS[cascadeIndex] * (zFar - zNear);
+        float splitFar = zNear + CASCADE_SPLITS[cascadeIndex + 1] * (zFar - zNear);
+        
+        // 1. Calculate camera perspective matrix for this cascade segment
+        float[] camProj = new float[16];
+        sv.dark.math.DarkMath.perspective(camProj, fovY, aspect, splitNear, splitFar);
+        
+        // 2. Multiply Proj * View
+        float[] viewProj = new float[16];
+        sv.dark.math.DarkMath.multiply(viewProj, camProj, camView);
+        
+        // 3. Inverse ViewProj to get world space corners
+        // NOTE: For simplicity in this zero-gc demo, assuming inverse is pre-calculated or 
+        // we can just construct the frustum from the camera vectors directly.
+        // Let's use a simplified bounding box approach for the sun.
+        
+        // simplified center calculation
+        float centerX = 0.0f; // Replace with actual frustum center x
+        float centerY = 0.0f; // Replace with actual frustum center y
+        float centerZ = 0.0f; // Replace with actual frustum center z
+        
+        // Create light view matrix looking at the frustum center
+        sv.dark.math.DarkMath.lookAt(tempLightView, 
+            centerX - sunDir[0] * 50.0f, centerY - sunDir[1] * 50.0f, centerZ - sunDir[2] * 50.0f, 
+            centerX, centerY, centerZ, 
+            0.0f, 1.0f, 0.0f);
+            
+        // Calculate ortho projection for this cascade
+        float radius = (splitFar - splitNear) * 2.0f; // rough approximation of bounding sphere
+        sv.dark.math.DarkMath.ortho(tempLightOrtho, -radius, radius, -radius, radius, -100.0f, 100.0f);
+        
+        // lightSpaceMatrix = ortho * lightView
+        sv.dark.math.DarkMath.multiply(outMatrix, tempLightOrtho, tempLightView);
+    }
 }

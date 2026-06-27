@@ -79,6 +79,11 @@ public final class DarkEngineWindow {
             sv.dark.scene.DarkDeferredLightingSystem.init();
             sv.dark.scene.DarkPostProcessSystem.init();
             sv.dark.scene.DarkFSRSystem.init();
+            
+            // Inicializar Sistemas de Iluminación y Sombras (Fase 29)
+            sv.dark.scene.DarkShadowSystem.init();
+            sv.dark.scene.DarkLightSystem.init();
+            sv.dark.scene.DarkClusteredSystem.init();
 
             // Initialize Native ImGui Chassis (Phase 9)
             imgui.ImGui.createContext();
