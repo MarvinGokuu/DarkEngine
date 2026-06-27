@@ -377,9 +377,17 @@ public final class DarkAtomicBus implements IEventBus {
 
         int availableSpace = (int) (buffer.length - (currentTail - currentHead));
         int eventsToWrite = Math.min(length, availableSpace);
+        if (eventsToWrite == 0) return 0;
 
-        for (int i= 0; i< eventsToWrite; i++) {
-            buffer[(int) ((currentTail + i) & mask)] = events[offset + i];
+        int tailPos = (int) (currentTail & mask);
+        if (tailPos + eventsToWrite <= buffer.length) {
+            // Contiguous write (No wrap-around) -> Use native vectorization (System.arraycopy)
+            System.arraycopy(events, offset, buffer, tailPos, eventsToWrite);
+        } else {
+            // Wrap-around -> Fallback to scalar loop
+            for (int i= 0; i< eventsToWrite; i++) {
+                buffer[(int) ((currentTail + i) & mask)] = events[offset + i];
+            }
         }
 
         TAIL_H.setRelease(this, currentTail + eventsToWrite);
@@ -399,9 +407,17 @@ public final class DarkAtomicBus implements IEventBus {
 
         int availableEvents = (int) (currentTail - currentHead);
         int eventsToRead = Math.min(maxEvents, Math.min(availableEvents, outputBuffer.length));
+        if (eventsToRead == 0) return 0;
 
-        for (int i= 0; i< eventsToRead; i++) {
-            outputBuffer[i] = buffer[(int) ((currentHead + i) & mask)];
+        int headPos = (int) (currentHead & mask);
+        if (headPos + eventsToRead <= buffer.length) {
+            // Contiguous read (No wrap-around) -> Use native vectorization (System.arraycopy)
+            System.arraycopy(buffer, headPos, outputBuffer, 0, eventsToRead);
+        } else {
+            // Wrap-around -> Fallback to scalar loop
+            for (int i= 0; i< eventsToRead; i++) {
+                outputBuffer[i] = buffer[(int) ((currentHead + i) & mask)];
+            }
         }
 
         HEAD_H.setRelease(this, currentHead + eventsToRead);

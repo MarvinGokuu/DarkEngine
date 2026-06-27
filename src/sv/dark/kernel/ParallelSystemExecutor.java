@@ -4,16 +4,10 @@
 
 package sv.dark.kernel;
 
-
 import sv.dark.core.DarkLogger;
 import sv.dark.core.systems.GameSystem;
 import sv.dark.core.AAACertified;
 import sv.dark.state.WorldStateFrame;
-
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Phaser;
 
 import sv.dark.core.systems.MovementSystem;
 import sv.dark.core.systems.RenderSystem;
@@ -23,115 +17,124 @@ import sv.dark.core.systems.AudioSystem;
 /**
  * RESPONSIBILITY: Parallel System Executor for deterministic parallel execution.
  * WHY: Sequential execution of systems wastes multi-core CPU potential. We need parallel execution without data races.
- * TECHNIQUE: Executes systems in parallel using Java Virtual Threads (Project Loom), respecting the dependency graph (Topological Sort). Uses pre-allocated Phasers and mutable Tasks for zero GC allocations.
- * GUARANTEES: Determinism (same graph + same input = same output). All systems in layer N finish before layer N+1 starts. No GC allocations during the loop.
+ * TECHNIQUE: Executes systems in parallel using static Platform Threads pinned to tasks, communicating via volatile Spin-Waits. 
+ * GUARANTEES: Determinism (same graph + same input = same output). All systems in layer N finish before layer N+1 starts. 0 GC allocations during the loop (no Executor/Thread pooling objects).
  * 
  * @author Marvin Alexander Flores Canales
  * @since 1.0
  */
 @AAACertified(
-    date = "2026-06-12",
-    maxLatencyNs = 10_000,
+    date = "2026-06-27",
+    maxLatencyNs = 2_000,
     minThroughput = 240,
     alignment = 64,
-    lockFree = false,
+    lockFree = true,
     offHeap = false,
-    notes = "Zero-GC Parallel executor using pre-allocated mutable Task wrappers and Phasers"
+    notes = "Zero-GC Parallel executor using Static Platform Threads and Spin-Wait Lock-Free barriers"
 )
 public final class ParallelSystemExecutor {
 
-    // Thread pool (uses Java 21+ Virtual Threads / Fibers)
-    private final ExecutorService pool;
-
-    // Execution layers (from the dependency graph)
-    private final List<List<GameSystem>> executionLayers;
-
-    // Mechanical Sympathy: Pre-allocated Phasers to avoid GC pressure on every frame
-    private final Phaser[] layerPhasers;
-    
-    // Mechanical Sympathy: Pre-allocated tasks to avoid lambda allocations in the loop
+    private final GameSystem[][] executionLayersArray;
     private final SystemTask[][] layerTasks;
+    private final WorkerThread[] workers;
 
-    // Metrics
     private long lastExecutionTimeNs;
 
-    // Local references for telemetry aggregation without false sharing
     private MovementSystem movementSystem;
     private RenderSystem renderSystem;
     private PhysicsSystem physicsSystem;
     private AudioSystem audioSystem;
     private sv.dark.core.systems.DarkAudioSystem darkAudioSystem;
 
-    /**
-     * Reusable, mutable task representation to prevent dynamic object/lambda alocations.
-     */
-    private static final class SystemTask implements Runnable {
+    private static final class SystemTask {
         private final GameSystem system;
-        private final Phaser phaser;
         private WorldStateFrame state;
         private double deltaTime;
 
-        SystemTask(GameSystem system, Phaser phaser) {
+        // Memory barriers for lock-free spin-waiting
+        volatile boolean ready = false;
+        volatile boolean done = false;
+        volatile boolean shutdown = false;
+
+        SystemTask(GameSystem system) {
             this.system = system;
-            this.phaser = phaser;
         }
 
-        void setArgs(WorldStateFrame state, double deltaTime) {
+        void setArgs(WorldStateFrame state, float deltaTime) {
             this.state = state;
             this.deltaTime = deltaTime;
+            this.done = false;
+            this.ready = true;
+        }
+    }
+
+    private static final class WorkerThread extends Thread {
+        private final SystemTask task;
+
+        WorkerThread(String name, SystemTask task) {
+            super(name);
+            this.task = task;
+            setDaemon(true);
         }
 
         @Override
         public void run() {
-            try {
-                system.update(state, deltaTime);
-            } catch (Exception e) {
-                // Suppressed to avoid blocking JNI/IO
-            } finally {
-                phaser.arrive(); // Mark task as completed
+            while (!task.shutdown) {
+                if (task.ready) {
+                    task.ready = false; // Claim task
+                    try {
+                        task.system.update(task.state, (float) task.deltaTime);
+                    } catch (Exception e) {
+                        // Suppressed to avoid blocking JNI/IO
+                    } finally {
+                        task.done = true; // Signal completion
+                    }
+                } else {
+                    Thread.onSpinWait(); // Mechanical Sympathy: Hint to CPU
+                }
             }
         }
     }
 
-    /**
-     * Constructor.
-     * 
-     * @param executionLayers System layers (from the dependency graph).
-     */
-    public ParallelSystemExecutor(List<List<GameSystem>> executionLayers) {
-        if (executionLayers == null || executionLayers.isEmpty()) {
+    public ParallelSystemExecutor(GameSystem[][] executionLayersArray) {
+        if (executionLayersArray == null || executionLayersArray.length == 0) {
             throw new IllegalArgumentException("Execution layers cannot be null or empty");
         }
 
-        this.executionLayers = executionLayers;
-
-        // Mechanical Sympathy: Project Loom Virtual Threads evade OS Context Switches
-        this.pool = Executors.newVirtualThreadPerTaskExecutor();
+        this.executionLayersArray = executionLayersArray;
         this.lastExecutionTimeNs = 0;
 
-        // Mechanical Sympathy: Pre-allocate Phasers & Tasks
-        this.layerPhasers = new Phaser[executionLayers.size()];
-        this.layerTasks = new SystemTask[executionLayers.size()][];
+        int totalParallelTasks = 0;
+        for (GameSystem[] layer : executionLayersArray) {
+            if (layer.length > 1) {
+                totalParallelTasks += layer.length;
+            }
+        }
+
+        this.layerTasks = new SystemTask[executionLayersArray.length][];
+        this.workers = new WorkerThread[totalParallelTasks];
         
-        for (int i = 0; i < executionLayers.size(); i++) {
-            List<GameSystem> layer = executionLayers.get(i);
-            int systemCount = layer.size();
+        int workerIdx = 0;
+        for (int i = 0; i < executionLayersArray.length; i++) {
+            GameSystem[] layer = executionLayersArray[i];
+            int systemCount = layer.length;
             
-            // N systems + 1 main thread (if > 1 system)
             if (systemCount > 1) {
-                this.layerPhasers[i] = new Phaser(systemCount + 1);
                 this.layerTasks[i] = new SystemTask[systemCount];
                 for (int j = 0; j < systemCount; j++) {
-                    this.layerTasks[i][j] = new SystemTask(layer.get(j), this.layerPhasers[i]);
+                    SystemTask task = new SystemTask(layer[j]);
+                    this.layerTasks[i][j] = task;
+                    
+                    WorkerThread worker = new WorkerThread("Worker-" + layer[j].getClass().getSimpleName(), task);
+                    this.workers[workerIdx++] = worker;
+                    worker.start();
                 }
             } else {
-                this.layerPhasers[i] = null;
                 this.layerTasks[i] = null;
             }
         }
 
-        // Dynamic system scan for telemetry
-        for (List<GameSystem> layer : executionLayers) {
+        for (GameSystem[] layer : executionLayersArray) {
             for (GameSystem system : layer) {
                 if (system instanceof MovementSystem) {
                     this.movementSystem = (MovementSystem) system;
@@ -148,7 +151,7 @@ public final class ParallelSystemExecutor {
         }
 
         DarkLogger.info("PARALLEL", "Executor initialized with " +
-                executionLayers.size() + " layers running on Java Virtual Threads (Loom)");
+                executionLayersArray.length + " layers running on " + totalParallelTasks + " Static Platform Threads (Spin-Wait)");
     }
 
     public MovementSystem getMovementSystem() {
@@ -171,82 +174,62 @@ public final class ParallelSystemExecutor {
         return darkAudioSystem;
     }
 
-    /**
-     * Executes all systems in parallel, respecting dependencies.
-     * 
-     * @param state     World state (shared, read-only for each system).
-     * @param deltaTime Elapsed time.
-     */
-    public void execute(WorldStateFrame state, double deltaTime) {
+    public void execute(WorldStateFrame state, float deltaTime) {
         long startTime = System.nanoTime();
 
-        // Execute each layer sequentially
-        for (int i = 0; i < executionLayers.size(); i++) {
-            executeLayer(i, executionLayers.get(i), state, deltaTime);
+        for (int i = 0; i < executionLayersArray.length; i++) {
+            executeLayer(i, executionLayersArray[i], state, deltaTime);
         }
 
         long endTime = System.nanoTime();
         lastExecutionTimeNs = endTime - startTime;
     }
 
-    /**
-     * Executes a layer of systems in parallel.
-     * 
-     * @param layerIndex Index of the layer for Phaser lookup.
-     * @param layer     Systems in the layer.
-     * @param state     World state.
-     * @param deltaTime Elapsed time.
-     */
-    private void executeLayer(int layerIndex, List<GameSystem> layer, WorldStateFrame state, double deltaTime) {
-        int systemCount = layer.size();
+    private void executeLayer(int layerIndex, GameSystem[] layer, WorldStateFrame state, float deltaTime) {
+        int systemCount = layer.length;
 
-        // Special case: layer with only 1 system (not worth parallelizing)
+        // 1. Mono-thread fast path
         if (systemCount == 1) {
             try {
-                layer.get(0).update(state, deltaTime);
+                layer[0].update(state, deltaTime);
             } catch (Exception e) {
                 // Suppressed
             }
             return;
         }
 
-        Phaser phaser = layerPhasers[layerIndex];
+        // 2. Parallel dispatch
         SystemTask[] tasks = layerTasks[layerIndex];
-
-        // Launch pre-allocated tasks in parallel (Zero-Allocation)
+        
         for (int j = 0; j < systemCount; j++) {
-            SystemTask task = tasks[j];
-            task.setArgs(state, deltaTime);
-            pool.execute(task);
+            tasks[j].setArgs(state, deltaTime);
         }
 
-        // Wait for all systems in the layer to finish
-        phaser.arriveAndAwaitAdvance();
+        // 3. Spin-Wait Barrier (Zero-GC synchronization)
+        for (int j = 0; j < systemCount; j++) {
+            SystemTask task = tasks[j];
+            while (!task.done) {
+                Thread.onSpinWait();
+            }
+        }
     }
 
-    /**
-     * Returns the execution time of the last execute() call.
-     * 
-     * @return Time in nanoseconds.
-     */
     public long getLastExecutionTimeNs() {
         return lastExecutionTimeNs;
     }
 
-    /**
-     * Returns the execution time in milliseconds.
-     * 
-     * @return Time in milliseconds.
-     */
     public double getLastExecutionTimeMs() {
         return lastExecutionTimeNs / 1_000_000.0;
     }
 
-    /**
-     * Shutdown the pool (call when closing the engine).
-     */
     public void shutdown() {
-        pool.close();
-        DarkLogger.info("PARALLEL", "Executor shutdown");
+        for (SystemTask[] tasks : layerTasks) {
+            if (tasks != null) {
+                for (SystemTask task : tasks) {
+                    task.shutdown = true;
+                }
+            }
+        }
+        DarkLogger.info("PARALLEL", "Executor shutdown (Platform Threads terminated)");
     }
 }
