@@ -584,7 +584,12 @@ public final class EngineKernel {
             if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
                 sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
                 imgui.ImGui.newFrame();
-                imgui.ImGui.showDemoWindow();
+                
+                int fps = (int) timeKeeper.getLastActualFps();
+                long memoryMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024);
+                long frameTimeNs = (long)(timeKeeper.getDeltaTime() * 1_000_000_000L);
+                sv.dark.ui.DarkProfiler.render(fps, frameTimeNs, memoryMb);
+                
                 imgui.ImGui.render();
                 sv.dark.ui.DarkImGuiRenderer.renderDrawData(imgui.ImGui.getDrawData());
             }
@@ -771,6 +776,9 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         sv.dark.core.DarkLogger.info("KERNEL", "[STEP 7/7] Terminating FFI Native Graphics...");
         try {
+            if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
+                sv.dark.core.systems.DarkGraphicsLinker.glfwDestroyWindow.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
+            }
             sv.dark.core.systems.DarkGraphicsLinker.glfwTerminate.invokeExact();
             sv.dark.core.DarkLogger.info("KERNEL", "[STEP 7/7] Native Graphics terminated [OK]");
         } catch (Throwable e) {

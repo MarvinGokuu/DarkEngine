@@ -94,8 +94,6 @@ public final class DarkGraphicsLinker {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
     );
 
-
-
     public static final MethodHandle glfwSwapBuffers = LINKER.downcallHandle(
         GLFW.find("glfwSwapBuffers").orElseThrow(),
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
