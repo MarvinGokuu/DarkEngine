@@ -95,15 +95,38 @@ public final class DarkWebEditorSocket extends Thread {
                 }
                 
                 String payload = new String(data);
-                // Payload format: "x,y"
-                String[] parts = payload.split(",");
-                if (parts.length == 2 && vault != null) {
+                // Payload format: "COMMAND|arg1|arg2|..."
+                String[] parts = payload.split("\\|");
+                if (parts.length > 0 && vault != null) {
                     try {
-                        int x = Integer.parseInt(parts[0]);
-                        int y = Integer.parseInt(parts[1]);
-                        vault.writeInt(DarkStateLayout.PLAYER_X, x);
-                        vault.writeInt(DarkStateLayout.PLAYER_Y, y);
-                    } catch (Exception ignore) {}
+                        String cmd = parts[0].toUpperCase();
+                        switch (cmd) {
+                            case "SET_POS":
+                                if (parts.length >= 3) {
+                                    vault.writeInt(DarkStateLayout.PLAYER_X, Integer.parseInt(parts[1]));
+                                    vault.writeInt(DarkStateLayout.PLAYER_Y, Integer.parseInt(parts[2]));
+                                }
+                                break;
+                            case "SPAWN_LIGHT":
+                                if (parts.length >= 8) {
+                                    sv.dark.scene.DarkLightSystem.addPointLight(
+                                        Float.parseFloat(parts[1]), Float.parseFloat(parts[2]), Float.parseFloat(parts[3]), // x,y,z
+                                        Float.parseFloat(parts[4]), // radius
+                                        Float.parseFloat(parts[5]), Float.parseFloat(parts[6]), Float.parseFloat(parts[7]), // r,g,b
+                                        1.0f // intensity
+                                    );
+                                }
+                                break;
+                            case "HOT_RELOAD":
+                                DarkLogger.info("WEB EDITOR", "Hot Reload Requested via WebSocket");
+                                break;
+                            default:
+                                DarkLogger.warn("WEB EDITOR", "Unknown Command: " + cmd);
+                                break;
+                        }
+                    } catch (Exception ignore) {
+                        DarkLogger.error("WEB EDITOR", "Failed to parse command: " + payload);
+                    }
                 }
             }
         }
