@@ -571,6 +571,29 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
+        // 1.5 Geometry Pass (Deferred) -> (Will be called from ECS RenderSystem)
+        // Here we assume G-Buffer is already filled by ECS loop.
+        
+        // 1.6 Clustered Deferred Shading (Grid & Culling)
+        float[] viewMatrix = new float[16];
+        float[] projMatrix = new float[16];
+        sv.dark.math.DarkMath.identity(viewMatrix); // TODO: Sync from camera ECS
+        sv.dark.math.DarkMath.identity(projMatrix); // TODO: Sync from camera ECS
+        sv.dark.scene.DarkClusteredSystem.dispatchGrid(projMatrix, viewMatrix);
+        
+        sv.dark.scene.DarkLightSystem.syncToGPU();
+        sv.dark.scene.DarkClusteredSystem.dispatchCulling(viewMatrix);
+        
+        // 1.7 Cascaded Shadow Mapping (CSM)
+        float[] sunDir = {0.5f, 1.0f, 0.5f};
+        float[] lightMatrix = new float[16];
+        for (int i = 0; i < sv.dark.scene.DarkShadowSystem.CASCADE_COUNT; i++) {
+            sv.dark.scene.DarkShadowSystem.calculateCascadeMatrix(i, viewMatrix, (float)Math.toRadians(60), 16f/9f, 0.1f, 1000f, sunDir, lightMatrix);
+            sv.dark.scene.DarkShadowSystem.beginShadowPass(i, lightMatrix);
+            // ECS Geometry would be rendered here for shadows
+            sv.dark.scene.DarkShadowSystem.endShadowPass();
+        }
+
         // 2. Dispatch Lighting Compute Shader (Translates G-Buffer to Lit Texture)
         sv.dark.scene.DarkDeferredLightingSystem.dispatchLighting();
 
