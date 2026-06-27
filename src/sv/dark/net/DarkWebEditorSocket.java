@@ -121,7 +121,7 @@ public final class DarkWebEditorSocket extends Thread {
                                 DarkLogger.info("WEB EDITOR", "Hot Reload Requested via WebSocket");
                                 break;
                             default:
-                                DarkLogger.warn("WEB EDITOR", "Unknown Command: " + cmd);
+                                DarkLogger.error("WEB EDITOR", "Unknown Command: " + cmd);
                                 break;
                         }
                     } catch (Exception ignore) {
