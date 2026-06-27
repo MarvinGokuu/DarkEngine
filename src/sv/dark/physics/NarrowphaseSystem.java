@@ -8,6 +8,13 @@ import sv.dark.core.systems.GameSystem;
 import sv.dark.ecs.DarkScene;
 import sv.dark.state.WorldStateFrame;
 
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorSpecies;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
+import java.nio.ByteOrder;
+import java.lang.foreign.ValueLayout;
+
 /**
  * Narrowphase Collision System (Phase 31).
  * 
@@ -30,29 +37,37 @@ public final class NarrowphaseSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         int maxEntities = scene.getSoA().getCapacity();
-        
-        // El Broadphase ya ha agrupado las entidades en el grid.
-        // Recorremos el mapa y probamos la colisión.
-        for (int i = 0; i < maxEntities; i++) {
-            
-            // Ignorar muertos
-            if (scene.getSoA().globalPosX.get(java.lang.foreign.ValueLayout.JAVA_DOUBLE, i * 8L) == Double.MAX_VALUE) continue;
+        VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
+        int upperBound = SPECIES.loopBound(maxEntities);
 
-            int cellId = grid.getCellId(
-                scene.getSoA().globalPosX.get(java.lang.foreign.ValueLayout.JAVA_DOUBLE, i * 8L),
-                scene.getSoA().globalPosY.get(java.lang.foreign.ValueLayout.JAVA_DOUBLE, i * 8L)
-            );
+        // Vectorized SIMD loop (8 entities per instruction on AVX-512)
+        for (int i = 0; i < upperBound; i += SPECIES.length()) {
+            DoubleVector xVec = DoubleVector.fromMemorySegment(SPECIES, scene.getSoA().globalPosX, i * 8L, ByteOrder.nativeOrder());
+            VectorMask<Double> activeMask = xVec.compare(VectorOperators.NE, Double.MAX_VALUE);
 
-            // Revisamos vecinos en la MISMA celda
+            if (activeMask.anyTrue()) {
+                long bits = activeMask.toLong();
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    if ((bits & (1L << j)) != 0) {
+                        int entityA = i + j;
+                        double posX = xVec.lane(j);
+                        double posY = scene.getSoA().globalPosY.get(ValueLayout.JAVA_DOUBLE, entityA * 8L);
+                        int cellId = grid.getCellId(posX, posY);
+                        checkCell(entityA, cellId);
+                    }
+                }
+            }
+        }
+
+        // Tail loop for remaining entities
+        for (int i = upperBound; i < maxEntities; i++) {
+            double posX = scene.getSoA().globalPosX.get(ValueLayout.JAVA_DOUBLE, i * 8L);
+            if (posX == Double.MAX_VALUE) continue;
+            double posY = scene.getSoA().globalPosY.get(ValueLayout.JAVA_DOUBLE, i * 8L);
+            int cellId = grid.getCellId(posX, posY);
             checkCell(i, cellId);
-
-            // NOTA: Para un motor de producción real deberíamos revisar las 4 celdas vecinas (Derecha, Abajo, Abajo-Der, Abajo-Izq).
-            // Para simplificar la arquitectura actual en este commit, probaremos internamente en la misma celda.
-            // checkCell(i, cellId + 1);
-            // checkCell(i, cellId + gridWidth);
-            // etc.
         }
     }
 

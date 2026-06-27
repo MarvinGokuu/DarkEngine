@@ -8,6 +8,12 @@ import java.lang.foreign.ValueLayout;
 import sv.dark.core.AAACertified;
 import sv.dark.scene.DarkTransformSoA;
 
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorSpecies;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
+import java.nio.ByteOrder;
+
 /**
  * Spatial Hash Grid for Broadphase Culling (Data-Oriented).
  * 
@@ -64,19 +70,41 @@ public final class SpatialHashGrid {
         return cy * gridWidth + cx;
     }
 
-    /**
-     * Construye el Grid en una pasada O(N).
-     * Lee directamente desde la memoria Off-Heap (DarkTransformSoA).
-     */
     public void buildGrid(DarkTransformSoA soa, int maxEntities) {
         clear();
-        for (int entityId = 0; entityId < maxEntities; entityId++) {
-            double posX = soa.globalPosX.get(ValueLayout.JAVA_DOUBLE, entityId * 8L);
-            double posY = soa.globalPosY.get(ValueLayout.JAVA_DOUBLE, entityId * 8L);
+        
+        VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
+        int upperBound = SPECIES.loopBound(maxEntities);
+        
+        // Vectorized SIMD loop (8 entities per instruction on AVX-512)
+        for (int i = 0; i < upperBound; i += SPECIES.length()) {
+            DoubleVector xVec = DoubleVector.fromMemorySegment(SPECIES, soa.globalPosX, i * 8L, ByteOrder.nativeOrder());
+            VectorMask<Double> activeMask = xVec.compare(VectorOperators.NE, Double.MAX_VALUE);
             
-            // Entidades inactivas o muertas tendrán MAX_VALUE
+            if (activeMask.anyTrue()) {
+                long bits = activeMask.toLong();
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    if ((bits & (1L << j)) != 0) {
+                        int entityId = i + j;
+                        double posX = xVec.lane(j);
+                        double posY = soa.globalPosY.get(ValueLayout.JAVA_DOUBLE, entityId * 8L);
+                        
+                        int cellId = getCellId(posX, posY);
+                        
+                        // Insertar al inicio de la lista enlazada simulada
+                        cellNext[entityId] = cellHead[cellId];
+                        cellHead[cellId] = entityId;
+                    }
+                }
+            }
+        }
+        
+        // Tail loop for remaining entities
+        for (int entityId = upperBound; entityId < maxEntities; entityId++) {
+            double posX = soa.globalPosX.get(ValueLayout.JAVA_DOUBLE, entityId * 8L);
             if (posX == Double.MAX_VALUE) continue;
             
+            double posY = soa.globalPosY.get(ValueLayout.JAVA_DOUBLE, entityId * 8L);
             int cellId = getCellId(posX, posY);
             
             // Insertar al inicio de la lista enlazada simulada
