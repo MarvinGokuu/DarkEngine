@@ -584,12 +584,7 @@ public final class EngineKernel {
             if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
                 sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
                 imgui.ImGui.newFrame();
-                
-                int fps = (int) timeKeeper.getLastActualFps();
-                long memoryMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024);
-                long frameTimeNs = (long)(timeKeeper.getDeltaTime() * 1_000_000_000L);
-                sv.dark.ui.DarkProfiler.render(fps, frameTimeNs, memoryMb);
-                
+                // [REMOVED] DarkProfiler call
                 imgui.ImGui.render();
                 sv.dark.ui.DarkImGuiRenderer.renderDrawData(imgui.ImGui.getDrawData());
             }
