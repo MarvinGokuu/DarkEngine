@@ -40,17 +40,25 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glDispatchCompute;
     public static MethodHandle glMemoryBarrier;
     public static MethodHandle glDrawArraysInstanced;
+    public static MethodHandle glDeleteBuffers;
 
     // Phase 27 - Deferred Pipeline Bindings
+    public static MethodHandle glDrawBuffers;
+    public static MethodHandle glDeleteShader;
+    public static MethodHandle glUniform4f;
     public static MethodHandle glGenTextures;
     public static MethodHandle glDeleteTextures;
     public static MethodHandle glBindTexture;
     public static MethodHandle glTexImage2D;
+    public static MethodHandle glTexImage3D;
     public static MethodHandle glTexParameteri;
+    public static MethodHandle glTexParameterfv;
     public static MethodHandle glGenFramebuffers;
     public static MethodHandle glDeleteFramebuffers;
     public static MethodHandle glBindFramebuffer;
+    public static MethodHandle glFramebufferTexture;
     public static MethodHandle glFramebufferTexture2D;
+    public static MethodHandle glFramebufferTextureLayer;
     public static MethodHandle glCheckFramebufferStatus;
     public static MethodHandle glBindImageTexture;
     
@@ -59,6 +67,9 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glUniform3f;
     public static MethodHandle glUniform1f;
     public static MethodHandle glActiveTexture;
+    public static MethodHandle glDrawBuffer;
+    public static MethodHandle glReadBuffer;
+    public static MethodHandle glClear;
 
     // Phase 35 - ImGui Rendering
     public static MethodHandle glGenVertexArrays;
@@ -79,6 +90,20 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glGetIntegerv;
     public static MethodHandle glIsProgram;
     public static MethodHandle glPixelStorei;
+
+    // Constantes OpenGL Faltantes Hotfix Phase 29
+    public static final int GL_VERTEX_SHADER = 0x8B31;
+    public static final int GL_FRAGMENT_SHADER = 0x8B30;
+    public static final int GL_TEXTURE_2D_ARRAY = 0x8C1A;
+    public static final int GL_DEPTH_COMPONENT32F = 0x8CAC;
+    public static final int GL_DEPTH_COMPONENT = 0x1902;
+    public static final int GL_TEXTURE_WRAP_S = 0x2802;
+    public static final int GL_TEXTURE_WRAP_T = 0x2803;
+    public static final int GL_CLAMP_TO_BORDER = 0x812D;
+    public static final int GL_TEXTURE_BORDER_COLOR = 0x1004;
+    public static final int GL_DEPTH_ATTACHMENT = 0x8D00;
+    public static final int GL_NONE = 0;
+    public static final int GL_DEPTH_BUFFER_BIT = 0x00000100;
 
     // Constantes OpenGL
     public static final int GL_COMPUTE_SHADER = 0x91B9;
@@ -148,6 +173,19 @@ public final class DarkOpenGLLinker {
             glBindBufferBase = bind(arena, "glBindBufferBase", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glDispatchCompute = bind(arena, "glDispatchCompute", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glMemoryBarrier = bind(arena, "glMemoryBarrier", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            
+            // Phase 27 Bindings & Hotfix
+            glDrawBuffers = bind(arena, "glDrawBuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteShader = bind(arena, "glDeleteShader", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glUniform4f = bind(arena, "glUniform4f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
+            glDeleteBuffers = bind(arena, "glDeleteBuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glTexImage3D = bind(arena, "glTexImage3D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glTexParameterfv = bind(arena, "glTexParameterfv", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glFramebufferTexture = bind(arena, "glFramebufferTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glFramebufferTextureLayer = bind(arena, "glFramebufferTextureLayer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glDrawBuffer = bind(arena, "glDrawBuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glReadBuffer = bind(arena, "glReadBuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
+            glClear = bind(arena, "glClear", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glDrawArraysInstanced = bind(arena, "glDrawArraysInstanced", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
 
             // Phase 27 - Textures and FBOs
