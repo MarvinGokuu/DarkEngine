@@ -44,7 +44,7 @@ public class SkeletalAnimationStressTest {
         }
 
         System.out.println("[TEST] Calling GPU GameSystem.update() headless...");
-        animSystem.update(null, 0.016);
+        animSystem.update(null, 0.016f);
         System.out.println("[OK] System correctly bypassed uninitialized OpenGL FFI.");
 
         skeletons.destroy();

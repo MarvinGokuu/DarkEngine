@@ -38,7 +38,7 @@ public final class GPUParticleSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         // En una implementación final estricta, comprobaremos si OpenGL ya inicializó los IDs.
         if (computeProgramId == -1) return; 
 

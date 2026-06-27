@@ -56,7 +56,7 @@ public class DependencyGraphPerformanceTest {
 
             // Add a dummy system to force initialization of HashMap tables
             GameSystem dummySystem = new GameSystem() {
-                @Override public void update(WorldStateFrame state, double dt) {}
+                @Override public void update(WorldStateFrame state, float dt) {}
                 @Override public String getName() { return "DummySystem"; }
                 @Override public String[] getDependencies() { return new String[0]; }
             };

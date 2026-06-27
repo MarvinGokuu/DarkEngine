@@ -114,6 +114,9 @@ public final class DarkSignalCommands {
     /** Rollback engine state (payload: 0). */
     public static final int SYS_ENGINE_ROLLBACK = 0x3103;
 
+    /** Terminate logging asynchronously (Poison Pill). */
+    public static final int SYS_TERMINATE_LOG_SIGNAL = 0x3104;
+
     // -------------------------------------------------------------------------
     // Audio Commands (0x4000 - 0x4FFF)
     // -------------------------------------------------------------------------

@@ -5,45 +5,32 @@ package sv.dark.core.systems; // Synchronized with path src/sv/dark/core/systems
 
 import sv.dark.core.AAACertified;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.BasicStroke;
-
 /**
  * RESPONSIBILITY: Aesthetic Definition and Visual Constants (Design System). Central repository for engine aesthetic constants and drawing styles.
  * WHY: To guarantee visual coherence and avoid object instantiation during rendering.
- * TECHNIQUE: Define hardware constants and pre-instantiated objects (O(1) access).
- * GUARANTEES: Static allocation and zero-runtime-cost for color retrieval.
+ * TECHNIQUE: Define hardware constants as primitive RGBA integers (O(1) access).
+ * GUARANTEES: Static allocation and zero-runtime-cost for color retrieval. No AWT dependencies.
  * 
  * @author Marvin Alexander Flores Canales
  * @since 1.0
  */
-/**
- * RESPONSIBILITY: Core component.
- * WHY: Critical for DarkEngine deterministic execution.
- * TECHNIQUE: Low-latency focused implementation.
- * GUARANTEES: Lock-free execution where applicable.
- */
 @AAACertified(
-    date = "2026-06-11",
+    date = "2026-06-23",
     maxLatencyNs = 0,
     minThroughput = 0,
     alignment = 0,
-    lockFree = false,
+    lockFree = true,
     offHeap = false,
-    notes = "Automatically AAA Certified during Core Audit"
+    notes = "100% Zero-Garbage Theme, native RGBA integers"
 )
 public final class DarkTheme {
 
-    // COLOR PALETTE (Hardware constants - O(1) access)
-    public static final Color MINT_NEON = new Color(0, 255, 163);
-    public static final Color BACKGROUND = new Color(10, 10, 15);
-    public static final Color PANEL_GLASS = new Color(30, 30, 45, 180);
-    public static final Color ALERT_CRITICAL = new Color(220, 0, 40);
-    public static final Color ALERT_HEALING = new Color(0, 180, 255);
-
-    // [CACHE OPTIMIZATION]: Pre-instantiated Stroke to avoid allocation in the render loop
-    private static final BasicStroke DEFAULT_STROKE = new BasicStroke(1f);
+    // COLOR PALETTE (Hardware constants - O(1) access, 32-bit RGBA)
+    public static final int MINT_NEON = 0x00FFA3FF;     // R:0 G:255 B:163 A:255
+    public static final int BACKGROUND = 0x0A0A0FFF;    // R:10 G:10 B:15 A:255
+    public static final int PANEL_GLASS = 0x1E1E2DB4;   // R:30 G:30 B:45 A:180
+    public static final int ALERT_CRITICAL = 0xDC0028FF;// R:220 G:0 B:40 A:255
+    public static final int ALERT_HEALING = 0x00B4FFFF; // R:0 G:180 B:255 A:255
 
     private DarkTheme() {
     }
@@ -53,7 +40,7 @@ public final class DarkTheme {
      * 
      * @param alertLevel Level extracted from DarkStateLayout.SYS_ENGINE_FLAGS
      */
-    public static Color getDynamicAccent(int alertLevel) {
+    public static int getDynamicAccent(int alertLevel) {
         return switch (alertLevel) {
             case 1 -> ALERT_CRITICAL; // Critical State
             case 2 -> ALERT_HEALING; // Self-repair
@@ -62,17 +49,9 @@ public final class DarkTheme {
     }
 
     /**
-     * Definition of the telemetry panels' look.
+     * Native FFI styling stub (Migrated to ImGui/Panama rendering)
      */
-    public static void applyGlassStyle(Graphics2D g2d, int x, int y, int w, int h) {
-        // High-efficiency industrial rendering
-        g2d.setColor(PANEL_GLASS);
-        g2d.fillRoundRect(x, y, w, h, 12, 12);
-
-        // [OBSERVATION]: Recommended to use DEFAULT_STROKE to avoid 'new' in each call.
-        g2d.setStroke(DEFAULT_STROKE);
-        g2d.setColor(new Color(255, 255, 255, 30));
-        g2d.drawRoundRect(x, y, w, h, 12, 12);
+    public static void applyGlassStyle(int x, int y, int w, int h) {
+        // Handled by DarkImGuiRenderer natively.
     }
-    // updated 3/1/26
 }

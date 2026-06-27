@@ -14,6 +14,7 @@ Las librerías de interfaz gráfica estándar de Java inyectan capas masivas de 
 En lugar de usar `JFrame`, DarkEngine usa **Project Panama (Foreign Function Interface)** para comunicarse directamente con `glfw3.dll` en Windows o `.so` en Linux. 
 - La creación de la ventana es 100% nativa.
 - El polling de eventos (`glfwPollEvents`) y el swap de buffers (`glfwSwapBuffers`) están inyectados **dentro del Hot-Path del Kernel (EngineKernel)**.
+- **Zero-Contention Latch**: El estado de los periféricos capturado se deposita en un Shadow Buffer (memoria nativa fuera del Heap) y se transfiere de inmediato al `currentState` del Vault mediante un barrido vectorial masivo (`MemorySegment.copy()`). Esto previene la disrupción del Caché L1 y erradica los locks atómicos entre el Hilo del Juego y la UI.
 - Resultado: **0ms Input Lag** y control absoluto del frame.
 
 ### 2. Dear ImGui (Editor AAA)

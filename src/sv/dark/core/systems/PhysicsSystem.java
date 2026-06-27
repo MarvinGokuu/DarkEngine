@@ -39,7 +39,7 @@ public final class PhysicsSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         // High-level wrapper (stub for full integration)
         processedCount++;
     }

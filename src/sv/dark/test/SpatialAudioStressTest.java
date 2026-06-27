@@ -55,7 +55,7 @@ public class SpatialAudioStressTest {
         }
 
         System.out.println("[TEST] Calling GameSystem.update() to simulate Doppler Effect sync...");
-        audioSys.update(null, 0.016);
+        audioSys.update(null, 0.016f);
         System.out.println("[OK] Synchronized 1024 OpenAL Sources natively.");
 
         audioSys.cleanup();

@@ -111,4 +111,21 @@ public final class DarkLogger {
             System.err.println("[DARK LOGGER] Execution finished with " + errorCount + " errors/warnings. Check logs/darkengine_errors.log");
         }
     }
+
+    /**
+     * Safely flushes and closes all native I/O streams.
+     * Prevents metric loss during asynchronous shutdown.
+     */
+    public static void flushAndClose() {
+        if (metricsWriter != null) {
+            metricsWriter.flush();
+            metricsWriter.close();
+            metricsWriter = null;
+        }
+        if (errorsWriter != null) {
+            errorsWriter.flush();
+            errorsWriter.close();
+            errorsWriter = null;
+        }
+    }
 }

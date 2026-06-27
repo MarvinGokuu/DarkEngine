@@ -42,7 +42,7 @@ public class UDPZeroCopyTest {
         
         // Simular 10 frames de subida de red a 20Hz (Tiempo = 50ms per frame)
         for (int i = 0; i < 10; i++) {
-            netSys.update(null, 0.05);
+            netSys.update(null, 0.05f);
         }
         
         System.out.println("[OK] Shipped UDP Packets gracefully.");

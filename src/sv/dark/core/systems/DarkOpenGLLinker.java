@@ -28,6 +28,7 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glGetShaderiv;
     public static MethodHandle glGetShaderInfoLog;
     public static MethodHandle glCreateProgram;
+    public static MethodHandle glDeleteProgram;
     public static MethodHandle glAttachShader;
     public static MethodHandle glLinkProgram;
     public static MethodHandle glUseProgram;
@@ -61,6 +62,7 @@ public final class DarkOpenGLLinker {
 
     // Phase 35 - ImGui Rendering
     public static MethodHandle glGenVertexArrays;
+    public static MethodHandle glDeleteVertexArrays;
     public static MethodHandle glBindVertexArray;
     public static MethodHandle glEnableVertexAttribArray;
     public static MethodHandle glVertexAttribPointer;
@@ -85,6 +87,7 @@ public final class DarkOpenGLLinker {
     public static final int GL_SHADER_STORAGE_BUFFER = 0x90D2;
     public static final int GL_DYNAMIC_DRAW = 0x88E8;
     public static final int GL_SHADER_STORAGE_BARRIER_BIT = 0x2000;
+    public static final int GL_SHADER_IMAGE_ACCESS_BARRIER_BIT = 0x00000020;
 
     // Phase 27 Constants
     public static final int GL_TEXTURE_2D = 0x0DE1;
@@ -134,6 +137,7 @@ public final class DarkOpenGLLinker {
             glGetShaderiv = bind(arena, "glGetShaderiv", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glGetShaderInfoLog = bind(arena, "glGetShaderInfoLog", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
             glCreateProgram = bind(arena, "glCreateProgram", FunctionDescriptor.of(ValueLayout.JAVA_INT));
+            glDeleteProgram = bind(arena, "glDeleteProgram", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glAttachShader = bind(arena, "glAttachShader", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glLinkProgram = bind(arena, "glLinkProgram", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glUseProgram = bind(arena, "glUseProgram", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
@@ -170,6 +174,7 @@ public final class DarkOpenGLLinker {
 
             // Phase 35 - ImGui Rendering
             glGenVertexArrays = bind(arena, "glGenVertexArrays", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glDeleteVertexArrays = bind(arena, "glDeleteVertexArrays", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindVertexArray = bind(arena, "glBindVertexArray", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glEnableVertexAttribArray = bind(arena, "glEnableVertexAttribArray", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glVertexAttribPointer = bind(arena, "glVertexAttribPointer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));

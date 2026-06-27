@@ -7,70 +7,56 @@ import sv.dark.core.AAACertified;
 
 import sv.dark.kernel.SystemRegistry;
 import java.lang.reflect.Field;
-import java.util.List;
 
 /**
- * RESPONSIBILITY: Validates that the SystemRegistry collections are initialized with the correct pre-sized capacity.
- * WHY: Dynamic array resizing (ArrayList) causes allocations and array copies, which degrade startup and runtime performance.
- * TECHNIQUE: Uses reflection to access internal 'elementData' array of ArrayLists and asserts their initial sizes.
- * GUARANTEES: Collections are correctly pre-sized to avoid reallocations in the hot-path.
+ * RESPONSIBILITY: Validates that the SystemRegistry uses fixed arrays with correct capacity.
+ * WHY: Dynamic array resizing causes allocations and array copies, degrading runtime performance.
+ * TECHNIQUE: Uses reflection to access internal arrays and asserts their exact sizes.
+ * GUARANTEES: Collections are correctly pre-sized to avoid reallocations.
  * 
  * @author Marvin Alexander Flores Canales
  * @since 1.0
  */
-/**
- * RESPONSIBILITY: Core component.
- * WHY: Critical for DarkEngine deterministic execution.
- * TECHNIQUE: Low-latency focused implementation.
- * GUARANTEES: Lock-free execution where applicable.
- */
 @AAACertified(
-    date = "2026-06-11",
+    date = "2026-06-23",
     maxLatencyNs = 0,
     minThroughput = 0,
     alignment = 0,
     lockFree = false,
     offHeap = false,
-    notes = "Automatically AAA Certified during Core Audit"
+    notes = "Validates 100% Zero-Garbage arrays in SystemRegistry"
 )
 public class SystemRegistryCapacityTest {
 
     public static void main(String[] args) {
         System.out.println("=======================================================");
-        System.out.println("  AAA+ CERTIFICATION: SYSTEM REGISTRY PRE-SIZING");
+        System.out.println("  AAA+ CERTIFICATION: SYSTEM REGISTRY ZERO-GARBAGE ARRAYS");
         System.out.println("=======================================================");
 
         try {
             SystemRegistry registry = new SystemRegistry();
 
-            // Extract gameSystems
-            Field gameSystemsField = SystemRegistry.class.getDeclaredField("gameSystems");
+            // Extract gameSystemsArray
+            Field gameSystemsField = SystemRegistry.class.getDeclaredField("gameSystemsArray");
             gameSystemsField.setAccessible(true);
-            List<?> gameSystems = (List<?>) gameSystemsField.get(registry);
+            Object[] gameSystemsArray = (Object[]) gameSystemsField.get(registry);
 
-            // Extract renderSystems
-            Field renderSystemsField = SystemRegistry.class.getDeclaredField("renderSystems");
+            // Extract renderSystemsArray
+            Field renderSystemsField = SystemRegistry.class.getDeclaredField("renderSystemsArray");
             renderSystemsField.setAccessible(true);
-            List<?> renderSystems = (List<?>) renderSystemsField.get(registry);
+            Object[] renderSystemsArray = (Object[]) renderSystemsField.get(registry);
 
-            // Inspect the capacity of the ArrayList through the private 'elementData' field
-            Field elementDataField = Class.forName("java.util.ArrayList").getDeclaredField("elementData");
-            elementDataField.setAccessible(true);
+            int gameCapacity = gameSystemsArray.length;
+            int renderCapacity = renderSystemsArray.length;
 
-            Object[] gameSystemsBackingArray = (Object[]) elementDataField.get(gameSystems);
-            Object[] renderSystemsBackingArray = (Object[]) elementDataField.get(renderSystems);
+            System.out.println("[TEST] gameSystems array capacity: " + gameCapacity + " (Expected: 64)");
+            System.out.println("[TEST] renderSystems array capacity: " + renderCapacity + " (Expected: 32)");
 
-            int gameCapacity = gameSystemsBackingArray.length;
-            int renderCapacity = renderSystemsBackingArray.length;
-
-            System.out.println("[TEST] gameSystems collection initial capacity: " + gameCapacity + " (Expected: 16)");
-            System.out.println("[TEST] renderSystems collection initial capacity: " + renderCapacity + " (Expected: 8)");
-
-            if (gameCapacity == 16 && renderCapacity == 8) {
-                System.out.println("\n[PASSED] SYSTEM REGISTRY COLLECTIONS ARE CORRECTLY PRE-SIZED");
+            if (gameCapacity == 64 && renderCapacity == 32) {
+                System.out.println("\n[PASSED] SYSTEM REGISTRY ARRAYS ARE CORRECTLY SIZED");
                 System.exit(0);
             } else {
-                System.err.println("\n[FAILED] SYSTEM REGISTRY COLLECTIONS ARE NOT PRE-SIZED CORRECTLY");
+                System.err.println("\n[FAILED] SYSTEM REGISTRY ARRAYS ARE NOT SIZED CORRECTLY");
                 System.exit(1);
             }
         } catch (Exception e) {

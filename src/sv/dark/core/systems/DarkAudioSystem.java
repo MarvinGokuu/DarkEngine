@@ -64,7 +64,7 @@ public final class DarkAudioSystem implements GameSystem {
     }
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         if (device == null || device.equals(MemorySegment.NULL)) return;
 
         try {

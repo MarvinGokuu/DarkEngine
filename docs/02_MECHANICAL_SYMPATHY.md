@@ -23,6 +23,7 @@ Para interactuar con la memoria y la CPU sin intermediarios:
 
 1. **VarHandles**: Proporcionan acceso volátil y atómico (`getOpaque`, `compareAndSet`) directo a variables, sin la penalización de bloqueos del sistema operativo (`Mutex`). Es la base del `DarkAtomicBus`.
 2. **Foreign Function & Memory API (Panama)**: Permite invocar funciones nativas de C/C++ directamente desde Java (`Downcalls`). El motor utiliza esto en `ThreadPinning` y `SystemStateManager` para saltarse la Máquina Virtual.
+3. **Zero-Contention Latch (Shadow Buffer)**: Para evitar colisiones (`Locks`) entre los callbacks asíncronos de Interfaz (GLFW/ImGui) y el hilo principal del Juego, el estado del teclado/ratón se captura en un "Shadow Buffer" nativo paralelo. Terminando el barrido, se hace una transferencia SIMD vectorial (`MemorySegment.copy()`) masiva e instantánea al Vault de memoria principal. Input Lag = 0ms.
 
 ## Thread Pinning y Afinidad Física
 

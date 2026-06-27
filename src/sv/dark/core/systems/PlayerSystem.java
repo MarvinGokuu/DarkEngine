@@ -48,7 +48,7 @@ public final class PlayerSystem implements GameSystem {
      * GUARANTEE: Deterministic - same state + deltaTime = same result
      */
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         int direction = state.readInt(ADDR_INPUT);
         if (direction == 0)
             return;

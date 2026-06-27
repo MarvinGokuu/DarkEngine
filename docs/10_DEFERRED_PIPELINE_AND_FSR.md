@@ -18,6 +18,7 @@ El **G-Buffer** permite guardar información geométrica pura en múltiples text
 - **Presentation (Monitor):** `GL_RGBA8` @ 3840x2160 (4K). El lienzo final, destino del upscaling FSR.
 
 > **Zero-GC Check:** Todos los punteros generados vía `glGenTextures` utilizan `Arena.ofConfined()`, desapareciendo al término del scope y evitando Garbage Collection.
+> **VRAM Leak Prevention:** Todos los sistemas gráficos (Culling, Lighting, FSR) implementan el contrato `destroy()` mediante llamadas directas a `glDeleteProgram` y `glDeleteBuffers`, liberando de manera determinista los descriptores de la GPU durante la secuencia de apagado (Graceful Shutdown) del Kernel.
 
 ---
 
@@ -55,6 +56,9 @@ La fase fue implementada de manera brutalmente eficiente, pero para estar 100% l
 3. **Múltiples Fuentes de Luz Dinámicas:**
    El shader `deferred_lighting.comp` usa variables fijas para el Sol `const vec3 sunDir`.
    - *Solución:* Enviar un Uniform Buffer Object (UBO) desde Java o empaquetar datos mediante un SSBO (Shader Storage Buffer Object) a la VRAM en la Fase de "Systems Execution".
+
+4. **Sincronización Precisa (Image Access Barrier):**
+   Las barreras de memoria previas introducían penalizaciones masivas al esperar sincrónicamente (`GL_SHADER_STORAGE_BARRIER_BIT`). Esto se ha resuelto afinando el bit de sincronización al semántico exacto: `GL_SHADER_IMAGE_ACCESS_BARRIER_BIT`, permitiendo que los Compute Shaders del Deferred Pipeline se encadenen en la GPU de manera 100% asíncrona sin bloquear la CPU.
 
 ---
 

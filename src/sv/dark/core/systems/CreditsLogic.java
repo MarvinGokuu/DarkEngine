@@ -43,7 +43,7 @@ public final class CreditsLogic {
      * but the result is persisted as INT (Fixed Point) to guarantee
      * determinism in replays.
      */
-    public static void update(WorldStateFrame state, double deltaTime) {
+    public static void update(WorldStateFrame state, float deltaTime) {
         if (state.readInt(OFFSET_ACTIVE) == 0)
             return;
 

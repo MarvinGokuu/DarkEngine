@@ -52,7 +52,7 @@ public class ElasticCollisionTest {
         System.out.println("[TEST] Warming up JVM JIT...");
         for (int i = 0; i < 100; i++) {
             grid.buildGrid(tSoa, maxEntities);
-            narrowphase.update(null, 0.016);
+            narrowphase.update(null, 0.016f);
         }
 
         System.out.println("[TEST] Benchmarking Narrowphase (100 passes)...");
@@ -61,7 +61,7 @@ public class ElasticCollisionTest {
         int passes = 100;
         for (int i = 0; i < passes; i++) {
             grid.buildGrid(tSoa, maxEntities);
-            narrowphase.update(null, 0.016);
+            narrowphase.update(null, 0.016f);
         }
         
         long endNs = System.nanoTime();

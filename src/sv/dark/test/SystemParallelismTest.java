@@ -38,7 +38,7 @@ public class SystemParallelismTest implements GameSystem {
     private long executionCount = 0;
 
     @Override
-    public void update(WorldStateFrame state, double deltaTime) {
+    public void update(WorldStateFrame state, float deltaTime) {
         executionCount++;
 
         // Read the value written by SystemExecutionTest

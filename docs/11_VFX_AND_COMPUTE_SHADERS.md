@@ -17,3 +17,5 @@ En Dark Engine:
 1. **Estructura Estática**: `DarkSkeletonSoA` preasigna un bloque nativo contiguo con capacidad para 10,000 entidades x 64 matrices de transformación por esqueleto. (Aprox. 40MB totales, estáticos, sin recolección de basura).
 2. **Transferencia Rápida**: El buffer se sube crudo a la tarjeta gráfica mediante `glBufferSubData`.
 3. **GPU Skinning**: El Compute Shader de animación (`skinning.comp`) lee estas matrices y deforma la malla de polígonos asíncronamente justo antes de dibujarla, ahorrándole a la CPU millones de multiplicaciones matriciales por milisegundo.
+
+> **Contrato de Integridad (VRAM Leak Prevention):** Todos los sistemas que invocan Compute Shaders implementan el método `destroy()` para ejecutar `glDeleteProgram` y `glDeleteBuffers` durante el apagado del Kernel. Omitir esto condenaría a la tarjeta gráfica a mantener programas huérfanos, drenando la memoria de video hasta forzar un crash (OOM) en el driver.
