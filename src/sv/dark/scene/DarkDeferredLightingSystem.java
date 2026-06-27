@@ -23,6 +23,11 @@ public final class DarkDeferredLightingSystem {
     private static int sunDirLocation;
     private static int sunColorLocation;
     private static int camPosLocation;
+    
+    // ECS Bindings (Updated per frame before dispatch)
+    private static float[] currentSunDir = {0.5f, 1.0f, 0.5f};
+    private static float[] currentSunColor = {1.5f, 1.425f, 1.2f};
+    private static float[] currentCamPos = {0.0f, 5.0f, 10.0f};
 
     public static void init() {
         try {
@@ -62,22 +67,28 @@ public final class DarkDeferredLightingSystem {
         }
     }
 
+    /**
+     * Called by the ECS / EngineKernel to update the current environmental lighting and camera.
+     */
+    public static void setEnvironment(float[] sunDir, float[] sunColor, float[] camPos) {
+        if (sunDir != null) System.arraycopy(sunDir, 0, currentSunDir, 0, 3);
+        if (sunColor != null) System.arraycopy(sunColor, 0, currentSunColor, 0, 3);
+        if (camPos != null) System.arraycopy(camPos, 0, currentCamPos, 0, 3);
+    }
+
     public static void dispatchLighting() {
         try {
             DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
-
-            // Dynamic sun variables (future: link to ECS)
-            float sunX = (float) Math.sin(System.currentTimeMillis() * 0.001) * 0.5f;
-            float sunY = 1.0f;
-            float sunZ = (float) Math.cos(System.currentTimeMillis() * 0.001) * 0.5f;
             
-            // Normalize
-            float length = (float) Math.sqrt(sunX*sunX + sunY*sunY + sunZ*sunZ);
-            sunX /= length; sunY /= length; sunZ /= length;
+            // Normalize sun direction to prevent lighting artifacts
+            float length = (float) Math.sqrt(currentSunDir[0]*currentSunDir[0] + currentSunDir[1]*currentSunDir[1] + currentSunDir[2]*currentSunDir[2]);
+            float sunX = currentSunDir[0] / length;
+            float sunY = currentSunDir[1] / length;
+            float sunZ = currentSunDir[2] / length;
             
             DarkOpenGLLinker.glUniform3f.invokeExact(sunDirLocation, sunX, sunY, sunZ);
-            DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, 1.5f, 1.425f, 1.2f);
-            DarkOpenGLLinker.glUniform3f.invokeExact(camPosLocation, 0.0f, 5.0f, 10.0f); // TODO: Ligar ECS Camera Position
+            DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, currentSunColor[0], currentSunColor[1], currentSunColor[2]);
+            DarkOpenGLLinker.glUniform3f.invokeExact(camPosLocation, currentCamPos[0], currentCamPos[1], currentCamPos[2]);
 
             // Bind Albedo (texture unit 0)
             DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE0);

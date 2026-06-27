@@ -100,6 +100,13 @@ public final class DarkDeferredPipeline {
                 return;
             }
 
+            // 8. Tell OpenGL which color attachments we'll use for rendering
+            MemorySegment drawBuffers = arena.allocate(ValueLayout.JAVA_INT, 3);
+            drawBuffers.set(ValueLayout.JAVA_INT, 0, DarkOpenGLLinker.GL_COLOR_ATTACHMENT0);
+            drawBuffers.set(ValueLayout.JAVA_INT, 4, DarkOpenGLLinker.GL_COLOR_ATTACHMENT1);
+            drawBuffers.set(ValueLayout.JAVA_INT, 8, DarkOpenGLLinker.GL_COLOR_ATTACHMENT2);
+            DarkOpenGLLinker.glDrawBuffers.invokeExact(3, drawBuffers);
+
             // Unbind to return to default screen framebuffer
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
 
