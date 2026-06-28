@@ -28,7 +28,7 @@ public final class SceneKinematicsSystem implements GameSystem {
     public void update(WorldStateFrame state, float deltaTime) {
         // Ejecuta físicas de 1,000,000 de entidades en AVX-512 usando la memoria contigua SoA
         // Por ahora, asumimos que la cámara está en (0, 0)
-        DarkKinematicsSystem.update(scene.getSoA(), (float) deltaTime, 0.0, 0.0);
+        DarkKinematicsSystem.update(scene.getSoA(), (float) deltaTime, 0.0, 0.0, 0.0);
     }
 
     @Override

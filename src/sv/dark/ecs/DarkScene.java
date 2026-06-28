@@ -71,7 +71,7 @@ public final class DarkScene {
         activeEntityCount++;
         
         // Inicializar estado a 0 (Limpiar data basura de vidas pasadas)
-        soaMemory.setEntity(entityId, 0.0, 0.0, 0.0f, 0.0f);
+        soaMemory.setEntity(entityId, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f);
         entitySignatures[entityId] = 0L; // Reiniciar bitmask
         
         return new DarkEntity(entityId, soaMemory, this);
@@ -89,7 +89,7 @@ public final class DarkScene {
         
         // Borramos del mundo visible empujándolo al infinito temporalmente
         // El Culling Shader lo ignorará automáticamente.
-        soaMemory.setEntity(entityId, Double.MAX_VALUE, Double.MAX_VALUE, 0.0f, 0.0f);
+        soaMemory.setEntity(entityId, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, 0.0f, 0.0f, 0.0f);
     }
 
     public int getActiveEntityCount() {

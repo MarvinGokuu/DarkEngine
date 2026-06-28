@@ -43,6 +43,11 @@ public final class SystemRegistry {
     private ParallelSystemExecutor parallelExecutor;
     private boolean parallelMode = false;
 
+    // [FASE 4] DAG Task Dispatcher — replaces layer-barrier model
+    private DarkTaskGraph taskGraph;
+    private DarkTaskDispatcher taskDispatcher;
+    private boolean dagMode = false;
+
     public SystemRegistry() {
         this.gameSystemsArray = new GameSystem[64];
         this.renderSystemsArray = new DarkRenderSystem[32];
@@ -66,7 +71,12 @@ public final class SystemRegistry {
     public void executeGameSystems(WorldStateFrame state, float deltaTime) {
         long startTime = System.nanoTime();
 
-        if (parallelMode && parallelExecutor != null) {
+        if (dagMode && taskDispatcher != null) {
+            // [FASE 4] DAG Mode: fine-grained per-node dispatch, no layer barriers.
+            taskDispatcher.execute(state, deltaTime);
+            lastExecutionTimeNs = taskDispatcher.getLastExecutionTimeNs();
+        } else if (parallelMode && parallelExecutor != null) {
+            // Legacy: layer-based work-stealing executor.
             parallelExecutor.execute(state, deltaTime);
             lastExecutionTimeNs = parallelExecutor.getLastExecutionTimeNs();
         } else {
@@ -120,15 +130,24 @@ public final class SystemRegistry {
             dependencyGraph.validate();
             dependencyGraph.printGraph();
 
+            // Legacy: Layer-based parallel executor (retrocompatibility)
             parallelExecutor = new ParallelSystemExecutor(dependencyGraph.getExecutionLayers());
 
+            // [FASE 4] DAG: Compile the flat node graph from validated layers
+            taskGraph = new DarkTaskGraph();
+            taskGraph.compile(dependencyGraph);
+            taskDispatcher = new DarkTaskDispatcher(taskGraph);
+
             DarkLogger.info("REGISTRY", "Dependency graph built successfully");
-            DarkLogger.info("REGISTRY", "Parallel execution ready (" + dependencyGraph.getLayerCount() + " layers)");
+            DarkLogger.info("REGISTRY", "DAG compiled: " + taskGraph.getNodeCount()
+                    + " nodes, " + dependencyGraph.getLayerCount() + " layers");
         } catch (IllegalStateException e) {
             DarkLogger.error("REGISTRY", "Failed to build dependency graph: " + e.getMessage());
             DarkLogger.error("REGISTRY", "Falling back to sequential execution");
             dependencyGraph = null;
             parallelExecutor = null;
+            taskGraph = null;
+            taskDispatcher = null;
         }
     }
 
@@ -138,11 +157,37 @@ public final class SystemRegistry {
             return;
         }
         this.parallelMode = enabled;
+        if (enabled) this.dagMode = false; // Mutually exclusive
         DarkLogger.info("REGISTRY", "Parallel mode: " + (enabled ? "ENABLED" : "DISABLED"));
+    }
+
+    /**
+     * Enables DAG mode (Fase 4). Disables legacy parallel mode.
+     * Requires buildDependencyGraph() to have been called successfully.
+     *
+     * DAG mode dispatches each system node individually as soon as its
+     * dependencies complete — no global layer barriers.
+     */
+    public void enableDAGMode() {
+        if (taskDispatcher == null) {
+            DarkLogger.error("REGISTRY", "Cannot enable DAG mode: dependency graph not built");
+            return;
+        }
+        this.dagMode = true;
+        this.parallelMode = false; // Mutually exclusive
+        DarkLogger.info("REGISTRY", "[FASE 4] DAG Mode ENABLED — elastic dispatch, no layer barriers.");
     }
 
     public boolean isParallelMode() {
         return parallelMode;
+    }
+
+    public boolean isDAGMode() {
+        return dagMode;
+    }
+
+    public DarkTaskDispatcher getTaskDispatcher() {
+        return taskDispatcher;
     }
 
     public ParallelSystemExecutor getParallelExecutor() {
