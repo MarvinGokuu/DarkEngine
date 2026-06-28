@@ -41,13 +41,15 @@ public final class SpatialHashGrid {
     private final int gridHeight;
     private final int numCells;
 
+    private boolean initialized = false;
+    private final int maxEntities;
+
     public SpatialHashGrid(int maxEntities, float cellSize, int gridWidth, int gridHeight) {
+        this.maxEntities = maxEntities;
         this.cellSize = cellSize;
         this.gridWidth = gridWidth;
         this.gridHeight = gridHeight;
         this.numCells = gridWidth * gridHeight;
-        
-        initComputeShader(maxEntities);
     }
 
     private void initComputeShader(int maxEntities) {
@@ -126,6 +128,10 @@ public final class SpatialHashGrid {
     }
 
     public void buildGrid(DarkTransformSoA soa, int maxEntities) {
+        if (!initialized) {
+            initComputeShader(this.maxEntities);
+            initialized = true;
+        }
         clear();
         
         try {
