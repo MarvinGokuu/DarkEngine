@@ -5,10 +5,7 @@ package sv.dark.core;
 
 import sv.dark.core.AAACertified;
 
-import sv.dark.core.systems.MovementSystem;
-import sv.dark.core.systems.RenderSystem;
 import sv.dark.core.systems.PhysicsSystem;
-import sv.dark.core.systems.AudioSystem;
 import sv.dark.bus.IEventBus;
 
 import java.nio.ByteBuffer;
@@ -53,10 +50,7 @@ public class MetricsCollector {
         public long frameTimeNs = 0;
         
         // Counters per system (aggregated)
-        public int movementProcessed = 0;
-        public int renderProcessed = 0;
         public int physicsProcessed = 0;
-        public int audioProcessed = 0;
         
         // Latencies
         public long busLatencyNs = 0;
@@ -99,26 +93,14 @@ public class MetricsCollector {
      * It is not in the frame's critical latency budget.
      */
     public static void aggregateMetrics(
-        MovementSystem movementSystem,
-        RenderSystem renderSystem,
         PhysicsSystem physicsSystem,
-        AudioSystem audioSystem,
         IEventBus eventBus,
         FrameMetrics output
     ) {
         // Read metrics from each system (WITHOUT CONTENTION)
         // Each system has already finished, no race conditions
-        if (movementSystem != null) {
-            output.movementProcessed = movementSystem.getProcessedCount();
-        }
-        if (renderSystem != null) {
-            output.renderProcessed = renderSystem.getProcessedCount();
-        }
         if (physicsSystem != null) {
             output.physicsProcessed = physicsSystem.getProcessedCount();
-        }
-        if (audioSystem != null) {
-            output.audioProcessed = audioSystem.getProcessedCount();
         }
         
         // Safely add bus statistics

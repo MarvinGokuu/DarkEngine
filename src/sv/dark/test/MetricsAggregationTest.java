@@ -6,10 +6,7 @@ package sv.dark.test;
 import sv.dark.core.AAACertified;
 
 import sv.dark.core.MetricsCollector;
-import sv.dark.core.systems.MovementSystem;
-import sv.dark.core.systems.RenderSystem;
 import sv.dark.core.systems.PhysicsSystem;
-import sv.dark.core.systems.AudioSystem;
 
 /**
  * RESPONSIBILITY: Validates metrics aggregation without contention and zero false sharing.
@@ -60,24 +57,15 @@ public class MetricsAggregationTest {
         System.out.println("\n[RUNNING] testMetricsAggregationNoContention...");
         MetricsCollector.FrameMetrics metrics = new MetricsCollector.FrameMetrics();
         
-        MovementSystem movement = new MovementSystem();
-        RenderSystem render = new RenderSystem();
         PhysicsSystem physics = new PhysicsSystem();
-        AudioSystem audio = new AudioSystem();
         
         for (int i= 0; i< 100; i++) {
-            movement.incrementProcessedCount();
-            render.incrementProcessedCount();
             physics.incrementProcessedCount();
-            audio.incrementProcessedCount();
         }
         
-        MetricsCollector.aggregateMetrics(movement, render, physics, audio, null, metrics);
+        MetricsCollector.aggregateMetrics(physics, null, metrics);
         
-        assertEquals("Movement count mismatch", 100, metrics.movementProcessed);
-        assertEquals("Render count mismatch", 100, metrics.renderProcessed);
         assertEquals("Physics count mismatch", 100, metrics.physicsProcessed);
-        assertEquals("Audio count mismatch", 100, metrics.audioProcessed);
         System.out.println("[PASS] No contention validation successful.");
     }
 
@@ -85,64 +73,33 @@ public class MetricsAggregationTest {
         System.out.println("\n[RUNNING] testMetricsAggregationPerformance...");
         
         // JIT Warm-up phase to trigger C2 compilation
-        MovementSystem warmMovement = new MovementSystem();
-        RenderSystem warmRender = new RenderSystem();
         PhysicsSystem warmPhysics = new PhysicsSystem();
-        AudioSystem warmAudio = new AudioSystem();
         for (int w = 0; w < 500_000; w++) {
-            warmMovement.incrementProcessedCount();
-            warmRender.incrementProcessedCount();
             warmPhysics.incrementProcessedCount();
-            warmAudio.incrementProcessedCount();
         }
 
         MetricsCollector.FrameMetrics metrics = new MetricsCollector.FrameMetrics();
         
-        MovementSystem movement = new MovementSystem();
-        RenderSystem render = new RenderSystem();
         PhysicsSystem physics = new PhysicsSystem();
-        AudioSystem audio = new AudioSystem();
-        
-        Thread t1 = new Thread(() -> {
-            for (int i= 0; i< 1_000_000; i++)
-                movement.incrementProcessedCount();
-        });
-        
-        Thread t2 = new Thread(() -> {
-            for (int i= 0; i< 1_000_000; i++)
-                render.incrementProcessedCount();
-        });
         
         Thread t3 = new Thread(() -> {
             for (int i= 0; i< 1_000_000; i++)
                 physics.incrementProcessedCount();
         });
         
-        Thread t4 = new Thread(() -> {
-            for (int i= 0; i< 1_000_000; i++)
-                audio.incrementProcessedCount();
-        });
-        
         long startNs = System.nanoTime();
         
-        t1.start();
-        t2.start();
         t3.start();
-        t4.start();
         
-        t1.join();
-        t2.join();
         t3.join();
-        t4.join();
         
         long elapsed = System.nanoTime() - startNs;
         
-        MetricsCollector.aggregateMetrics(movement, render, physics, audio, null, metrics);
+        MetricsCollector.aggregateMetrics(physics, null, metrics);
         
-        long totalOps = metrics.movementProcessed + metrics.renderProcessed + 
-                        metrics.physicsProcessed + metrics.audioProcessed;
+        long totalOps = metrics.physicsProcessed;
         
-        assertEquals("Total operations mismatch", 4_000_000, totalOps);
+        assertEquals("Total operations mismatch", 1_000_000, totalOps);
         
         long opsPerSec = (totalOps * 1_000_000_000L) / elapsed;
         System.out.println("Throughput: " + (opsPerSec / 1_000_000) + "M ops/sec");
@@ -157,11 +114,11 @@ public class MetricsAggregationTest {
     private static void testZeroFalseSharing() {
         System.out.println("\n[RUNNING] testZeroFalseSharing...");
         
-        MovementSystem movement = new MovementSystem();
-        RenderSystem render = new RenderSystem();
+        PhysicsSystem physics1 = new PhysicsSystem();
+        PhysicsSystem physics2 = new PhysicsSystem();
         
-        long addr1 = System.identityHashCode(movement);
-        long addr2 = System.identityHashCode(render);
+        long addr1 = System.identityHashCode(physics1);
+        long addr2 = System.identityHashCode(physics2);
         
         if (addr1 == addr2) {
             throw new RuntimeException("Memory address collision: instances are not separated");
