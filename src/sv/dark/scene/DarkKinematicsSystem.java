@@ -37,8 +37,9 @@ public final class DarkKinematicsSystem {
      * @param dt Delta time en segundos.
      * @param camX Posición global de la cámara X (64-bits).
      * @param camY Posición global de la cámara Y (64-bits).
+     * @param camZ Posición global de la cámara Z (64-bits).
      */
-    public static void update(DarkTransformSoA soa, float dt, double camX, double camY) {
+    public static void update(DarkTransformSoA soa, float dt, double camX, double camY, double camZ) {
         int capacity = soa.getCapacity();
         long loopBound = D_SPECIES.loopBound(capacity);
         long i = 0;
@@ -51,24 +52,31 @@ public final class DarkKinematicsSystem {
             // 1. Memory Load (Interleaved para saturar el bus de memoria)
             DoubleVector px = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosX, offset64, BO);
             DoubleVector py = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosY, offset64, BO);
+            DoubleVector pz = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosZ, offset64, BO);
             FloatVector vxFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velX, offset32, BO);
             FloatVector vyFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velY, offset32, BO);
+            FloatVector vzFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velZ, offset32, BO);
 
-            // 2. CPU ALU Math (Instruction Level Parallelism - X e Y en distintos puertos)
+            // 2. CPU ALU Math (Instruction Level Parallelism)
             DoubleVector vx = (DoubleVector) vxFloat.castShape(D_SPECIES, 0);
             DoubleVector vy = (DoubleVector) vyFloat.castShape(D_SPECIES, 0);
+            DoubleVector vz = (DoubleVector) vzFloat.castShape(D_SPECIES, 0);
             
             DoubleVector newPx = px.add(vx.mul(dt));
             DoubleVector newPy = py.add(vy.mul(dt));
+            DoubleVector newPz = pz.add(vz.mul(dt));
             
             FloatVector finalVisualX = (FloatVector) newPx.sub(camX).castShape(F_SPECIES, 0);
             FloatVector finalVisualY = (FloatVector) newPy.sub(camY).castShape(F_SPECIES, 0);
+            FloatVector finalVisualZ = (FloatVector) newPz.sub(camZ).castShape(F_SPECIES, 0);
 
             // 3. Memory Store
             newPx.intoMemorySegment(soa.globalPosX, offset64, BO);
             newPy.intoMemorySegment(soa.globalPosY, offset64, BO);
+            newPz.intoMemorySegment(soa.globalPosZ, offset64, BO);
             finalVisualX.intoMemorySegment(soa.posX, offset32, BO);
             finalVisualY.intoMemorySegment(soa.posY, offset32, BO);
+            finalVisualZ.intoMemorySegment(soa.posZ, offset32, BO);
         }
 
         // Fase 2: Cola Escalar (Precisión Infinita 64-bits)
@@ -87,6 +95,12 @@ public final class DarkKinematicsSystem {
             double newPy = py + (vy * dt);
             soa.globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, newPy);
             soa.posY.set(ValueLayout.JAVA_FLOAT, offset32, (float)(newPy - camY));
+            
+            double pz = soa.globalPosZ.get(ValueLayout.JAVA_DOUBLE, offset64);
+            float vz = soa.velZ.get(ValueLayout.JAVA_FLOAT, offset32);
+            double newPz = pz + (vz * dt);
+            soa.globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, newPz);
+            soa.posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float)(newPz - camZ));
         }
     }
 }
