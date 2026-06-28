@@ -73,8 +73,12 @@ if %errorlevel% neq 0 (
 
 :: 6. Generate Native App Image with JPackage
 echo [STAGE] Generating Native Executable Image (JPackage)...
+if exist jpackage_input rd /s /q jpackage_input
+mkdir jpackage_input
+copy /y DarkEngine-v1.0.jar jpackage_input\DarkEngine-v1.0.jar >nul
+
 jpackage --name "Dark-Engine" ^
-         --input . ^
+         --input jpackage_input ^
          --main-jar DarkEngine-v1.0.jar ^
          --type app-image ^
          --dest Dark-Engine-V1.0 ^
@@ -95,6 +99,7 @@ copy /y lib\soft_oal.dll Dark-Engine-V1.0\Dark-Engine\lib\soft_oal.dll >nul
 
 :: Cleanup temp files
 if exist compile_release_list.txt del /q compile_release_list.txt
+if exist jpackage_input rd /s /q jpackage_input
 
 echo ---------------------------------------------------
 echo [SUCCESS] Dark-Engine V1.0 Packaging Complete!
