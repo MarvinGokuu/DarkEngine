@@ -9,8 +9,10 @@ import sv.dark.core.DarkLogger;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.lang.foreign.ValueLayout;
 import sv.dark.scene.DarkShaderLoader;
+import sv.dark.scene.DarkRenderScratchpad;
+import sv.dark.scene.DarkCameraState;
+import sv.dark.math.DarkMath;
 
 /**
  * Deferred Lighting System (Phase 27).
@@ -23,6 +25,18 @@ public final class DarkDeferredLightingSystem {
     private static int sunDirLocation;
     private static int sunColorLocation;
     private static int camPosLocation;
+    private static int invViewProjLocation;
+    private static int viewMatrixLocation;
+    private static int zNearLocation;
+    private static int zFarLocation;
+    private static int cascadeSplit0Location;
+    private static int cascadeSplit1Location;
+    private static int cascadeSplit2Location;
+    private static int lightSpaceMatricesLocation;
+    
+    // Scratch matrices for World Position reconstruction in Shader
+    private static final float[] tempViewProj = new float[16];
+    private static final float[] tempInvViewProj = new float[16];
     
     // ECS Bindings (Updated per frame before dispatch)
     private static float[] currentSunDir = {0.5f, 1.0f, 0.5f};
@@ -47,6 +61,7 @@ public final class DarkDeferredLightingSystem {
             computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
             DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
             DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
+            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
             
             try (Arena arenaLocal = Arena.ofConfined()) {
                 MemorySegment nameDir = arenaLocal.allocateFrom("sunDir");
@@ -57,6 +72,17 @@ public final class DarkDeferredLightingSystem {
 
                 MemorySegment nameCamPos = arenaLocal.allocateFrom("camPos");
                 camPosLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameCamPos);
+
+                MemorySegment nameInv = arenaLocal.allocateFrom("invViewProj");
+                invViewProjLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameInv);
+
+                viewMatrixLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("viewMatrix"));
+                zNearLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("zNear"));
+                zFarLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("zFar"));
+                cascadeSplit0Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[0]"));
+                cascadeSplit1Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[1]"));
+                cascadeSplit2Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[2]"));
+                lightSpaceMatricesLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("lightSpaceMatrices"));
             }
             
             DarkLogger.info("GRAPHICS", "Deferred Lighting Compute Shader compilado.");
@@ -90,6 +116,49 @@ public final class DarkDeferredLightingSystem {
             DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, currentSunColor[0], currentSunColor[1], currentSunColor[2]);
             DarkOpenGLLinker.glUniform3f.invokeExact(camPosLocation, currentCamPos[0], currentCamPos[1], currentCamPos[2]);
 
+            // Upload camera view matrix
+            if (viewMatrixLocation != -1) {
+                DarkRenderScratchpad.writeMatrix(DarkCameraState.VIEW_MATRIX);
+                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(viewMatrixLocation, 1, false, DarkRenderScratchpad.MATRIX_64B);
+            }
+
+            // Upload near/far clip distances
+            if (zNearLocation != -1) {
+                DarkOpenGLLinker.glUniform1f.invokeExact(zNearLocation, DarkCameraState.Z_NEAR);
+            }
+            if (zFarLocation != -1) {
+                DarkOpenGLLinker.glUniform1f.invokeExact(zFarLocation, DarkCameraState.Z_FAR);
+            }
+
+            // Calculate and upload CSM splits in view space (3 floats)
+            float zNear = DarkCameraState.Z_NEAR;
+            float zFar = DarkCameraState.Z_FAR;
+            float split0 = zNear + DarkShadowSystem.CASCADE_SPLITS[1] * (zFar - zNear);
+            float split1 = zNear + DarkShadowSystem.CASCADE_SPLITS[2] * (zFar - zNear);
+            float split2 = zNear + DarkShadowSystem.CASCADE_SPLITS[3] * (zFar - zNear);
+            if (cascadeSplit0Location != -1) {
+                DarkOpenGLLinker.glUniform1f.invokeExact(cascadeSplit0Location, split0);
+            }
+            if (cascadeSplit1Location != -1) {
+                DarkOpenGLLinker.glUniform1f.invokeExact(cascadeSplit1Location, split1);
+            }
+            if (cascadeSplit2Location != -1) {
+                DarkOpenGLLinker.glUniform1f.invokeExact(cascadeSplit2Location, split2);
+            }
+
+            // Upload CSM light space matrices (3 matrices, 192 bytes = 48 floats)
+            if (lightSpaceMatricesLocation != -1) {
+                MemorySegment.copy(DarkShadowSystem.getCascadeLightMatrices(), 0, DarkRenderScratchpad.MATRIX_ARRAY_192B, ValueLayout.JAVA_FLOAT, 0L, 48);
+                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(lightSpaceMatricesLocation, 3, false, DarkRenderScratchpad.MATRIX_ARRAY_192B);
+            }
+
+            // Calculate Inverse View-Projection Matrix
+            DarkMath.multiplySIMD(tempViewProj, DarkCameraState.PROJ_MATRIX, DarkCameraState.VIEW_MATRIX);
+            if (DarkMath.inverse(tempInvViewProj, tempViewProj)) {
+                DarkRenderScratchpad.writeMatrix(tempInvViewProj);
+                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(invViewProjLocation, 1, false, DarkRenderScratchpad.MATRIX_64B);
+            }
+
             // Bind Albedo (texture unit 0)
             DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE0);
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getAlbedoTexture());
@@ -101,6 +170,19 @@ public final class DarkDeferredLightingSystem {
             // Bind PBR (texture unit 2)
             DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE2);
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getPbrTexture());
+
+            // Bind Shadow Map Array Texture (texture unit 4)
+            DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE4);
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkShadowSystem.getDepthMapArray());
+
+            // Bind Depth (texture unit 5)
+            DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE5);
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkDeferredPipeline.getDepthTexture());
+
+            // Bind Clustered Shading SSBOs to binding points 2, 3, 4
+            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 2, DarkLightSystem.getLightsSSBO());
+            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 3, DarkClusteredSystem.getGlobalIndexCountSSBO());
+            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 4, DarkClusteredSystem.getLightGridSSBO());
 
             // Bind Lit output image (image unit 3)
             DarkOpenGLLinker.glBindImageTexture.invokeExact(3, DarkDeferredPipeline.getLitTexture(), 0, false, 0, DarkOpenGLLinker.GL_READ_WRITE, DarkOpenGLLinker.GL_RGBA16F);

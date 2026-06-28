@@ -39,6 +39,7 @@ public final class DarkFSRSystem {
             computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
             DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
             DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
+            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
             
             DarkLogger.info("GRAPHICS", "FSR Upscale Compute Shader compilado. Target: 4K");
 

@@ -109,22 +109,28 @@ public final class DarkShadowSystem {
             );
             
             DarkOpenGLLinker.glClear.invokeExact(DarkOpenGLLinker.GL_DEPTH_BUFFER_BIT);
-            
             DarkOpenGLLinker.glUseProgram.invokeExact(shadowProgramId);
             
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment matrixPtr = arena.allocateFrom(ValueLayout.JAVA_FLOAT, lightSpaceMatrix);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(lightSpaceMatrixLoc, 1, false, matrixPtr);
-            }
+            // Zero-Alloc matrix upload: reuse MATRIX_64B scratchpad, 0 OS syscalls.
+            // WHY: This method is called 3x per frame (one per cascade). Old impl:
+            // 3 Arena.ofConfined() = 6 mmap/munmap syscalls per frame = 360/second.
+            // [NON_BLOCKING] [ZERO_ALLOCATION] [RENDER_THREAD_ONLY]
+            DarkRenderScratchpad.writeMatrix(lightSpaceMatrix);
+            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(lightSpaceMatrixLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
         } catch (Throwable e) {
             DarkLogger.error("GRAPHICS", "Error in beginShadowPass");
         }
     }
     
+    /**
+     * Zero-Alloc model matrix upload per shadow-casting entity.
+     * WHY: Called N_entities x CASCADE_COUNT per frame. Arena.ofConfined() = N*3*2 syscalls/frame.
+     * // [NON_BLOCKING] [ZERO_ALLOCATION] [RENDER_THREAD_ONLY]
+     */
     public static void setModelMatrix(float[] modelMatrix) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment ptr = arena.allocateFrom(ValueLayout.JAVA_FLOAT, modelMatrix);
-            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(modelLoc, 1, false, ptr);
+        try {
+            DarkRenderScratchpad.writeMatrix(modelMatrix);
+            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(modelLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
         } catch (Throwable e) {}
     }
 
@@ -144,14 +150,28 @@ public final class DarkShadowSystem {
     // =========================================================================
     
     // Arrays pre-allocated to avoid GC
-    private static final float[] tempCamInverse = new float[16];
-    private static final float[] tempFrustumCorners = new float[32]; // 8 corners * 4 (x,y,z,w)
-    private static final float[] tempLightView = new float[16];
-    private static final float[] tempLightOrtho = new float[16];
+    private static final float[] tempCamInverse       = new float[16];
+    private static final float[] tempFrustumCorners   = new float[32]; // 8 corners * 4 (x,y,z,w)
+    private static final float[] tempLightView        = new float[16];
+    private static final float[] tempLightOrtho       = new float[16];
     private static final float[] tempLightSpaceMatrix = new float[16];
+    // NDC unit cube corners — mathematical constant, NEVER allocate per frame.
+    // [FUTURE AUDITORS]: This is static final intentionally. The local `ndcBox`
+    // that was here before caused 180 heap allocations/second (3 cascades x 60fps).
+    private static final float[] NDC_BOX = {
+        -1,-1,-1,  1,-1,-1,  -1,1,-1,  1,1,-1,
+        -1,-1, 1,  1,-1, 1,  -1,1, 1,  1,1, 1
+    };
     
-    // Standard cascade split distances
-    public static final float[] CASCADE_SPLITS = { 0.05f, 0.15f, 0.5f, 1.0f }; // Near, Mid, Far
+    // Standard cascade split distances (Starting at 0.0f to cover near plane)
+    public static final float[] CASCADE_SPLITS = { 0.0f, 0.05f, 0.25f, 1.0f }; // Near, Mid, Far
+
+    // Pre-allocated array to hold all cascade light space matrices (3 cascades * 16 floats = 48 floats)
+    public static final float[] CASCADE_LIGHT_MATRICES = new float[16 * CASCADE_COUNT];
+
+    public static float[] getCascadeLightMatrices() {
+        return CASCADE_LIGHT_MATRICES;
+    }
 
     /**
      * Calculates the Light Space Matrix for a specific cascade.
@@ -172,37 +192,104 @@ public final class DarkShadowSystem {
             float[] outMatrix) {
             
         float splitNear = zNear + CASCADE_SPLITS[cascadeIndex] * (zFar - zNear);
-        float splitFar = zNear + CASCADE_SPLITS[cascadeIndex + 1] * (zFar - zNear);
+        float splitFar  = zNear + CASCADE_SPLITS[cascadeIndex + 1] * (zFar - zNear);
         
-        // 1. Calculate camera perspective matrix for this cascade segment
-        float[] camProj = new float[16];
-        sv.dark.math.DarkMath.perspective(camProj, fovY, aspect, splitNear, splitFar);
+        // 1. Camera perspective for this cascade — write into tempLightOrtho (reused as camProj temp).
+        // WHY: Reusing the pre-allocated static array avoids a new float[16] heap allocation.
+        sv.dark.math.DarkMath.perspective(tempLightOrtho, fovY, aspect, splitNear, splitFar);
         
-        // 2. Multiply Proj * View
-        float[] viewProj = new float[16];
-        sv.dark.math.DarkMath.multiply(viewProj, camProj, camView);
+        // 2. Multiply Proj * View — write into tempCamInverse (reused as viewProj temp).
+        sv.dark.math.DarkMath.multiplySIMD(tempCamInverse, tempLightOrtho, camView);
         
-        // 3. Inverse ViewProj to get world space corners
-        // NOTE: For simplicity in this zero-gc demo, assuming inverse is pre-calculated or 
-        // we can just construct the frustum from the camera vectors directly.
-        // Let's use a simplified bounding box approach for the sun.
+        // 3. Exact 8-corner inverse projection.
+        // Inverse the ViewProj matrix to calculate the 8 frustum corners in World Space.
+        sv.dark.math.DarkMath.inverse(tempCamInverse, tempCamInverse); // In-place inverse
         
-        // simplified center calculation
-        float centerX = 0.0f; // Replace with actual frustum center x
-        float centerY = 0.0f; // Replace with actual frustum center y
-        float centerZ = 0.0f; // Replace with actual frustum center z
+        float frustumCenterX = 0.0f;
+        float frustumCenterY = 0.0f;
+        float frustumCenterZ = 0.0f;
         
-        // Create light view matrix looking at the frustum center
-        sv.dark.math.DarkMath.lookAt(tempLightView, 
-            centerX - sunDir[0] * 50.0f, centerY - sunDir[1] * 50.0f, centerZ - sunDir[2] * 50.0f, 
-            centerX, centerY, centerZ, 
-            0.0f, 1.0f, 0.0f);
+        for (int i = 0; i < 8; i++) {
+            float x = NDC_BOX[i * 3];
+            float y = NDC_BOX[i * 3 + 1];
+            float z = NDC_BOX[i * 3 + 2];
             
-        // Calculate ortho projection for this cascade
-        float radius = (splitFar - splitNear) * 2.0f; // rough approximation of bounding sphere
-        sv.dark.math.DarkMath.ortho(tempLightOrtho, -radius, radius, -radius, radius, -100.0f, 100.0f);
+            // Multiply Inverse(ViewProj) * vec4(x, y, z, 1.0)
+            float w = tempCamInverse[3] * x + tempCamInverse[7] * y + tempCamInverse[11] * z + tempCamInverse[15];
+            float wx = (tempCamInverse[0] * x + tempCamInverse[4] * y + tempCamInverse[8] * z + tempCamInverse[12]) / w;
+            float wy = (tempCamInverse[1] * x + tempCamInverse[5] * y + tempCamInverse[9] * z + tempCamInverse[13]) / w;
+            float wz = (tempCamInverse[2] * x + tempCamInverse[6] * y + tempCamInverse[10] * z + tempCamInverse[14]) / w;
+            
+            tempFrustumCorners[i * 4] = wx;
+            tempFrustumCorners[i * 4 + 1] = wy;
+            tempFrustumCorners[i * 4 + 2] = wz;
+            
+            frustumCenterX += wx;
+            frustumCenterY += wy;
+            frustumCenterZ += wz;
+        }
         
-        // lightSpaceMatrix = ortho * lightView
-        sv.dark.math.DarkMath.multiply(outMatrix, tempLightOrtho, tempLightView);
+        frustumCenterX /= 8.0f;
+        frustumCenterY /= 8.0f;
+        frustumCenterZ /= 8.0f;
+        
+        // Calculate max radius of the bounding sphere tightly fitting the 8 corners
+        float radius = 0.0f;
+        for (int i = 0; i < 8; i++) {
+            float dx = tempFrustumCorners[i * 4] - frustumCenterX;
+            float dy = tempFrustumCorners[i * 4 + 1] - frustumCenterY;
+            float dz = tempFrustumCorners[i * 4 + 2] - frustumCenterZ;
+            float dist = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist > radius) radius = dist;
+        }
+        
+        // Stabilize shadow map by snapping to texel increments
+        // This completely eliminates Shadow Shimmering (AAA Technique)
+        float texelSize = (2.0f * radius) / SHADOW_WIDTH;
+        frustumCenterX = (float) Math.floor(frustumCenterX / texelSize) * texelSize;
+        frustumCenterY = (float) Math.floor(frustumCenterY / texelSize) * texelSize;
+        frustumCenterZ = (float) Math.floor(frustumCenterZ / texelSize) * texelSize;
+
+        // 4. Build light view matrix: look AT the frustum center FROM a sun-direction offset.
+        sv.dark.math.DarkMath.lookAt(tempLightView,
+            frustumCenterX - sunDir[0] * radius,
+            frustumCenterY - sunDir[1] * radius,
+            frustumCenterZ - sunDir[2] * radius,
+            frustumCenterX, frustumCenterY, frustumCenterZ,
+            0.0f, 1.0f, 0.0f);
+
+        // 5. Calculate tight orthographic bounds for this cascade.
+        // We use the radius for all axes to ensure a perfect spherical bounding box
+        sv.dark.math.DarkMath.ortho(tempLightOrtho, -radius, radius, -radius, radius, -radius * 5.0f, radius * 5.0f);
+        
+        // 6. lightSpaceMatrix = ortho * lightView — write directly into outMatrix (pre-allocated by caller).
+        sv.dark.math.DarkMath.multiplySIMD(outMatrix, tempLightOrtho, tempLightView);
+
+        // Copy directly to the global cascade matrices array
+        System.arraycopy(outMatrix, 0, CASCADE_LIGHT_MATRICES, cascadeIndex * 16, 16);
+    }
+
+    public static void destroy() {
+        if (!isInitialized) return;
+        try {
+            if (shadowProgramId != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(shadowProgramId);
+                shadowProgramId = 0;
+            }
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
+                fboPtr.set(ValueLayout.JAVA_INT, 0L, depthMapFBO);
+                DarkOpenGLLinker.glDeleteFramebuffers.invokeExact(1, fboPtr);
+                depthMapFBO = 0;
+                
+                MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT);
+                texPtr.set(ValueLayout.JAVA_INT, 0L, depthMapArray);
+                DarkOpenGLLinker.glDeleteTextures.invokeExact(1, texPtr);
+                depthMapArray = 0;
+            }
+            isInitialized = false;
+        } catch (Throwable e) {
+            DarkLogger.error("GRAPHICS", "Error destroying Shadow System resources: " + e.getMessage());
+        }
     }
 }

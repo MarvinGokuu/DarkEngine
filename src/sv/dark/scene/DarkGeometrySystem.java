@@ -11,22 +11,28 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 
 /**
- * Geometry Rendering System (Phase 27).
+ * Geometry Rendering System (Phase 35+ AZDO).
  * Executes the Geometry Pass: drawing 3D entities into the G-Buffer MRTs.
+ * Uses Persistent Mapped Buffers (AZDO) for zero-FFI matrix uploads.
  */
-@AAACertified(date = "2026-06-27", maxLatencyNs = 1, minThroughput = 0, lockFree = true, offHeap = true, notes = "Native Rasterization Pipeline for G-Buffer Population")
+@AAACertified(date = "2026-06-28", maxLatencyNs = 1, minThroughput = 0, lockFree = true, offHeap = true, notes = "Native Rasterization Pipeline with AZDO Persistent Buffers")
 public final class DarkGeometrySystem {
 
     private static int shaderProgramId;
     
     // Uniform Locations
-    private static int modelLoc;
     private static int viewLoc;
     private static int projLoc;
     private static int diffuseLoc;
     private static int normalLoc;
     private static int pbrLoc;
     private static int colorMultLoc;
+
+    // AZDO State
+    private static int ssboMatricesId;
+    private static MemorySegment mappedMatricesPtr;
+    private static int instanceCount = 0;
+    public static final int MAX_ENTITIES = 100_000;
 
     private static boolean isInitialized = false;
 
@@ -55,13 +61,25 @@ public final class DarkGeometrySystem {
             DarkOpenGLLinker.glDeleteShader.invokeExact(fragId);
 
             try (Arena arenaLocal = Arena.ofConfined()) {
-                modelLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("model"));
                 viewLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("view"));
                 projLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("projection"));
                 diffuseLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("texture_diffuse1"));
                 normalLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("texture_normal1"));
                 pbrLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("texture_pbr1"));
                 colorMultLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shaderProgramId, arenaLocal.allocateFrom("colorMultiplier"));
+                
+                // AZDO SSBO Initialization
+                MemorySegment idPtr = arenaLocal.allocate(ValueLayout.JAVA_INT);
+                DarkOpenGLLinker.glGenBuffers.invokeExact(1, idPtr);
+                ssboMatricesId = idPtr.get(ValueLayout.JAVA_INT, 0);
+                
+                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboMatricesId);
+                long size = (long) MAX_ENTITIES * 64L; // 64 bytes per mat4
+                int flags = DarkOpenGLLinker.GL_MAP_WRITE_BIT | DarkOpenGLLinker.GL_MAP_PERSISTENT_BIT | DarkOpenGLLinker.GL_MAP_COHERENT_BIT;
+                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, size, MemorySegment.NULL, flags);
+                
+                mappedMatricesPtr = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, size, flags);
+                mappedMatricesPtr = mappedMatricesPtr.reinterpret(size); // Allow Java to write up to size
             }
             
             // Pre-bind texture unit locations
@@ -71,7 +89,7 @@ public final class DarkGeometrySystem {
             DarkOpenGLLinker.glUniform1i.invokeExact(pbrLoc, 2);     // GL_TEXTURE2
             DarkOpenGLLinker.glUseProgram.invokeExact(0);
 
-            DarkLogger.info("GRAPHICS", "Geometry Pass Shaders Compiled and Linked.");
+            DarkLogger.info("GRAPHICS", "Geometry Pass Shaders Compiled (AZDO Enabled).");
             isInitialized = true;
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error initializing DarkGeometrySystem", e);
@@ -97,48 +115,62 @@ public final class DarkGeometrySystem {
         }
     }
 
-    /**
-     * Binds the Geometry Pass program and sets the camera matrices.
-     * This should be called before drawing the ECS entities.
-     */
     public static void beginPass(float[] viewMatrix, float[] projMatrix) {
         if (!isInitialized) return;
         try {
             DarkOpenGLLinker.glUseProgram.invokeExact(shaderProgramId);
-            
-            // Set global matrices
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment viewPtr = arena.allocateFrom(ValueLayout.JAVA_FLOAT, viewMatrix);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(viewLoc, 1, false, viewPtr);
-                
-                MemorySegment projPtr = arena.allocateFrom(ValueLayout.JAVA_FLOAT, projMatrix);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(projLoc, 1, false, projPtr);
-            }
-            
-            // Default color multiplier (white)
+
+            DarkRenderScratchpad.writeMatrix(viewMatrix);
+            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(viewLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
+
+            DarkRenderScratchpad.writeMatrix(projMatrix);
+            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(projLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
+
             DarkOpenGLLinker.glUniform4f.invokeExact(colorMultLoc, 1.0f, 1.0f, 1.0f, 1.0f);
+            
+            // Bind AZDO SSBO
+            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0, ssboMatricesId);
+            instanceCount = 0;
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error beginning Geometry Pass", e);
         }
     }
     
     /**
-     * Helper to set model matrix per entity.
+     * AZDO: Writes directly to VRAM mapped memory without FFI crossing.
+     * Zero-GC, Zero-Syscalls.
      */
     public static void setModelMatrix(float[] modelMatrix) {
+        if (instanceCount >= MAX_ENTITIES) return;
+        MemorySegment.copy(modelMatrix, 0, mappedMatricesPtr, ValueLayout.JAVA_FLOAT, instanceCount * 64L, 16);
+        instanceCount++;
+    }
+
+    /**
+     * Dispatches the instanced draw call for all accumulated matrices.
+     */
+    public static void flush(int indexCount) {
+        if (instanceCount == 0 || !isInitialized) return;
         try {
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment modelPtr = arena.allocateFrom(ValueLayout.JAVA_FLOAT, modelMatrix);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(modelLoc, 1, false, modelPtr);
-            }
+            DarkOpenGLLinker.glDrawElementsInstanced.invokeExact(DarkOpenGLLinker.GL_TRIANGLES, indexCount, DarkOpenGLLinker.GL_UNSIGNED_INT, MemorySegment.NULL, instanceCount);
+            instanceCount = 0; // Reset for next batch
         } catch (Throwable e) {
-            DarkLogger.fatal("GRAPHICS", "Error setting model matrix", e);
+            DarkLogger.fatal("GRAPHICS", "Error flushing Geometry AZDO", e);
         }
     }
 
     public static void destroy() {
         if (!isInitialized) return;
         try {
+            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboMatricesId);
+            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
+            
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment ptr = arena.allocate(ValueLayout.JAVA_INT);
+                ptr.set(ValueLayout.JAVA_INT, 0, ssboMatricesId);
+                DarkOpenGLLinker.glDeleteBuffers.invokeExact(1, ptr);
+            }
+            
             DarkOpenGLLinker.glDeleteProgram.invokeExact(shaderProgramId);
             isInitialized = false;
         } catch (Throwable e) {

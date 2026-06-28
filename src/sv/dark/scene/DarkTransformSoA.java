@@ -27,12 +27,15 @@ public final class DarkTransformSoA {
     // 32-bits (Float) - Destino Final para la GPU (VRAM / OpenGL FFI)
     public final MemorySegment posX;
     public final MemorySegment posY;
+    public final MemorySegment posZ;
     public final MemorySegment velX;
     public final MemorySegment velY;
+    public final MemorySegment velZ;
 
     // 64-bits (Double) - Lógica y Cinemática del CPU (Precisión Infinita)
     public final MemorySegment globalPosX;
     public final MemorySegment globalPosY;
+    public final MemorySegment globalPosZ;
 
     /**
      * Aloja la memoria nativa requerida para la capacidad máxima de entidades.
@@ -48,14 +51,17 @@ public final class DarkTransformSoA {
         // Asignación de bloques contiguos paralelos (32-bit para la GPU)
         this.posX = arena.allocate(bytesRequired32, 64); // Alineado a 64-bytes (Cache Line)
         this.posY = arena.allocate(bytesRequired32, 64);
+        this.posZ = arena.allocate(bytesRequired32, 64);
         this.velX = arena.allocate(bytesRequired32, 64);
         this.velY = arena.allocate(bytesRequired32, 64);
+        this.velZ = arena.allocate(bytesRequired32, 64);
 
         // Asignación de bloques (64-bit para simulaciones CPU)
         this.globalPosX = arena.allocate(bytesRequired64, 64);
         this.globalPosY = arena.allocate(bytesRequired64, 64);
+        this.globalPosZ = arena.allocate(bytesRequired64, 64);
         
-        DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 4 + bytesRequired64 * 2) / 1024 / 1024) + " MB Off-Heap)");
+        DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 6 + bytesRequired64 * 3) / 1024 / 1024) + " MB Off-Heap 3D LWC)");
     }
     
     public int getCapacity() {
@@ -65,20 +71,23 @@ public final class DarkTransformSoA {
     /**
      * Inserta datos escalares para una entidad (Útil para inicialización).
      */
-    public void setEntity(int entityId, double globalPx, double globalPy, float vx, float vy) {
+    public void setEntity(int entityId, double globalPx, double globalPy, double globalPz, float vx, float vy, float vz) {
         long offset32 = entityId * 4L;
         long offset64 = entityId * 8L;
         
         // Setear estado lógico en 64-bits
         globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, globalPx);
         globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, globalPy);
+        globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, globalPz);
         
         // Setear estado visual inicial (A la espera del primer Camera Relative Rendering)
         posX.set(ValueLayout.JAVA_FLOAT, offset32, (float) globalPx);
         posY.set(ValueLayout.JAVA_FLOAT, offset32, (float) globalPy);
+        posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float) globalPz);
         
         velX.set(ValueLayout.JAVA_FLOAT, offset32, vx);
         velY.set(ValueLayout.JAVA_FLOAT, offset32, vy);
+        velZ.set(ValueLayout.JAVA_FLOAT, offset32, vz);
     }
     
     public void destroy() {

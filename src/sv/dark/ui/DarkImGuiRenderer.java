@@ -19,6 +19,7 @@ public final class DarkImGuiRenderer {
     private static int g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
     private static int g_VboHandle = 0, g_ElementsHandle = 0;
     private static int g_FontTexture = 0;
+    private static final float[] orthoProjection = new float[16];
 
     public static void init() {
         createDeviceObjects();
@@ -94,10 +95,9 @@ public final class DarkImGuiRenderer {
     }
 
     public static void renderDrawData(ImDrawData drawData) {
-        if (drawData.getCmdListsCount() == 0) return;
+        if (drawData == null || drawData.getCmdListsCount() == 0) return;
         
         try {
-            Arena arena = Arena.ofAuto();
             int fbWidth = (int) (drawData.getDisplaySizeX() * drawData.getFramebufferScaleX());
             int fbHeight = (int) (drawData.getDisplaySizeY() * drawData.getFramebufferScaleY());
             if (fbWidth <= 0 || fbHeight <= 0) return;
@@ -117,19 +117,17 @@ public final class DarkImGuiRenderer {
             float T = drawData.getDisplayPosY();
             float B = drawData.getDisplayPosY() + drawData.getDisplaySizeY();
             
-            float[] orthoProjection = new float[] {
-                2.0f/(R-L),   0.0f,         0.0f,   0.0f,
-                0.0f,         2.0f/(T-B),   0.0f,   0.0f,
-                0.0f,         0.0f,        -1.0f,   0.0f,
-                (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f
-            };
+            orthoProjection[0] = 2.0f/(R-L);   orthoProjection[1] = 0.0f;         orthoProjection[2] = 0.0f;   orthoProjection[3] = 0.0f;
+            orthoProjection[4] = 0.0f;         orthoProjection[5] = 2.0f/(T-B);   orthoProjection[6] = 0.0f;   orthoProjection[7] = 0.0f;
+            orthoProjection[8] = 0.0f;         orthoProjection[9] = 0.0f;         orthoProjection[10] = -1.0f;  orthoProjection[11] = 0.0f;
+            orthoProjection[12] = (R+L)/(L-R); orthoProjection[13] = (T+B)/(B-T); orthoProjection[14] = 0.0f;  orthoProjection[15] = 1.0f;
             
-            MemorySegment orthoSeg = arena.allocateFrom(ValueLayout.JAVA_FLOAT, orthoProjection);
+            sv.dark.scene.DarkRenderScratchpad.writeMatrix(orthoProjection);
             DarkOpenGLLinker.glUseProgram.invokeExact(g_ShaderHandle);
             DarkOpenGLLinker.glUniform1i.invokeExact(g_AttribLocationTex, 0);
-            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(g_AttribLocationProjMtx, 1, false, orthoSeg);
+            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(g_AttribLocationProjMtx, 1, false, sv.dark.scene.DarkRenderScratchpad.MATRIX_64B);
             
-            MemorySegment vaoPtr = arena.allocate(ValueLayout.JAVA_INT);
+            MemorySegment vaoPtr = sv.dark.scene.DarkRenderScratchpad.INT_4B;
             DarkOpenGLLinker.glGenVertexArrays.invokeExact(1, vaoPtr);
             int vao = vaoPtr.get(ValueLayout.JAVA_INT, 0);
             DarkOpenGLLinker.glBindVertexArray.invokeExact(vao);
