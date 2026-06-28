@@ -16,9 +16,9 @@ for /f "tokens=2 delims= " %%v in ('javac --version 2^>^&1') do set JAVAC_VER=%%
 for /f "tokens=1 delims=." %%m in ("%JAVAC_VER%") do set JAVA_MAJOR=%%m
 echo [INFO] Compiler: JDK %JAVAC_VER% (Aggressive Zero-Debug Mode)
 
-:: 2. Discover Source Files (excluding tests)
-echo [STAGE] Discovering source files (Excluding test packages)...
-dir /s /B src\*.java | findstr /v "\\test\\" > compile_release_list.txt
+:: 2. Discover Source Files (excluding tests and benchmarks)
+echo [STAGE] Discovering source files (Excluding test and benchmark packages)...
+dir /s /B src\*.java | findstr /v "\\test\\" | findstr /v "\\benchmark\\" > compile_release_list.txt
 
 :: 3. Compile
 echo [STAGE] Compiling Source without debug symbols (-g:none)...

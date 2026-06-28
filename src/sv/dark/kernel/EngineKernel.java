@@ -598,7 +598,13 @@ public final class EngineKernel {
             if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
                 sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
                 imgui.ImGui.newFrame();
-                // [REMOVED] DarkProfiler call
+                
+                // Inject Visual Profiler for Telemetry (Phase 5)
+                sv.dark.ui.DarkVisualProfiler.render(
+                        timeKeeper.getLastActualFps(), 
+                        pooledFrameMetrics.frameTimeNs, 
+                        (int) timeKeeper.getCurrentTargetFps());
+                        
                 imgui.ImGui.render();
                 imgui.ImDrawData drawData = imgui.ImGui.getDrawData();
                 if (drawData != null) {

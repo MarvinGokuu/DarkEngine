@@ -19,8 +19,9 @@ if not exist bin mkdir bin
 
 <nul set /p="[BUILD] Compiling kernel and subsystems (JDK %JAVAC_VER%)... "
 
-:: Auto-discover all Java files to prevent missing dependencies or OS command-line limits
-dir /s /B src\*.java > compile_list.txt
+:: 2. Discover Source Files (excluding tests and benchmarks)
+echo [STAGE] Discovering source files...
+dir /s /B src\*.java | findstr /v "\\test\\" | findstr /v "\\benchmark\\" > compile_list.txt
 
 javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
