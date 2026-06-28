@@ -30,7 +30,8 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-:: Copy resources (images, configurations, etc.) to bin
+:: 3. Inject Resources and Compute Shaders
+echo [STAGE] Injecting static resources and Compute Shaders...
 if not exist bin\sv\dark\ui mkdir bin\sv\dark\ui
 copy /y src\sv\dark\ui\darkengine_logo.png bin\sv\dark\ui\darkengine_logo.png >nul
 
@@ -38,9 +39,25 @@ if not exist bin\sv\dark\admin mkdir bin\sv\dark\admin
 copy /y src\sv\dark\admin\editor.html bin\sv\dark\admin\editor.html >nul
 copy /y src\sv\dark\admin\index.html bin\sv\dark\admin\index.html >nul
 
-echo [SUCCESS] Build complete. Binaries in: bin\
+echo [STAGE] Injecting GLSL Compute Shaders...
+for /R src %%f in (*.comp) do (
+    set "FILE_PATH=%%f"
+    setlocal EnableDelayedExpansion
+    set "REL_PATH=!FILE_PATH:%CD%\src\=!"
+    set "DEST_DIR=%CD%\bin\!REL_PATH!"
+    for %%a in ("!DEST_DIR!") do set "DEST_FOLDER=%%~dpa"
+    if not exist "!DEST_FOLDER!" mkdir "!DEST_FOLDER!"
+    copy /y "%%f" "!DEST_DIR!" >nul
+    endlocal
+)
 
-:: 3. Package as JAR
+:: 4. Inject ImGui Jars and Package as JAR
+echo [STAGE] Injecting ImGui libraries...
+cd bin
+jar xf ..\lib\imgui-java-binding.jar
+jar xf ..\lib\imgui-java-natives-windows.jar
+if exist META-INF rd /s /q META-INF
+cd ..
 echo [STAGE] Creating DarkEngine.jar...
 jar --create --file DarkEngine.jar --main-class sv.dark.state.DarkEngineMaster -C bin .
 
@@ -49,22 +66,21 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-:: 4. Native App Image — GUI subsystem (no console window)
+:: 5. Native App Image — GUI subsystem (no console window)
 echo [STAGE] Generating Native App Image...
 jpackage --name "Dark-Engine" ^
          --input . ^
          --main-jar DarkEngine.jar ^
          --type app-image ^
-         --add-modules jdk.incubator.vector,java.base,jdk.httpserver,jdk.management,java.desktop ^
-         --java-options "--enable-preview --enable-native-access=ALL-UNNAMED -XX:+UseZGC -Xms4G -Xmx4G -XX:+AlwaysPreTouch" ^
-         --arguments "--enable-preview"
+         --add-modules jdk.incubator.vector,java.base,jdk.httpserver,jdk.management,java.desktop,jdk.unsupported ^
+         --java-options "--enable-preview --enable-native-access=ALL-UNNAMED -XX:+UseZGC -Xms4G -Xmx4G -XX:+AlwaysPreTouch --add-modules jdk.incubator.vector"
 
 if %errorlevel% neq 0 (
     echo [ERROR] jpackage failed.
     exit /b %errorlevel%
 )
 
-:: 5. Copy Native Libraries
+:: 6. Copy Native Libraries
 echo [STAGE] Bundling Native Libraries (DLLs)...
 if not exist Dark-Engine\lib mkdir Dark-Engine\lib
 copy /y lib\glfw3.dll Dark-Engine\lib\glfw3.dll >nul
