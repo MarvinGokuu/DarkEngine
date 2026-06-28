@@ -18,17 +18,24 @@ public class SystemSIMDKinematicsTest {
         
         // Inicializar entidades aleatoriamente
         for(int i = 0; i < ENTITY_COUNT; i++) {
-            soa.setEntity(i, 0.0, 0.0, 10.5f, -5.2f);
+            soa.setEntity(i, 0.0, 0.0, 0.0, 10.5f, -5.2f, 0.0f);
         }
         
-        // Calentamiento JIT
-        for(int i = 0; i < 50; i++) {
-            DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0);
+        // Calentamiento JIT (Forzar compilación C2 limpia mediante llamadas repetidas)
+        DarkTransformSoA warmupSoa = new DarkTransformSoA(1024);
+        for(int i = 0; i < 15000; i++) {
+            DarkKinematicsSystem.update(warmupSoa, 0.016f, 0.0, 0.0, 0.0);
+        }
+        warmupSoa.destroy();
+        
+        // Calentamiento de Caché L1/L2/L3 en el array real de medición
+        for(int i = 0; i < 10; i++) {
+            DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0, 0.0);
         }
         
         // Medición
         long start = System.nanoTime();
-        DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0);
+        DarkKinematicsSystem.update(soa, 0.016f, 0.0, 0.0, 0.0);
         long end = System.nanoTime();
         
         double durationMs = (end - start) / 1_000_000.0;
