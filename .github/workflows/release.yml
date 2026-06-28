@@ -1,0 +1,50 @@
+name: DarkEngine AAA Production Build
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Package (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+          
+      - name: Verify Java Version
+        run: javac --version
+
+      - name: Execute Production Build (build_release.bat)
+        run: .\build_release.bat
+        shell: cmd
+
+      - name: Compress Native App Image
+        run: Compress-Archive -Path "Dark-Engine-V1.0\Dark-Engine" -DestinationPath "Dark-Engine-Windows.zip"
+        shell: powershell
+
+      - name: Upload Artifact to GitHub Action (Always accessible)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkEngine-Windows-Build
+          path: Dark-Engine-Windows.zip
+          retention-days: 14
+
+      - name: Create GitHub Release (Only on Tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Dark-Engine-Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
