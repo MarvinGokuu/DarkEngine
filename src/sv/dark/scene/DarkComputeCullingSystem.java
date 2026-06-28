@@ -112,9 +112,9 @@ public final class DarkComputeCullingSystem {
             long bytes = capacity * 4L; 
 
             // 1. AZDO Zero-Syscall Copia (Solo 3 copias lineales RAM -> VRAM)
-            MemorySegment.copy(soa.posX, 0, mappedPosX, ValueLayout.JAVA_FLOAT, 0L, capacity);
-            MemorySegment.copy(soa.posY, 0, mappedPosY, ValueLayout.JAVA_FLOAT, 0L, capacity);
-            MemorySegment.copy(soa.posZ, 0, mappedPosZ, ValueLayout.JAVA_FLOAT, 0L, capacity);
+            MemorySegment.copy(soa.posX, 0L, mappedPosX, 0L, bytes);
+            MemorySegment.copy(soa.posY, 0L, mappedPosY, 0L, bytes);
+            MemorySegment.copy(soa.posZ, 0L, mappedPosZ, 0L, bytes);
 
             // 2. Activar programa de GPU
             DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
