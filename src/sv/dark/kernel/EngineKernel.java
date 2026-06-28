@@ -132,7 +132,7 @@ public final class EngineKernel {
         // [ECS PHASE 30] Init Scene Orchestrator with default capacity
         // Se usa 50_000 por defecto para no asfixiar el Heap Base en tests de Boot
         this.scene = new sv.dark.ecs.DarkScene(50_000);
-        
+
         // [FRAMEGRAPH] Initialize Render Graph Nodes
         this.frameGraph = new sv.dark.scene.graph.DarkFrameGraph();
         this.frameGraph.addPass(new sv.dark.scene.graph.GridCullingPass());
@@ -259,6 +259,12 @@ public final class EngineKernel {
         // [NEURONA_048 STEP 2.5] NATIVE WINDOW INIT (Main Thread FFI)
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
         sv.dark.ui.DarkEngineWindow.initNativeWindow();
+
+        // Initialize Graphics Context for Systems that require it
+        sv.dark.core.systems.GameSystem bpSystem = systemRegistry.getSystem(sv.dark.physics.BroadphaseSystem.class);
+        if (bpSystem != null) {
+            ((sv.dark.physics.BroadphaseSystem) bpSystem).getGrid().initGraphicsContext();
+        }
 
         // [APP EDITOR PAUSED] 
         // AWT/Java2D violates Zero-Garbage architecture. Reserved for WebSockets and FFI.
@@ -588,6 +594,15 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
+        // Clear default framebuffer to pitch black (hacker style base)
+        if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
+            try {
+                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
+            } catch (Throwable t) {
+                // Ignore
+            }
+        }
+
         float[] viewMatrix = sv.dark.scene.DarkCameraState.VIEW_MATRIX;
         float[] projMatrix = sv.dark.scene.DarkCameraState.PROJ_MATRIX;
 
@@ -599,12 +614,6 @@ public final class EngineKernel {
                 sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
                 imgui.ImGui.newFrame();
                 
-                // Inject Visual Profiler for Telemetry (Phase 5)
-                sv.dark.ui.DarkVisualProfiler.render(
-                        timeKeeper.getLastActualFps(), 
-                        pooledFrameMetrics.frameTimeNs, 
-                        (int) timeKeeper.getCurrentTargetFps());
-                        
                 imgui.ImGui.render();
                 imgui.ImDrawData drawData = imgui.ImGui.getDrawData();
                 if (drawData != null) {
@@ -618,8 +627,6 @@ public final class EngineKernel {
         // Swap buffers to display the frame
         if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
             try {
-                // Clear default framebuffer to pitch black (hacker style base)
-                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
                 sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
             } catch (Throwable t) {
                 sv.dark.core.DarkLogger.error("GRAPHICS", "Native panic during glfwSwapBuffers: " + t.getMessage());

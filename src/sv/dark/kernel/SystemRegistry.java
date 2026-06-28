@@ -62,6 +62,13 @@ public final class SystemRegistry {
         DarkLogger.info("REGISTRY", "Registered game system: " + system.getName());
     }
 
+    public GameSystem getSystem(Class<?> clazz) {
+        for (int i = 0; i < gameSystemCount; i++) {
+            if (clazz.isInstance(gameSystemsArray[i])) return gameSystemsArray[i];
+        }
+        return null;
+    }
+
     public void registerRenderSystem(DarkRenderSystem system) {
         if (renderSystemCount >= renderSystemsArray.length) throw new IllegalStateException("RenderSystem capacity exceeded");
         renderSystemsArray[renderSystemCount++] = system;

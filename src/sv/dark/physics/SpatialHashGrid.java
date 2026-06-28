@@ -52,7 +52,8 @@ public final class SpatialHashGrid {
         this.numCells = gridWidth * gridHeight;
     }
 
-    private void initComputeShader(int maxEntities) {
+    public void initGraphicsContext() {
+        if (initialized) return;
         try {
             int shaderId = (int) sv.dark.core.systems.DarkOpenGLLinker.glCreateShader.invokeExact(sv.dark.core.systems.DarkOpenGLLinker.GL_COMPUTE_SHADER);
             String source = sv.dark.scene.DarkShaderLoader.loadShader("src/sv/dark/physics/radix_sort.comp");
@@ -106,6 +107,7 @@ public final class SpatialHashGrid {
                 mappedCellNext = (MemorySegment) sv.dark.core.systems.DarkOpenGLLinker.glMapBufferRange.invokeExact(sv.dark.core.systems.DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, nextSize, flagsMapReadWrite);
                 mappedCellNext = mappedCellNext.reinterpret(nextSize);
             }
+            initialized = true;
         } catch (Throwable e) {
             sv.dark.core.DarkLogger.fatal("PHYSICS", "Failed to init GPU Spatial Hash", e);
         }
@@ -129,8 +131,8 @@ public final class SpatialHashGrid {
 
     public void buildGrid(DarkTransformSoA soa, int maxEntities) {
         if (!initialized) {
-            initComputeShader(this.maxEntities);
-            initialized = true;
+            sv.dark.core.DarkLogger.fatal("PHYSICS", "SpatialHashGrid buildGrid() called before initGraphicsContext()!", null);
+            return;
         }
         clear();
         
