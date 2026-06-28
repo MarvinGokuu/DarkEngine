@@ -215,7 +215,7 @@ public final class DarkOpenGLLinker {
             // AZDO
             glBufferStorage = bind(arena, "glBufferStorage", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
             glMapBufferRange = bind(arena, "glMapBufferRange", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
-            glUnmapBuffer = bind(arena, "glUnmapBuffer", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT));
+            glUnmapBuffer = bind(arena, "glUnmapBuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
 
             // Phase 27 - Textures and FBOs
             glGenTextures = bind(arena, "glGenTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
