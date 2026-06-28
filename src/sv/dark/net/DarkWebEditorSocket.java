@@ -54,9 +54,11 @@ public final class DarkWebEditorSocket extends Thread {
         int bytesRead = in.read(requestBytes);
         String request = new String(requestBytes, 0, bytesRead);
         
-        Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(request);
-        if (match.find()) {
-            String key = match.group(1).trim();
+        int keyStart = request.indexOf("Sec-WebSocket-Key: ");
+        if (keyStart != -1) {
+            keyStart += 19;
+            int keyEnd = request.indexOf("\r\n", keyStart);
+            String key = request.substring(keyStart, keyEnd).trim();
             String magic = key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
             byte[] sha1 = MessageDigest.getInstance("SHA-1").digest(magic.getBytes());
             String accept = Base64.getEncoder().encodeToString(sha1);
@@ -94,21 +96,32 @@ public final class DarkWebEditorSocket extends Thread {
                     }
                 }
                 
-                String payload = new String(data);
-                // Payload format: "COMMAND|arg1|arg2|..."
-                String[] parts = payload.split("\\|");
-                if (parts.length > 0 && vault != null) {
+                // Fast Zero-GC parsing replacing String.split
+                String[] parts = new String[10];
+                int partCount = 0;
+                int start = 0;
+                for (int i = 0; i < data.length && partCount < 10; i++) {
+                    if (data[i] == '|') {
+                        parts[partCount++] = new String(data, start, i - start);
+                        start = i + 1;
+                    }
+                }
+                if (start < data.length && partCount < 10) {
+                    parts[partCount++] = new String(data, start, data.length - start);
+                }
+                
+                if (partCount > 0 && vault != null) {
                     try {
                         String cmd = parts[0].toUpperCase();
                         switch (cmd) {
                             case "SET_POS":
-                                if (parts.length >= 3) {
+                                if (partCount >= 3) {
                                     vault.writeInt(DarkStateLayout.PLAYER_X, Integer.parseInt(parts[1]));
                                     vault.writeInt(DarkStateLayout.PLAYER_Y, Integer.parseInt(parts[2]));
                                 }
                                 break;
                             case "SPAWN_LIGHT":
-                                if (parts.length >= 8) {
+                                if (partCount >= 8) {
                                     sv.dark.scene.DarkLightSystem.addPointLight(
                                         Float.parseFloat(parts[1]), Float.parseFloat(parts[2]), Float.parseFloat(parts[3]), // x,y,z
                                         Float.parseFloat(parts[4]), // radius
@@ -125,7 +138,7 @@ public final class DarkWebEditorSocket extends Thread {
                                 break;
                         }
                     } catch (Exception ignore) {
-                        DarkLogger.error("WEB EDITOR", "Failed to parse command: " + payload);
+                        DarkLogger.error("WEB EDITOR", "Failed to parse command");
                     }
                 }
             }

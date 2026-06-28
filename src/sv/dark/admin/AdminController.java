@@ -110,14 +110,49 @@ public final class AdminController {
     }
 
     /**
+     * Escribe un String estático (Ascii puro) al buffer. Zero-GC.
+     */
+    private static int writeAscii(byte[] dest, int offset, String text) {
+        for (int i = 0; i < text.length(); i++) {
+            dest[offset++] = (byte) text.charAt(i);
+        }
+        return offset;
+    }
+
+    /**
+     * Escribe un número entero (long) directamente al buffer en formato ASCII. Zero-GC.
+     */
+    private static int writeLong(byte[] dest, int offset, long value) {
+        if (value == 0) {
+            dest[offset++] = '0';
+            return offset;
+        }
+        if (value < 0) {
+            dest[offset++] = '-';
+            value = -value;
+        }
+        long temp = value;
+        int digits = 0;
+        while (temp > 0) {
+            digits++;
+            temp /= 10;
+        }
+        int idx = offset + digits - 1;
+        while (value > 0) {
+            dest[idx--] = (byte) ('0' + (value % 10));
+            value /= 10;
+        }
+        return offset + digits;
+    }
+
+    /**
      * Administrative Consumer loop.
      * Separates "dirty" logic (String formatting) from the Main Kernel.
      */
     private static void runAdminLoop(sv.dark.kernel.EngineKernel kernel) {
         var adminBus = kernel.getAdminMetricsBus();
-        // [OPTIMIZATION] Pre-allocated StringBuilder for Zero-Garbage JSON construction
-        // We use capacity 2048 to prevent resize with future fields
-        StringBuilder jsonBuilder = new StringBuilder(2048);
+        // [OPTIMIZATION] Pre-allocated byte array for Zero-Garbage JSON construction
+        byte[] jsonBuffer = new byte[2048];
 
         while (true) {
             try {
@@ -135,32 +170,41 @@ public final class AdminController {
                         long headroomNs = sv.dark.kernel.MetricsPacker.unpackHeadroomNs(metric);
 
                         // 1.5 Write beautifully formatted metrics to darkengine_metrics.log
+                        // Note: DarkLogger should eventually become completely Zero-GC too.
                         DarkLogger.info("METRICS", String.format("Frame: %d | Time: %dus | FPS: %d (Target: %d) | Headroom: %.2fms", 
                                         frameCount, timeMicros, actualFps, targetFps, headroomNs / 1_000_000.0));
 
                         // 2. Obtain slow state (Slow-Path safe here)
                         boolean isParallel = kernel.getSystemRegistry().isParallelMode();
                         int systemCount = kernel.getSystemRegistry().getGameSystemCount();
-                        String executionMode = isParallel ? "Parallel" : "Sequential";
-                        String executionOrder = isParallel ? "DAG" : "Linear";
-
-                        // 3. Build JSON (Builder Pattern - AAA+ Compliant)
-                        jsonBuilder.setLength(0);
-                        jsonBuilder.append("{")
-                                .append("\"frameLatency\":").append(frameLatencyNs).append(",")
-                                .append("\"cpuCore\":1,")
-                                .append("\"executionMode\":\"").append(executionMode).append("\",")
-                                .append("\"systems\":").append(systemCount).append(",")
-                                .append("\"executionOrder\":\"").append(executionOrder).append("\",")
-                                .append("\"parallelism\":\"").append(isParallel ? "ON (Automatic)" : "OFF").append("\",")
-                                .append("\"frameCount\":").append(frameCount).append(",")
-                                .append("\"targetFps\":").append(targetFps).append(",")
-                                .append("\"actualFps\":").append(actualFps).append(",")
-                                .append("\"headroomNs\":").append(headroomNs)
-                                .append("}");
+                        
+                        // 3. Build JSON (Zero-GC Byte Writing Pattern - AAA+ Compliant)
+                        int ptr = 0;
+                        ptr = writeAscii(jsonBuffer, ptr, "{\"frameLatency\":");
+                        ptr = writeLong(jsonBuffer, ptr, frameLatencyNs);
+                        ptr = writeAscii(jsonBuffer, ptr, ",\"cpuCore\":1,\"executionMode\":\"");
+                        ptr = writeAscii(jsonBuffer, ptr, isParallel ? "Parallel" : "Sequential");
+                        ptr = writeAscii(jsonBuffer, ptr, "\",\"systems\":");
+                        ptr = writeLong(jsonBuffer, ptr, systemCount);
+                        ptr = writeAscii(jsonBuffer, ptr, ",\"executionOrder\":\"");
+                        ptr = writeAscii(jsonBuffer, ptr, isParallel ? "DAG" : "Linear");
+                        ptr = writeAscii(jsonBuffer, ptr, "\",\"parallelism\":\"");
+                        ptr = writeAscii(jsonBuffer, ptr, isParallel ? "ON (Automatic)" : "OFF");
+                        ptr = writeAscii(jsonBuffer, ptr, "\",\"frameCount\":");
+                        ptr = writeLong(jsonBuffer, ptr, frameCount);
+                        ptr = writeAscii(jsonBuffer, ptr, ",\"targetFps\":");
+                        ptr = writeLong(jsonBuffer, ptr, targetFps);
+                        ptr = writeAscii(jsonBuffer, ptr, ",\"actualFps\":");
+                        ptr = writeLong(jsonBuffer, ptr, actualFps);
+                        ptr = writeAscii(jsonBuffer, ptr, ",\"headroomNs\":");
+                        ptr = writeLong(jsonBuffer, ptr, headroomNs);
+                        ptr = writeAscii(jsonBuffer, ptr, "}");
 
                         // 4. Publish to Atomic Snapshot
-                        updateSnapshot(jsonBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                        // Copy exact length to avoid trailing null bytes
+                        byte[] finalSnapshot = new byte[ptr];
+                        System.arraycopy(jsonBuffer, 0, finalSnapshot, 0, ptr);
+                        updateSnapshot(finalSnapshot);
                     } else {
                         // Not a frame stat, possibly a packed command ID
                         int commandId = sv.dark.bus.DarkSignalPacker.unpackCommandId(metric);
