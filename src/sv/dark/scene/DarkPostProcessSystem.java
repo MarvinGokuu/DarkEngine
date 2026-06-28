@@ -38,6 +38,7 @@ public final class DarkPostProcessSystem {
             computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
             DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
             DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
+            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
             
             DarkLogger.info("GRAPHICS", "Post-Process (ACES HDR + Bloom) Compute Shader compilado.");
 

@@ -6,6 +6,7 @@ package sv.dark.core.systems; // Synchronized with path src/sv/dark/core/systems
 import sv.dark.core.AAACertified;
 
 import sv.dark.state.WorldStateFrame;
+import sv.dark.state.DarkStateLayout;
 
 /**
  * RESPONSIBILITY: Deterministic UI Logic (Credits). Calculate credits scroll positioning deterministically.
@@ -34,8 +35,8 @@ import sv.dark.state.WorldStateFrame;
 public final class CreditsLogic {
 
     // Design constants (Memory offsets within the Frame)
-    private static final long OFFSET_ACTIVE = 1024L;
-    private static final long OFFSET_SCROLL = 1028L;
+    private static final long OFFSET_ACTIVE = DarkStateLayout.UI_CREDITS_ACTIVE;
+    private static final long OFFSET_SCROLL = DarkStateLayout.UI_CREDITS_SCROLL;
 
     /**
      * Updates the position of the credits.

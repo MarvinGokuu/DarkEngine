@@ -11,8 +11,12 @@ layout(std430, binding = 1) readonly buffer PosYBuffer {
     float posY[];
 };
 
+layout(std430, binding = 2) readonly buffer PosZBuffer {
+    float posZ[];
+};
+
 // Buffer de salida
-layout(std430, binding = 2) writeonly buffer VisibilityBuffer {
+layout(std430, binding = 3) writeonly buffer VisibilityBuffer {
     int isVisible[];
 };
 
@@ -21,15 +25,18 @@ const float frustumLeft = -1000.0;
 const float frustumRight = 1000.0;
 const float frustumTop = -1000.0;
 const float frustumBottom = 1000.0;
+const float frustumNear = -1000.0;
+const float frustumFar = 1000.0;
 
 void main() {
     uint index = gl_GlobalInvocationID.x;
     
     float x = posX[index];
     float y = posY[index];
+    float z = posZ[index];
     
     // Culling Matemático (AABB vs Frustum) ejecutado en la GPU
-    if (x >= frustumLeft && x <= frustumRight && y >= frustumTop && y <= frustumBottom) {
+    if (x >= frustumLeft && x <= frustumRight && y >= frustumTop && y <= frustumBottom && z >= frustumNear && z <= frustumFar) {
         isVisible[index] = 1;
     } else {
         isVisible[index] = 0;

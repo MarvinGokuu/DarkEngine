@@ -40,6 +40,13 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glDispatchCompute;
     public static MethodHandle glMemoryBarrier;
     public static MethodHandle glDrawArraysInstanced;
+    public static MethodHandle glDrawElementsInstanced;
+    public static MethodHandle glDrawElementsInstancedBaseVertexBaseInstance;
+
+    // Phase 35+ AZDO
+    public static MethodHandle glBufferStorage;
+    public static MethodHandle glMapBufferRange;
+    public static MethodHandle glUnmapBuffer;
     public static MethodHandle glDeleteBuffers;
 
     // Phase 27 - Deferred Pipeline Bindings
@@ -50,6 +57,7 @@ public final class DarkOpenGLLinker {
     public static MethodHandle glDeleteTextures;
     public static MethodHandle glBindTexture;
     public static MethodHandle glTexImage2D;
+    public static MethodHandle glTexSubImage2D;
     public static MethodHandle glTexImage3D;
     public static MethodHandle glTexParameteri;
     public static MethodHandle glTexParameterfv;
@@ -65,7 +73,9 @@ public final class DarkOpenGLLinker {
     // Phase 27 - Dynamic Uniforms & Bugfixes
     public static MethodHandle glGetUniformLocation;
     public static MethodHandle glUniform3f;
+    public static MethodHandle glUniform2f;
     public static MethodHandle glUniform1f;
+    public static MethodHandle glUniform1ui;
     public static MethodHandle glActiveTexture;
     public static MethodHandle glDrawBuffer;
     public static MethodHandle glReadBuffer;
@@ -99,6 +109,15 @@ public final class DarkOpenGLLinker {
     public static final int GL_DEPTH_COMPONENT = 0x1902;
     public static final int GL_TEXTURE_WRAP_S = 0x2802;
     public static final int GL_TEXTURE_WRAP_T = 0x2803;
+
+    public static final int GL_UNSIGNED_INT = 0x1405;
+    
+    public static final int GL_MAP_READ_BIT = 0x0001;
+    public static final int GL_MAP_WRITE_BIT = 0x0002;
+    public static final int GL_MAP_PERSISTENT_BIT = 0x0040;
+    public static final int GL_MAP_COHERENT_BIT = 0x0080;
+    public static final int GL_DYNAMIC_STORAGE_BIT = 0x0100;
+
     public static final int GL_CLAMP_TO_BORDER = 0x812D;
     public static final int GL_TEXTURE_BORDER_COLOR = 0x1004;
     public static final int GL_DEPTH_ATTACHMENT = 0x8D00;
@@ -134,6 +153,8 @@ public final class DarkOpenGLLinker {
     public static final int GL_TEXTURE1 = 0x84C1;
     public static final int GL_TEXTURE2 = 0x84C2;
     public static final int GL_TEXTURE3 = 0x84C3;
+    public static final int GL_TEXTURE4 = 0x84C4;
+    public static final int GL_TEXTURE5 = 0x84C5;
     public static final int GL_COLOR_ATTACHMENT2 = 0x8CE2;
 
     // Phase 35 Constants
@@ -151,6 +172,7 @@ public final class DarkOpenGLLinker {
     public static final int GL_STREAM_DRAW = 0x88E0;
     public static final int GL_VIEWPORT = 0x0BA2;
     public static final int GL_UNPACK_ROW_LENGTH = 0x0CF2;
+    public static final int GL_PIXEL_UNPACK_BUFFER = 0x88EC;
 
     public static void init() {
         try (Arena arena = Arena.ofConfined()) {
@@ -187,12 +209,20 @@ public final class DarkOpenGLLinker {
             glReadBuffer = bind(arena, "glReadBuffer", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glClear = bind(arena, "glClear", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
             glDrawArraysInstanced = bind(arena, "glDrawArraysInstanced", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            glDrawElementsInstanced = bind(arena, "glDrawElementsInstanced", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+            glDrawElementsInstancedBaseVertexBaseInstance = bind(arena, "glDrawElementsInstancedBaseVertexBaseInstance", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+            
+            // AZDO
+            glBufferStorage = bind(arena, "glBufferStorage", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+            glMapBufferRange = bind(arena, "glMapBufferRange", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
+            glUnmapBuffer = bind(arena, "glUnmapBuffer", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.JAVA_INT));
 
             // Phase 27 - Textures and FBOs
             glGenTextures = bind(arena, "glGenTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glDeleteTextures = bind(arena, "glDeleteTextures", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glBindTexture = bind(arena, "glBindTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glTexImage2D = bind(arena, "glTexImage2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            glTexSubImage2D = bind(arena, "glTexSubImage2D", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glTexParameteri = bind(arena, "glTexParameteri", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             
             glGenFramebuffers = bind(arena, "glGenFramebuffers", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
@@ -207,7 +237,9 @@ public final class DarkOpenGLLinker {
             // Dynamic Uniforms & Bugfixes
             glGetUniformLocation = bind(arena, "glGetUniformLocation", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
             glUniform3f = bind(arena, "glUniform3f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
+            glUniform2f = bind(arena, "glUniform2f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT, ValueLayout.JAVA_FLOAT));
             glUniform1f = bind(arena, "glUniform1f", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_FLOAT));
+            glUniform1ui = bind(arena, "glUniform1ui", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
             glActiveTexture = bind(arena, "glActiveTexture", FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT));
 
             // Phase 35 - ImGui Rendering

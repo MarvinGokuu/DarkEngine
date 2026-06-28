@@ -6,6 +6,7 @@ package sv.dark.core.systems; // Synchronized with path src/sv/dark/core/systems
 import sv.dark.core.AAACertified;
 
 import sv.dark.state.WorldStateFrame;
+import sv.dark.state.DarkStateLayout;
 
 /**
  * RESPONSIBILITY: Apply input commands to the player character's state.
@@ -34,9 +35,9 @@ import sv.dark.state.WorldStateFrame;
 public final class PlayerSystem implements GameSystem {
 
     // Fixed offsets in WorldStateFrame (Direct addressing)
-    private static final long ADDR_POS_X = 1000L;
-    private static final long ADDR_POS_Y = 1008L;
-    private static final long ADDR_INPUT = 1016L;
+    private static final long ADDR_POS_X = DarkStateLayout.LEGACY_PLAYER_X_DOUBLE;
+    private static final long ADDR_POS_Y = DarkStateLayout.LEGACY_PLAYER_Y_DOUBLE;
+    private static final long ADDR_INPUT = DarkStateLayout.LEGACY_PLAYER_INPUT;
 
     // Movement constants (Injected into the hot-path)
     private static final double BASE_VELOCITY = 300.0; // Pixels per second

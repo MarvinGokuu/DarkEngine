@@ -6,6 +6,7 @@ layout(binding = 0) uniform sampler2D albedoTex;
 layout(binding = 1) uniform sampler2D normalTex;
 layout(binding = 2) uniform sampler2D pbrTex;
 layout(binding = 4) uniform sampler2DArray shadowMapArray; // CSM
+layout(binding = 5) uniform sampler2D depthTex; // G-Buffer Depth
 
 layout(rgba16f, binding = 3) writeonly uniform image2D litImage;
 
@@ -20,6 +21,7 @@ uniform vec3 sunDir;
 uniform vec3 sunColor;
 uniform vec3 camPos;
 uniform mat4 viewMatrix;
+uniform mat4 invViewProj; // Reconstruct world pos
 uniform float zNear;
 uniform float zFar;
 
@@ -96,8 +98,15 @@ void main() {
 
     vec3 N = normalize(normal);
     
-    // Aproximación ortográfica de View Vector temporal (Hasta tener Depth Buffer y reconstruir WorldPos)
-    vec3 V = normalize(camPos); 
+    // Depth and World Position Reconstruction
+    float depthVal = texture(depthTex, uv).r;
+    vec4 ndc = vec4(uv * 2.0 - 1.0, depthVal * 2.0 - 1.0, 1.0);
+    vec4 worldPos = invViewProj * ndc;
+    worldPos /= worldPos.w;
+    vec3 FragPosWorld = worldPos.xyz;
+    
+    // View vector based on actual world position
+    vec3 V = normalize(camPos - FragPosWorld); 
     
     vec3 L = normalize(sunDir);
     vec3 H = normalize(V + L);
@@ -107,24 +116,30 @@ void main() {
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
 
-    // Clustered Shading Lookup (Boilerplate)
-    // 1. Calculate FragDepth from Z-Buffer (Assume we have it bound, skipped for brevity)
-    // 2. Find Cluster Index based on FragDepth and Screen X,Y
-    // uint zSlice = uint(max(log2(fragDepth / zNear) * scale + bias, 0.0));
-    // uvec2 cluster = lightGrid[clusterIndex];
-    // for(uint i = 0; i < cluster.y; i++) { 
-    //     uint lightIndex = lightIndices[cluster.x + i]; 
-    //     Light light = lights[lightIndex]; 
-    //     // Add point light radiance...
-    // }
-
-    // CSM Shadow Calculation (Boilerplate)
-    // float shadow = 0.0;
-    // vec4 fragPosLightSpace = lightSpaceMatrices[cascadeIndex] * vec4(FragPosWorld, 1.0);
-    // shadow = texture(shadowMapArray, vec3(fragPosLightSpace.xy, cascadeIndex));
+    // CSM Shadow Calculation
+    float shadow = 0.0;
+    
+    // Select Cascade using camera splits
+    vec4 viewSpacePos = viewMatrix * vec4(FragPosWorld, 1.0);
+    float viewDepth = -viewSpacePos.z;
+    uint cascadeIndex = 0;
+    if (viewDepth > cascadeSplits[1]) cascadeIndex = 2;
+    else if (viewDepth > cascadeSplits[0]) cascadeIndex = 1;
+    
+    vec4 fragPosLightSpace = lightSpaceMatrices[cascadeIndex] * vec4(FragPosWorld, 1.0);
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    
+    // Simple Shadow Test
+    if (projCoords.z < 1.0) {
+        float closestDepth = texture(shadowMapArray, vec3(projCoords.xy, cascadeIndex)).r;
+        if (projCoords.z > closestDepth + 0.005) {
+            shadow = 1.0;
+        }
+    }
 
     // Calcular ecuación de reflectancia (Radiance)
-    vec3 radiance = sunColor; // * (1.0 - shadow);
+    vec3 radiance = sunColor * (1.0 - shadow);
 
     // BRDF Cook-Torrance
     float NDF = DistributionGGX(N, H, roughness);   
@@ -143,6 +158,54 @@ void main() {
     // Cálculo final direccional (N.L)
     float NdotL = max(dot(N, L), 0.0);        
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
+
+    // Clustered Shading Evaluation (Point Lights)
+    float GRID_SIZE_Z = 24.0;
+    float scale = GRID_SIZE_Z / log2(zFar / zNear);
+    float bias = -(GRID_SIZE_Z * log2(zNear) / log2(zFar / zNear));
+    uint zSlice = uint(max(log2(max(viewDepth, 0.0001) / zNear) * scale + bias, 0.0));
+    zSlice = min(zSlice, uint(GRID_SIZE_Z - 1.0));
+    
+    // Cluster X and Y (16x9 grid)
+    uint clusterX = uint(uv.x * 16.0);
+    uint clusterY = uint(uv.y * 9.0);
+    
+    uint clusterIndex = clusterX + (clusterY * 16) + (zSlice * 16 * 9);
+    uvec2 cluster = lightGrid[clusterIndex];
+    
+    for(uint i = 0; i < cluster.y; i++) { 
+        uint lightIndex = lightIndices[cluster.x + i]; 
+        Light light = lights[lightIndex]; 
+        
+        vec3 plPos = light.position_radius.xyz;
+        float radius = light.position_radius.w;
+        vec3 plColor = light.color_intensity.xyz;
+        float intensity = light.color_intensity.w;
+        
+        vec3 plL = normalize(plPos - FragPosWorld);
+        vec3 plH = normalize(V + plL);
+        float distance = length(plPos - FragPosWorld);
+        
+        if (distance < radius) {
+            float attenuation = pow(clamp(1.0 - pow((distance / radius), 4.0), 0.0, 1.0), 2.0) / (distance * distance + 1.0);
+            vec3 plRadiance = plColor * intensity * attenuation;
+            
+            float plNDF = DistributionGGX(N, plH, roughness);   
+            float plG   = GeometrySmith(N, V, plL, roughness);      
+            vec3 plF    = fresnelSchlick(max(dot(plH, V), 0.0), F0);
+            
+            vec3 plNumerator    = plNDF * plG * plF; 
+            float plDenominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, plL), 0.0) + 0.0001;
+            vec3 plSpecular = plNumerator / plDenominator;
+            
+            vec3 plKS = plF;
+            vec3 plKD = vec3(1.0) - plKS;
+            plKD *= 1.0 - metallic;
+            
+            float plNdotL = max(dot(N, plL), 0.0);        
+            Lo += (plKD * albedo / PI + plSpecular) * plRadiance * plNdotL;
+        }
+    }
 
     // Sumar ambiente y oclusión (AO)
     vec3 ambient = ambientLight * albedo * ao;

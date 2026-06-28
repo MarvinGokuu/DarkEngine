@@ -9,11 +9,15 @@ out vec2 TexCoords;
 out vec3 Normal;
 out mat3 TBN;
 
-uniform mat4 model;
+layout(std430, binding = 0) readonly buffer ModelMatrices {
+    mat4 models[];
+};
+
 uniform mat4 view;
 uniform mat4 projection;
 
 void main() {
+    mat4 model = models[gl_InstanceID];
     vec4 worldPos = model * vec4(aPos, 1.0);
     FragPos = worldPos.xyz; 
     TexCoords = aTexCoords;
