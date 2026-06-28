@@ -58,11 +58,11 @@ docs/management/PENDING_TASKS_ARCHIVE.md
 do_commits.ps1
 
 # --- HERRAMIENTAS Y AUDITORIAS INTERNAS (No versionar) ---
-.management/
-.audit_archive/
-.reports/
-.audit_scripts/
-.code-injector/
+tools/internal/.management/
+tools/internal/.audit_archive/
+tools/internal/.reports/
+tools/internal/.audit_scripts/
+tools/internal/.code-injector/
 repomix-output*.xml
 *.repomix
 ceo_semantic_auditor.py
