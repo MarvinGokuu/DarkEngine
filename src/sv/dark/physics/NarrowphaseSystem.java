@@ -83,4 +83,9 @@ public final class NarrowphaseSystem implements GameSystem {
             entityB = grid.getNextEntity(entityB);
         }
     }
+
+    @Override
+    public String[] getDependencies() {
+        return new String[]{"BroadphaseSystem"};
+    }
 }
