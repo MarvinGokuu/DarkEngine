@@ -31,14 +31,15 @@ public final class SectorMemoryVault {
     private static final int PAGE_SIZE;
     
     static {
-        int size = 4096; // Default to 4KB
+        int size = 4096; // Default to 4KB (x86_64 / amd64)
         try {
-            java.lang.reflect.Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            sun.misc.Unsafe unsafe = (sun.misc.Unsafe) f.get(null);
-            size = unsafe.pageSize();
+            String arch = System.getProperty("os.arch").toLowerCase();
+            if (arch.contains("aarch64") || arch.contains("arm")) {
+                // Modern ARM architectures (like Apple Silicon M-series) typically use 16KB pages
+                size = 16384; 
+            }
         } catch (Exception e) {
-            // Fallback to 4KB if Unsafe is completely locked down
+            // Fallback securely to 4KB
         }
         PAGE_SIZE = size;
     }
