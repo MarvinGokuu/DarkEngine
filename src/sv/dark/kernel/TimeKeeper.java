@@ -128,6 +128,9 @@ public final class TimeKeeper {
             // Waking up from AFK/Minimized! Prevent stutter death-spiral.
             resetRingBuffer();
             lastFrameTime = currentFrameTime; // Erase history to prevent massive DeltaTime
+            if (currentMode == EngineMode.GAMING_CVT) {
+                setTargetFps(60); // Instantly restore active FPS instead of stepping up over minutes
+            }
         }
         lastAFKTier = currentAFKTier;
     }

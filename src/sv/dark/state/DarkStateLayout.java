@@ -82,6 +82,15 @@ public final class DarkStateLayout {
     public static final int INPUT_LAST_SIGNAL = 1208; // Slot 302
 
     // -------------------------------------------------------------------------
+    // Slots mapped for legacy systems (PlayerSystem / CreditsLogic)
+    // -------------------------------------------------------------------------
+    public static final int LEGACY_PLAYER_X_DOUBLE = 1000;
+    public static final int LEGACY_PLAYER_Y_DOUBLE = 1008;
+    public static final int LEGACY_PLAYER_INPUT = 1016;
+    public static final int UI_CREDITS_ACTIVE = 1024;
+    public static final int UI_CREDITS_SCROLL = 1028;
+
+    // -------------------------------------------------------------------------
     // Memory Segment Bounds
     // -------------------------------------------------------------------------
 

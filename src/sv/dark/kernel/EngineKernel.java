@@ -43,6 +43,10 @@ import sv.dark.state.WorldStateFrame;
 )
 public final class EngineKernel {
 
+    // Pre-allocated scratch matrix and vector to ensure zero GC in phaseRender()
+    private static final float[] RENDER_LIGHT_MATRIX = new float[16];
+    private static final float[] RENDER_SUN_DIR = {0.5f, 1.0f, 0.5f};
+ 
     // Kernel state
     private volatile boolean running = true;
     private volatile boolean paused = false;
@@ -65,6 +69,9 @@ public final class EngineKernel {
     
     // [ECS PHASE 30] Scene Orchestrator
     private final sv.dark.ecs.DarkScene scene;
+    
+    // [FRAMEGRAPH] Render Dependency Graph
+    private final sv.dark.scene.graph.DarkFrameGraph frameGraph;
 
     // Pre-allocated array for event batching (Zero-Allocation hot path)
     private final long[] eventBatchBuffer = new long[2048];
@@ -125,7 +132,15 @@ public final class EngineKernel {
         // [ECS PHASE 30] Init Scene Orchestrator with default capacity
         // Se usa 50_000 por defecto para no asfixiar el Heap Base en tests de Boot
         this.scene = new sv.dark.ecs.DarkScene(50_000);
-
+        
+        // [FRAMEGRAPH] Initialize Render Graph Nodes
+        this.frameGraph = new sv.dark.scene.graph.DarkFrameGraph();
+        this.frameGraph.addPass(new sv.dark.scene.graph.GridCullingPass());
+        this.frameGraph.addPass(new sv.dark.scene.graph.ShadowPass());
+        this.frameGraph.addPass(new sv.dark.scene.graph.DeferredLightingPass());
+        this.frameGraph.addPass(new sv.dark.scene.graph.PostProcessPass());
+        this.frameGraph.addPass(new sv.dark.scene.graph.FSRPass());
+        this.frameGraph.compile();
         // [NEURONA_048 STEP 3] Admin Metrics Bus (Control Plane)
         // Capacity 1024: ~17 seconds of metrics at 60 FPS
         this.adminMetricsBus = new DarkAtomicBus(1024);
@@ -308,8 +323,8 @@ public final class EngineKernel {
         // Current power saving state
         int powerSavingTier = 0; // 0=Active, 1=SpinWait, 2=LightSleep, 3=DeepHibernation
 
-        // COOPERATIVE INTERRUPTION: Verify only 'running' to avoid JNI call overhead
-        while (running) {
+        // COOPERATIVE INTERRUPTION: Verify only 'running' and interruption to avoid JNI call overhead
+        while (running && !Thread.currentThread().isInterrupted()) {
             // [FFI HOT-PATH] Absolute OS Control. If OS requests close, we obey and shutdown gracefully.
             if (sv.dark.ui.DarkEngineWindow.shouldClose()) {
                 this.running = false;
@@ -362,29 +377,34 @@ public final class EngineKernel {
                         powerSavingTier = 3;
                         sv.dark.ui.EngineStateChannel.STATE.set(sv.dark.ui.EngineStateChannel.STATE_TIER3);
                     }
-                    try {
-                        Thread.sleep(100); // Deep hibernation: 100ms (10 wake-ups/second)
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
+                    if (sv.dark.ui.DarkEngineWindow.getWindowPointer() == null) {
+                        try {
+                            Thread.sleep(100); // Deep hibernation: 100ms (10 wake-ups/second)
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        continue; // Skip systems execution
                     }
-                    continue; // Skip systems execution
 
                 } else if (idleTimeNs > TIER1_THRESHOLD_NS) {
                     // TIER 2: LIGHT SLEEP (10s - 1min)
                     if (powerSavingTier != 2) {
                         powerSavingTier = 2;
                     }
+                    if (sv.dark.ui.DarkEngineWindow.getWindowPointer() == null) {
                         LockSupport.parkNanos(1_000_000); // Light sleep: 1ms (native)
-                    continue; // Skip systems execution
+                        continue; // Skip systems execution
+                    }
 
                 } else if (idleTimeNs > 0) {
                     // TIER 1: SPIN WAIT (0 - 10s)
                     if (powerSavingTier != 1) {
                         powerSavingTier = 1;
                     }
-                    Thread.onSpinWait(); // CPU Hint: release resources without sleeping
-                    // DO NOT continue: keep executing systems in Tier 1
+                    if (sv.dark.ui.DarkEngineWindow.getWindowPointer() == null) {
+                        Thread.onSpinWait(); // CPU Hint: release resources without sleeping
+                    }
                 }
             }
 
@@ -436,10 +456,7 @@ public final class EngineKernel {
                 ParallelSystemExecutor executor = systemRegistry.getParallelExecutor();
                 if (executor != null) {
                     MetricsCollector.aggregateMetrics(
-                            executor.getMovementSystem(),
-                            executor.getRenderSystem(),
                             executor.getPhysicsSystem(),
-                            executor.getAudioSystem(),
                             adminMetricsBus,
                             pooledFrameMetrics);
                 }
@@ -571,37 +588,11 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
-        // 1.5 Geometry Pass (Deferred) -> (Will be called from ECS RenderSystem)
-        // Here we assume G-Buffer is already filled by ECS loop.
-        
-        // 1.6 Clustered Deferred Shading (Grid & Culling)
-        float[] viewMatrix = new float[16];
-        float[] projMatrix = new float[16];
-        sv.dark.math.DarkMath.identity(viewMatrix); // TODO: Sync from camera ECS
-        sv.dark.math.DarkMath.identity(projMatrix); // TODO: Sync from camera ECS
-        sv.dark.scene.DarkClusteredSystem.dispatchGrid(projMatrix, viewMatrix);
-        
-        sv.dark.scene.DarkLightSystem.syncToGPU();
-        sv.dark.scene.DarkClusteredSystem.dispatchCulling(viewMatrix);
-        
-        // 1.7 Cascaded Shadow Mapping (CSM)
-        float[] sunDir = {0.5f, 1.0f, 0.5f};
-        float[] lightMatrix = new float[16];
-        for (int i = 0; i < sv.dark.scene.DarkShadowSystem.CASCADE_COUNT; i++) {
-            sv.dark.scene.DarkShadowSystem.calculateCascadeMatrix(i, viewMatrix, (float)Math.toRadians(60), 16f/9f, 0.1f, 1000f, sunDir, lightMatrix);
-            sv.dark.scene.DarkShadowSystem.beginShadowPass(i, lightMatrix);
-            // ECS Geometry would be rendered here for shadows
-            sv.dark.scene.DarkShadowSystem.endShadowPass();
-        }
+        float[] viewMatrix = sv.dark.scene.DarkCameraState.VIEW_MATRIX;
+        float[] projMatrix = sv.dark.scene.DarkCameraState.PROJ_MATRIX;
 
-        // 2. Dispatch Lighting Compute Shader (Translates G-Buffer to Lit Texture)
-        sv.dark.scene.DarkDeferredLightingSystem.dispatchLighting();
-
-        // 3. Dispatch Post-Processing Compute Shader (Bloom & ACES ToneMapping on Lit Texture)
-        sv.dark.scene.DarkPostProcessSystem.dispatchPostProcess();
-
-        // 4. Dispatch FSR Upscale Compute Shader (Translates Lit 720p to Presentation 4K)
-        sv.dark.scene.DarkFSRSystem.dispatchFSR();
+        // Dispatch FrameGraph (Data-Driven execution of rendering passes)
+        frameGraph.execute(viewMatrix, projMatrix);
 
         try {
             if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
@@ -609,7 +600,10 @@ public final class EngineKernel {
                 imgui.ImGui.newFrame();
                 // [REMOVED] DarkProfiler call
                 imgui.ImGui.render();
-                sv.dark.ui.DarkImGuiRenderer.renderDrawData(imgui.ImGui.getDrawData());
+                imgui.ImDrawData drawData = imgui.ImGui.getDrawData();
+                if (drawData != null) {
+                    sv.dark.ui.DarkImGuiRenderer.renderDrawData(drawData);
+                }
             }
         } catch (Throwable t) {
             sv.dark.core.DarkLogger.error("IMGUI", "Native exception rendering ImGui: " + t.getMessage());
@@ -618,6 +612,8 @@ public final class EngineKernel {
         // Swap buffers to display the frame
         if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
             try {
+                // Clear default framebuffer to pitch black (hacker style base)
+                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
                 sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
             } catch (Throwable t) {
                 sv.dark.core.DarkLogger.error("GRAPHICS", "Native panic during glfwSwapBuffers: " + t.getMessage());
@@ -781,6 +777,9 @@ public final class EngineKernel {
             sv.dark.scene.DarkDeferredPipeline.destroy();
             sv.dark.scene.DarkComputeCullingSystem.destroy();
             sv.dark.scene.DarkDeferredLightingSystem.destroy();
+            sv.dark.scene.DarkLightSystem.destroy();
+            sv.dark.scene.DarkClusteredSystem.destroy();
+            sv.dark.scene.DarkShadowSystem.destroy();
             sv.dark.scene.DarkPostProcessSystem.destroy();
             sv.dark.scene.DarkFSRSystem.destroy();
             sv.dark.ui.DarkImGuiRenderer.destroy();

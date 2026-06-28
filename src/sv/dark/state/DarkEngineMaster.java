@@ -127,8 +127,10 @@ public final class DarkEngineMaster {
         sv.dark.net.DarkNetworkClient[] netClients = new sv.dark.net.DarkNetworkClient[]{ netClient };
         registry.registerGameSystem(new sv.dark.net.NetworkReplicationSystem(netClients, kernel.getScene()));
 
-        // Finalize Dependency Graph
+        // [FASE 4] Activa el DAG Mode: dispatch elástico sin barreras de layer.
+        // Cada sistema se despacha individualmente en cuanto sus dependencias atómicas
+        // se satisfacen — 100% CPU core utilization, sin idle time entre layers.
         registry.buildDependencyGraph();
-        registry.setParallelMode(true);
+        registry.enableDAGMode();
     }
 }
