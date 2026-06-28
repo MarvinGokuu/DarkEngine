@@ -26,6 +26,10 @@ public class ElasticCollisionTest {
         int maxEntities = 50_000;
         float cellSize = 10.0f;
         
+        System.out.println("[TEST] Initializing GPU Context for Broadphase...");
+        sv.dark.ui.DarkEngineWindow.initNativeWindow();
+        sv.dark.core.systems.DarkOpenGLLinker.init();
+
         System.out.println("[TEST] Initializing off-heap physics pipelines...");
         DarkScene scene = new DarkScene(maxEntities);
         DarkTransformSoA tSoa = scene.getSoA();
