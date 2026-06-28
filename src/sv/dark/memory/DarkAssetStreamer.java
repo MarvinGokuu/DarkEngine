@@ -7,6 +7,8 @@ import java.io.RandomAccessFile;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * RESPONSIBILITY: Stream binary assets directly to VRAM/RAM without parsing.
@@ -54,5 +56,26 @@ public class DarkAssetStreamer {
             DarkLogger.error("STREAMER", "Failed to stream asset: " + assetPath);
             return null;
         }
+    }
+
+    /**
+     * Asynchronously streams an asset from Disk -> RAM -> PBO without blocking the main thread.
+     * Uses ForkJoinPool for I/O and Zero-GC operations.
+     * 
+     * @param assetPath The path to the compiled .darkasset
+     * @param arena The memory arena to bind the lifecycle to
+     * @param pboOffset The offset in the DarkGPUStreamer PBO to stage the payload
+     * @param onComplete Callback executed when the payload is successfully staged in the PBO
+     */
+    public static void streamAssetAsync(String assetPath, Arena arena, long pboOffset, Consumer<DarkAsset> onComplete) {
+        CompletableFuture.supplyAsync(() -> {
+            return streamAsset(assetPath, arena);
+        }).thenAccept(asset -> {
+            if (asset != null) {
+                // Stage directly into the GPU PBO from the Background Thread
+                DarkGPUStreamer.stageAssetPayload(asset, pboOffset);
+                onComplete.accept(asset);
+            }
+        });
     }
 }
