@@ -49,3 +49,9 @@ Este glosario consolida la terminología técnica exclusiva de DarkEngine. Para 
 **VarHandle**: Primitiva de la JVM que provee acceso atómico relajado o estricto (`Compare-And-Swap`, `getOpaque`, `setVolatile`) a posiciones de memoria o campos de clase de forma mucho más barata que un bloque `synchronized`.
 
 **VRAM (Video RAM)**: Memoria interna de la tarjeta gráfica, que cuenta con anchos de banda masivos (>500 GB/s) comparado con la RAM del sistema. El motor transfiere carga matemática pesada aquí para desatascar la CPU.
+
+## Z
+**Zero-Copy I/O**: Lectura de disco masiva (DirectStorage / `io_uring`) que mapea el disco NVMe directamente a la VRAM saltando el Kernel y el Heap.
+
+---
+*(Términos Futuros del Master Roadmap: **LWC** (Large World Coordinates, precisión en double 64-bit), **DAG** (Directed Acyclic Graph para manejo de hilos elásticos), **TDR Recovery** (Recuperación en caliente ante crasheos del driver de GPU sin cerrar el motor)).*

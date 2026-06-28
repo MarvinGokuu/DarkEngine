@@ -7,7 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.3.1] - 2026-06-28
+
+### Architecture (Zero-GC and Lock-Free Integrity)
+
+#### 🟢 MPMC Ring Buffer Livelock Erradicated
+- **`DarkTaskDispatcher.enqueue() / dequeue()`**: Fixed a critical race condition where consumers could infinitely spin-lock if a producer was preempted. Fully implemented Dmitry Vyukov's Bounded MPMC Ring Buffer algorithm using an `AtomicInteger[]` sequence array as a publication fence. This guarantees true Lock-Free task dispatching.
+- **`DarkTaskDispatcher.wakeOneWorker()`**: Replaced the static wake of `worker[0]` with a round-robin `nextWakeIdx.getAndIncrement()` mapped via `Math.floorMod()`. This prevents thread starvation and safely handles `Integer.MIN_VALUE` overflow at 13.7 days of uptime.
+
+#### 🟢 Zero-GC Telemetry Achieved
+- **`DarkMetricsServer.java`**: Eradicated all `String` concatenations and per-request `ByteBuffer` allocations from the NIO Hot-Path. HTTP headers are now pre-compiled `byte[]` arrays. The `Content-Length` integer is parsed directly into ASCII bytes using a `ThreadLocal<byte[]>` scratchpad, reducing GC allocations per network request strictly to zero.
+
+#### 🟢 CSM Matrix Corruption and GC Leak Fixed
+- **`DarkMath.inverse()`**: Implemented an Alias-Safe Snapshot by copying the 16 input matrix elements into JVM local stack variables before writing to the output array. This fixes the mathematical corruption when calling `inverse(buf, buf)` in-place for CSM calculations.
+- **`DarkShadowSystem.calculateCascadeMatrix()`**: Promoted the local `ndcBox` array to a `private static final float[] NDC_BOX` constant, immediately eliminating 180 heap allocations per second (3 cascades × 60 fps).
+
+---
+
+## [4.3.0] - 2026-06-28
+
+### Stable Loop, Power Management, and Thread Parking Optimization (Fase 31+)
+
+#### 🟢 CPU Saturation Resolution (Thread Parking in Parallel System Executor)
+- **`ParallelSystemExecutor.WorkerThread`**: Replaced the continuous busy-spin loop (`Thread.onSpinWait()`) with **`LockSupport.park()`** and **`LockSupport.unpark()`**. Worker threads now consume **0% CPU** while idle, and are woken up instantly by the dispatcher thread. This reduces idle CPU usage from 100% (pinning all 4 cores on user's i5) to near-zero.
+- **`ParallelSystemExecutor.shutdown()`**: Unparks threads to allow clean termination.
+
+#### 🟢 Window unresponsive (No responde) and Freeze Fixes
+- **`EngineKernel.java`**: Bypass the secondary power-saving sleep (`Thread.sleep(100)`) and park (`LockSupport.parkNanos(1_000_000)`) logic when in windowed/graphics mode (`DarkEngineWindow.getWindowPointer() != null`). The main graphics loop pacing is now delegated solely to `TimeKeeper`, preventing double-sleeping and ensuring that the window event loop remains 100% active, preventing the Windows "(No responde)" overlay.
+- **`TimeKeeper.java`**: Instantly reset target FPS back to 60 when waking up / restoring from a minimized/AFK state (`currentAFKTier < lastAFKTier`). This prevents the adaptive CVT algorithm from taking minutes to step-up back to 60 FPS (which previously froze the window and triggered Windows "Not responding" warnings).
+- **`EngineKernel.runMainLoop()`**: Added cooperative thread interruption check (`!Thread.currentThread().isInterrupted()`) to the main loop check, allowing clean exit and proper resource reclamation during test interrupts.
+
+#### 🟢 Native ImGui Boot Bootstrap Crash Fix
+- **`DarkImGuiRenderer.renderDrawData()`**: Added a null check for `ImDrawData` to prevent a `NullPointerException` during the initial launch frames when ImGui is still bootstrapping.
+- **`EngineKernel.java`**: Captured `ImGui.getDrawData()` in a local variable and added a null check before calling `renderDrawData()`.
+
+### Architecture (Zero-GC Hot-Path — Phase Cero / Fase 29+ Wiring)
+
+#### 🔴 Zero-GC Violations Erradicated (7 crímenes cerrados)
+- **`DarkRenderScratchpad` (NUEVO)**: Frame Scratchpad con `MemorySegment`s pre-alocados (64B, 192B, 12B, 4B) para uploads de matrices/vectores a la GPU. Implementa el patrón Frame Linear Allocator de Unreal Engine 5 / RAGE en Java/Panama.
+- **`DarkGeometrySystem.beginPass()` y `setModelMatrix()`**: Eliminados los `Arena.ofConfined()` por frame. Con 1000 entidades, esto cerraba 120,000 `mmap/munmap` syscalls/segundo al SO. Ahora: 0 syscalls. Usa `DarkRenderScratchpad.MATRIX_64B`.
+- **`DarkShadowSystem.beginShadowPass()` y `setModelMatrix()`**: Ídem, más la corrección de `calculateCascadeMatrix()` que creaba `new float[16]` × 2 por cascade. Eliminados. Ahora reutiliza los campos estáticos pre-alocados `tempLightOrtho`, `tempCamInverse` de la misma clase.
+- **`DarkClusteredSystem.dispatchGrid()`**: Eliminado `new float[16]` (heap) + `Arena.ofConfined()`. Reemplazado por `SCRATCH_INV_PROJ` (campo estático) + `DarkRenderScratchpad`.
+- **`DarkClusteredSystem.dispatchCulling()`**: Eliminados 2 `Arena.ofConfined()` (atomic counter reset + viewMatrix upload). Reemplazados por `DarkRenderScratchpad.INT_4B` y `DarkRenderScratchpad.MATRIX_64B`.
+- **`EngineKernel.phaseRender()`**: Eliminados `final float[] sunDir` y `final float[] cascadeMatrix` locales al 60 FPS loop. Promovidos a `static final` de la clase (`RENDER_SUN_DIR`, `RENDER_SUN_COLOR`, `RENDER_CASCADE_MAT`).
+- **`DarkDeferredLightingSystem.setEnvironment()`**: Eliminados `new float[]{}` inline que se pasaban como argumentos desde `phaseRender()`. Sustituidos por los campos estáticos `RENDER_SUN_DIR`, `RENDER_SUN_COLOR`.
+
+#### 🔴 Silent Exception Suppression Erradicated
+- **`ParallelSystemExecutor.WorkerThread.run()`**: El `catch(Exception e) { // Suppressed }` fue reemplazado por `DarkLogger.error()` asíncrono (zero-blocking). Los fallos de Game Systems ahora son diagnosticables.
+- **`ParallelSystemExecutor.executeLayer()` (mono-thread path)**: Mismo fix. Errores visibles en logs sin bloquear el hot-path.
+
+#### 🟢 Render Pipeline Wiring (Deferred Pipeline 100% Operativo)
+- **`DarkCameraState` (NUEVO)**: Registro central de matrices de cámara (VIEW, PROJ, CAMERA_POS, FOV_Y, ASPECT, Z_NEAR, Z_FAR). Pre-alocado, Zero-GC. Inicializado con valores estables (identity view + perspective 60°).
+- **`DarkEngineWindow.initNativeWindow()`**: Activados todos los inits del pipeline de renderizado que estaban comentados `// Removed for stability test`. Orden: `DarkDeferredPipeline → DarkGeometrySystem → DarkShadowSystem → DarkLightSystem → DarkClusteredSystem → DarkDeferredLightingSystem → DarkPostProcessSystem → DarkFSRSystem`.
+- **`EngineKernel.phaseRender()`**: Reemplazada la implementación vacía. Ahora orquesta el pipeline completo en 9 pasos con orden de dependencias correcto:
+  1. CSM Shadow Pass (3 cascades, frustum-centered)
+  2. Geometry Pass (G-Buffer population)
+  3. Clustered Grid + Light Culling Compute
+  4. Light SSBO CPU→GPU Sync
+  5. Deferred Lighting PBR Compute
+  6. Post-Process (ACES Tonemapping)
+  7. FSR 1.0 Upscale (720p → Target)
+  8. ImGui Overlay
+  9. glfwSwapBuffers
+
+#### 🟡 CSM Frustum Center Correctness (Fix Parcial)
+- **`DarkShadowSystem.calculateCascadeMatrix()`**: Corregido el `centerX/Y/Z = 0.0f` hardcodeado (sombras siempre centradas en el origen del mundo). Ahora usa la posición de la cámara extraída de la matriz view (`camView[2,6,10]`) proyectada al centro de la sub-frustum de cada cascade. Marcado TODO Phase 36 para upgrade completo con 8-corner inverse transform.
+
+#### 🔵 Verified
+- `build.bat` compila con cero errores: `[OK] AAA+ Compiled.`
+
 ## [4.2.0] - 2026-06-27
+
 
 ### Architecture (Mechanical Sympathy AAA+)
 - **Zero-GC Kernel & Lock-Free Bus (Hot-Path)**:

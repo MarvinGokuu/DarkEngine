@@ -25,13 +25,15 @@ Para interactuar con la memoria y la CPU sin intermediarios:
 2. **Foreign Function & Memory API (Panama)**: Permite invocar funciones nativas de C/C++ directamente desde Java (`Downcalls`). El motor utiliza esto en `ThreadPinning` y `SystemStateManager` para saltarse la Máquina Virtual.
 3. **Zero-Contention Latch (Shadow Buffer)**: Para evitar colisiones (`Locks`) entre los callbacks asíncronos de Interfaz (GLFW/ImGui) y el hilo principal del Juego, el estado del teclado/ratón se captura en un "Shadow Buffer" nativo paralelo. Terminando el barrido, se hace una transferencia SIMD vectorial (`MemorySegment.copy()`) masiva e instantánea al Vault de memoria principal. Input Lag = 0ms.
 
-## Thread Pinning y Afinidad Física
+## Thread Pinning y Afinidad Física (Hacia el Grafo DAG)
 
 Si un hilo es movido de un núcleo de CPU a otro por el Sistema Operativo, todas las memorias Caché (L1/L2) locales a ese núcleo quedan inválidas (Cache Miss), resultando en accesos lentos a la RAM principal.
 
 El motor soluciona esto fijando (Pinning) hilos específicos a núcleos físicos de la CPU mediante:
 - **Windows**: Llamada a `SetThreadAffinityMask` de `kernel32.dll`.
 - **Linux/POSIX**: Llamada a `pthread_setaffinity_np` de `libpthread.so` / `libc.so`.
+
+**Evolución Arquitectónica (Master Roadmap):** Para maximizar la simpatía mecánica de estos hilos fijos, el motor migrará de barreras estáticas globales a un **Directed Acyclic Task Graph (DAG)**. Los hilos nunca esperarán ociosos; al terminar una micro-tarea, desbloquearán atómicamente a las dependientes, saturando los núcleos al 100% sin pausas (Zero-Stall).
 
 ## Prevención de False Sharing
 

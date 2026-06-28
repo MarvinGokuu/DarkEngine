@@ -24,6 +24,7 @@ Cuando el creador arrastra y suelta un archivo a la ventana GLFW, este compilado
 ### 2.2. Zero-Copy Streaming (DarkAssetStreamer)
 Cuando el motor necesita el asset, **nunca** crea un objeto en Java. Utiliza `java.nio.channels.FileChannel.map` acoplado a un `MemorySegment` de *Project Panama*.
 - El sistema operativo mapea el archivo físico del disco NVMe directamente a la memoria virtual del proceso (Direct Memory Access).
+- **GPU AZDO Streaming (`DarkGPUStreamer`):** Los assets mapeados saltan directamente a un *Pixel Unpack Buffer (PBO)* de 64MB, alojado de forma persistente (`GL_MAP_PERSISTENT_BIT`). Se implementó AZDO (*Approaching Zero Driver Overhead*) para inyectar payloads directo al bus DMA de la GPU, evadiendo completamente RAM y drivers del OS.
 - El Streamer realiza una validación ultra rápida de la firma de metadatos de los primeros 9 bytes, y posteriormente aplica un `MemorySegment.asSlice(9)` para aislar el *Payload* gráfico.
 - El motor envía a la tarjeta gráfica (VRAM) **exclusivamente** el segmento cortado, evitando corromper texturas y modelos con metadatos ajenos.
 - Cero recolección de basura, carga instantánea y cero uso de CPU para parsear bytes.

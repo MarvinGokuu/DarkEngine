@@ -49,6 +49,8 @@ Este repositorio mantiene su conocimiento arquitectónico consolidado en **10 Ar
 8. `07_GLOSSARY.md`: Diccionario técnico de términos.
 9. `08_NATIVE_GRAPHICS_FFI.md`: Integración de Project Panama con GLFW e ImGui (Zero-GC Render).
 10. `09_ASSET_COMPILER_STREAMING.md`: La técnica Zero-Copy para carga de modelos pesados eludiendo a Java.
+11. `audit_archive/DARKENGINE_MASTER_ROADMAP.md`: **Manifiesto Arquitectónico y Roadmap Oficial** (Single Source of Truth).
+12. `audit_archive/REPORTE_CEO_CRITICA_ABSOLUTA.md`: Crítica brutal de diseño y deudas técnicas a resolver.
 
 ---
 

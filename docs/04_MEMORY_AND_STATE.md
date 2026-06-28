@@ -12,7 +12,8 @@ En **DarkEngine**, evitamos el Heap en toda nuestra vía crítica. Usar el Heap 
 1. **Arena Allocation**: Utiliza la Foreign Function & Memory API (`Arena.ofShared()`) para solicitar un bloque contiguo y gigantesco de memoria al sistema operativo.
 2. **MemorySegments**: Trata este bloque como un `MemorySegment`, lo cual es el equivalente en C a un bloque de memoria obtenido por `malloc()`.
 3. **Mapeo Dimensional (SoA)**: En lugar de crear un objeto por cada entidad del juego (Ej. 100,000 Objetos de Partícula), almacena 100,000 valores `X`, 100,000 valores `Y`, y 100,000 banderas de estado de forma contigua. Esto permite un recorrido secuencial que la Caché L1 del procesador prefiere (Data Locality).
-4. **Shader Storage Buffer Objects (SSBO)**: Dado que nuestros MemorySegments son contiguos, pueden enviarse íntegros y en crudo a la VRAM mediante enlaces de OpenGL FFI. Al llegar a la GPU, se convierten en SSBOs y alimentan instantáneamente los Compute Shaders sin necesidad de serialización.
+4. **Large World Coordinates (LWC)**: Según el Roadmap Maestro, las coordenadas `X/Y/Z` migrarán de `float` (32-bit) a `double` (64-bit) en estos segmentos de memoria cruda, garantizando un mundo abierto sin "Vertex Jitter", para luego restarse asíncronamente frente a la cámara enviando floats a la GPU.
+5. **Shader Storage Buffer Objects (SSBO)**: Dado que nuestros MemorySegments son contiguos, pueden enviarse íntegros y en crudo a la VRAM mediante enlaces de OpenGL FFI. Al llegar a la GPU, se convierten en SSBOs y alimentan instantáneamente los Compute Shaders sin necesidad de serialización.
 
 ## EngineStateChannel (Canalización de Estado)
 

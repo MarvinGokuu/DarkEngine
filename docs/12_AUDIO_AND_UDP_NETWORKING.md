@@ -5,7 +5,7 @@ El motor Dark Engine no delega funciones críticas a librerías de Java pesadas 
 ## Motor de Audio HRTF (OpenAL Soft)
 Se enlazó la librería nativa de C **OpenAL Soft** mediante *Project Panama* (Foreign Function & Memory API).
 - **DarkAudioSourceSoA**: Asigna de forma estática 1024 fuentes de sonido simultáneas en memoria Off-Heap.
-- **Sincronización Física**: Durante el Main Loop, el motor lee las posiciones espaciales de la ECS (Entity Component System) y las inyecta crudas a OpenAL mediante la llamada a sistema de C (`alSource3f`). 
+- **Sincronización Física y DAG (Roadmap)**: Durante el Main Loop, el motor lee las posiciones espaciales de la ECS (Entity Component System) y las inyecta crudas a OpenAL mediante la llamada a sistema de C (`alSource3f`). En el futuro, el *Task Graph (DAG)* agendará la computación de audio espacial estricta dependiente del fin del cálculo de Oclusión por Geometría.
 - **HRTF y Doppler**: Esto habilita sonido binaural tridimensional auténtico, reverberación de entorno (EFX) y efecto Doppler por velocidad sin crear un solo objeto Java.
 
 ## Servidor Autoritario Zero-Allocation (UDP)

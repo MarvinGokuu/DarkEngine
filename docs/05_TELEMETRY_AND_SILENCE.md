@@ -9,6 +9,8 @@ El clásico `System.out.println` o `printf` realiza una llamada de I/O bloqueant
 En producción, la terminal del DarkEngine debe permanecer limpia tras el arranque. 
 Cualquier mensaje, latido, error, o advertencia se deriva al sistema de telemetría asíncrono para asegurar que la vía principal (Hot-Path) del motor jamás experimente Input Lag o caídas de cuadros.
 
+**Directiva de Telemetría Zero-GC Implementada:** `DarkMetricsServer` opera mediante un Gateway NIO asíncrono puro (`AsynchronousServerSocketChannel`). El tráfico HTTP elude completamente las clases tradicionales de Java. Emplea búferes pre-asignados y un *scratchpad* `ThreadLocal<byte[]>` para traducir los dígitos de `Content-Length` directo a ASCII en la memoria nativa, garantizando cero (`0`) alojamientos en el Heap por cada *request* de red procesado.
+
 ## DarkLogger: Telemetría Off-Path
 
 El `DarkLogger` es el recolector central de datos de telemetría y diagnósticos.

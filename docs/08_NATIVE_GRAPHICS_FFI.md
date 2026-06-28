@@ -24,5 +24,7 @@ A través de `DarkImGuiLinker`, conectamos la librería `cimgui.dll` sin utiliza
 - El motor simplemente inyecta comandos de dibujado atómicos.
 - **Zero-GC**: No instanciamos botones ni paneles en el Heap de Java.
 
-## Futuro (Fase 21% y 27%)
+## Futuro (Fase 21% y 27%, Roadmap TDR)
 El chasis actual provee el contexto OpenGL. En futuras fases, el motor usará este mismo puente FFI para inyectar recursos binarios pre-compilados (`.darkasset`) directamente a la GPU, y utilizará Compute Shaders para el renderizado masivo diferido (Deferred Pipeline).
+
+**Resiliencia TDR (Roadmap):** Se requerirá utilizar puentes FFI hacia extensiones como `GL_ARB_robustness` para detectar si el driver de video crashea (TDR - Timeout Detection and Recovery) por exceso de Compute Shaders. El motor deberá pausar silenciosamente, recrear el contexto gráfico en C++, recargar los SSBOs y resumir el juego sin destruir la sesión de JVM del usuario.

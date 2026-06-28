@@ -19,3 +19,6 @@ En Dark Engine:
 3. **GPU Skinning**: El Compute Shader de animación (`skinning.comp`) lee estas matrices y deforma la malla de polígonos asíncronamente justo antes de dibujarla, ahorrándole a la CPU millones de multiplicaciones matriciales por milisegundo.
 
 > **Contrato de Integridad (VRAM Leak Prevention):** Todos los sistemas que invocan Compute Shaders implementan el método `destroy()` para ejecutar `glDeleteProgram` y `glDeleteBuffers` durante el apagado del Kernel. Omitir esto condenaría a la tarjeta gráfica a mantener programas huérfanos, drenando la memoria de video hasta forzar un crash (OOM) en el driver.
+
+## Spatial Hashing por GPU (Phase 3+)
+El motor delega el cálculo espacial completo (Broadphase) a la tarjeta gráfica. `SpatialHashGrid` inicializa Buffers Estructurados de Shader (SSBOs) y despacha un algoritmo atómico en VRAM (`radix_sort.comp` interactuando vía `atomicExchange`) ordenando hasta 100,000 entidades espacialmente en milisegundos, erradicando el cuello de botella tradicional de colisión en la CPU.
