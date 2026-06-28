@@ -25,6 +25,10 @@ public class SpatialHashGridTest {
         int gridHeight = 100;
         float cellSize = 10.0f;
 
+        System.out.println("[TEST] Initializing GPU Context for Broadphase...");
+        sv.dark.ui.DarkEngineWindow.initNativeWindow();
+        sv.dark.core.systems.DarkOpenGLLinker.init();
+
         System.out.println("[TEST] Allocating off-heap arrays for " + maxEntities + " entities...");
         DarkTransformSoA soa = new DarkTransformSoA(maxEntities);
         SpatialHashGrid grid = new SpatialHashGrid(maxEntities, cellSize, gridWidth, gridHeight);
