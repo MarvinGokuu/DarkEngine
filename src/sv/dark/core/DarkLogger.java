@@ -97,7 +97,9 @@ public final class DarkLogger {
         String formatted = formatMessage("FATAL", component, message);
         if (errorsWriter != null) {
             errorsWriter.println(formatted);
-            t.printStackTrace(errorsWriter);
+            if (t != null) {
+                t.printStackTrace(errorsWriter);
+            }
         }
         errorCount++;
         System.exit(1);

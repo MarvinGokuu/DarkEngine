@@ -11,6 +11,8 @@ import sv.dark.state.WorldStateFrame;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 /**
  * RESPONSIBILITY: Lock-Free DAG Task Dispatcher — the Cerebro AAA of DarkEngine.
@@ -114,9 +116,10 @@ public final class DarkTaskDispatcher {
      * Invariant: sequences[i] == producerHead when slot i is free to write.
      *            sequences[i] == producerHead + 1 when slot i has unread data.
      *            sequences[i] == consumerHead + CAPACITY when slot i was read and is free.
-     * WHY AtomicInteger[]: ensures visibility across threads without volatile array reads.
+     * WHY int[] + VarHandle: guarantees 64-byte Stride alignment (Zero False Sharing) and sub-ns RAM access.
      */
-    private final AtomicInteger[] sequences;
+    private final int[] sequences;
+    private static final VarHandle SEQ_H = MethodHandles.arrayElementVarHandle(int[].class);
 
     /** Next slot index to claim for writing (producer side). Unbounded counter. */
     private final AtomicInteger producerHead = new AtomicInteger(0);
@@ -211,9 +214,10 @@ public final class DarkTaskDispatcher {
 
         // Initialize Vyukov sequence array: sequences[i] starts at i
         // (signals: slot i is free and ready to be claimed by a producer at pos=i)
-        this.sequences = new AtomicInteger[QUEUE_CAPACITY];
+        // 64-Byte Stride (16 ints = 64 bytes) to completely evade False Sharing on L1 Cache Lines.
+        this.sequences = new int[QUEUE_CAPACITY * 16];
         for (int i = 0; i < QUEUE_CAPACITY; i++) {
-            sequences[i] = new AtomicInteger(i);
+            this.sequences[i * 16] = i;
         }
 
         // Spawn worker threads: (cores - 1) so the main thread remains available for rendering.
@@ -380,7 +384,7 @@ public final class DarkTaskDispatcher {
         while (true) {
             int pos  = producerHead.get();
             int slot = pos & QUEUE_MASK;
-            int seq  = sequences[slot].get();
+            int seq  = (int) SEQ_H.getVolatile(sequences, slot * 16);
             int diff = seq - pos;
 
             if (diff == 0) {
@@ -388,7 +392,7 @@ public final class DarkTaskDispatcher {
                 if (producerHead.compareAndSet(pos, pos + 1)) {
                     // CAS won: write data first, then publish via sequence.
                     queue[slot] = node;
-                    sequences[slot].set(pos + 1); // PUBLICATION FENCE: consumers can now read
+                    SEQ_H.setVolatile(sequences, slot * 16, pos + 1); // PUBLICATION FENCE: consumers can now read
                     return;
                 }
                 // CAS lost to another producer — retry from top.
@@ -424,7 +428,7 @@ public final class DarkTaskDispatcher {
         while (true) {
             int pos  = consumerHead.get();
             int slot = pos & QUEUE_MASK;
-            int seq  = sequences[slot].get();
+            int seq  = (int) SEQ_H.getVolatile(sequences, slot * 16);
             int diff = seq - (pos + 1);
 
             if (diff == 0) {
@@ -432,7 +436,7 @@ public final class DarkTaskDispatcher {
                 if (consumerHead.compareAndSet(pos, pos + 1)) {
                     DarkTaskNode node = queue[slot];
                     queue[slot] = null;                         // Help GC (defensive)
-                    sequences[slot].set(pos + QUEUE_CAPACITY); // Free slot for next cycle
+                    SEQ_H.setVolatile(sequences, slot * 16, pos + QUEUE_CAPACITY); // Free slot for next cycle
                     return node;
                 }
                 // CAS lost to another consumer — retry.
