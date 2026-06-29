@@ -10,13 +10,34 @@ echo  DARK ENGINE - AAA+ TEST SUITE EXECUTOR
 echo ==============================================
 echo.
 
-echo [TEST] Compiling dependencies...
+echo [TEST] Compiling dependencies (Kernel)...
 call build.bat
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Build failed. Cannot run tests.
     type compile.log
     exit /b 1
 )
+
+echo [TEST] Compiling test suite...
+for /f "tokens=2 delims= " %%v in ('javac --version 2^>^&1') do set JAVAC_VER=%%v
+for /f "tokens=1 delims=." %%m in ("%JAVAC_VER%") do set JAVA_MAJOR=%%m
+
+dir /s /B src\sv\dark\test\*.java > compile_list_test.txt
+javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
+    --add-modules jdk.incubator.vector ^
+    -Xlint:-incubating ^
+    -cp "src;bin;lib\imgui-java-binding.jar" ^
+    @compile_list_test.txt > compile_test.log 2>&1
+
+if %errorlevel% neq 0 (
+    echo [ERROR] TEST SUITE COMPILATION FAILED.
+    echo ----------------------------------------------
+    type compile_test.log
+    echo ----------------------------------------------
+    exit /b %errorlevel%
+)
+if exist compile_list_test.txt del /q compile_list_test.txt
+if exist compile_test.log del /q compile_test.log
 
 echo ============================================== > %LOG_FILE%
 echo  DARK ENGINE - AAA+ TEST SUITE EXECUTOR >> %LOG_FILE%

@@ -32,6 +32,7 @@ public class SpatialHashGridTest {
         System.out.println("[TEST] Allocating off-heap arrays for " + maxEntities + " entities...");
         DarkTransformSoA soa = new DarkTransformSoA(maxEntities);
         SpatialHashGrid grid = new SpatialHashGrid(maxEntities, cellSize, gridWidth, gridHeight);
+        grid.initGraphicsContext();
 
         System.out.println("[TEST] Spawning random entities in grid (1000x1000 area)...");
         for (int i = 0; i < maxEntities; i++) {
