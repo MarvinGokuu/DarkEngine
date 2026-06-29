@@ -88,7 +88,7 @@ public final class DarkStateVault {
     public long readLong(int slotIndex) {
         // Fail-fast boundary validation (development profile only)
         if (sv.dark.config.DarkEngineConfig.VALIDATION_ENABLED) {
-            if (slotIndex % 2 != 0) {
+            if ((slotIndex & 1) != 0) {
                 throw new IllegalArgumentException(
                         "slotIndex must be even to read long (8 bytes). " +
                                 "Got slotIndex=" + slotIndex + ". " +
@@ -114,7 +114,7 @@ public final class DarkStateVault {
     public void writeLong(int slotIndex, long value) {
         // Fail-fast boundary validation (development profile only)
         if (sv.dark.config.DarkEngineConfig.VALIDATION_ENABLED) {
-            if (slotIndex % 2 != 0) {
+            if ((slotIndex & 1) != 0) {
                 throw new IllegalArgumentException(
                         "slotIndex must be even to write long (8 bytes). " +
                                 "Got slotIndex=" + slotIndex + ". " +
