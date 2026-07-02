@@ -60,8 +60,8 @@ public final class DarkFSRSystem {
             DarkOpenGLLinker.glBindImageTexture.invokeExact(1, DarkDeferredPipeline.getPresentationTexture(), 0, false, 0, DarkOpenGLLinker.GL_READ_WRITE, DarkOpenGLLinker.GL_RGBA8);
 
             // Dispatch 3840x2160 in 16x16 work groups
-            int groupsX = (DarkDeferredPipeline.TARGET_WIDTH + 15) / 16;
-            int groupsY = (DarkDeferredPipeline.TARGET_HEIGHT + 15) / 16;
+            int groupsX = (sv.dark.config.DarkDisplayConfig.targetWidth + 15) / 16;
+            int groupsY = (sv.dark.config.DarkDisplayConfig.targetHeight + 15) / 16;
             DarkOpenGLLinker.glDispatchCompute.invokeExact(groupsX, groupsY, 1);
 
             // Synchronize memory before Window swap

@@ -32,9 +32,7 @@ public final class DarkDeferredPipeline {
     public static final int INTERNAL_WIDTH = 1280;
     public static final int INTERNAL_HEIGHT = 720;
     
-    // Resolución Final de Presentación (FSR Target)
-    public static final int TARGET_WIDTH = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_WIDTH;
-    public static final int TARGET_HEIGHT = sv.dark.config.DarkEngineConfig.GRAPHICS_TARGET_HEIGHT;
+    // Resolución Final de Presentación (FSR Target) - Ahora en DarkDisplayConfig
 
     private static boolean isInitialized = false;
 
@@ -98,7 +96,7 @@ public final class DarkDeferredPipeline {
 
             // 6. Configure Presentation Texture (Salida Final Upscaled FSR - 4K)
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, presentationTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, TARGET_WIDTH, TARGET_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, sv.dark.config.DarkDisplayConfig.targetWidth, sv.dark.config.DarkDisplayConfig.targetHeight, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_LINEAR);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_LINEAR);
 
@@ -174,5 +172,17 @@ public final class DarkDeferredPipeline {
 
     public static int getDepthTexture() {
         return depthTexture;
+    }
+
+    public static void resizeTarget(int newWidth, int newHeight) {
+        if (!isInitialized) return;
+        try {
+            sv.dark.config.DarkDisplayConfig.setTargetResolution(newWidth, newHeight);
+            DarkLogger.info("GRAPHICS", "Resizing FSR Target to " + newWidth + "x" + newHeight);
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, presentationTexture);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, newWidth, newHeight, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
+        } catch (Throwable e) {
+            DarkLogger.error("GRAPHICS", "Failed to resize target texture");
+        }
     }
 }
