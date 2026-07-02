@@ -255,6 +255,9 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING JIT WARM-UP...");
         UltraFastBootSequence.warmUpWithStructuralIntegrity();
+        
+        // [PHASE 27] Start Shader Hot-Reloading Service (Virtual Thread)
+        sv.dark.scene.DarkShaderLoader.startHotReloadService();
 
         // [NEURONA_048 STEP 2.5] NATIVE WINDOW INIT (Main Thread FFI)
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
@@ -406,6 +409,13 @@ public final class EngineKernel {
                         Thread.onSpinWait(); // CPU Hint: release resources without sleeping
                     }
                 }
+            }
+
+            // -------------------------------------------------------------------------
+            // HOT-RELOAD CHECK (Phase 2.5)
+            // -------------------------------------------------------------------------
+            if (sv.dark.scene.DarkShaderLoader.isShaderDirty.getAndSet(false)) {
+                sv.dark.scene.DarkDeferredLightingSystem.reloadShaders();
             }
 
             // -------------------------------------------------------------------------
@@ -664,8 +674,10 @@ public final class EngineKernel {
 
         // [TERMINATOR THREAD] Guarantees process death if shutdown freezes or throws an Error
         Thread terminator = new Thread(() -> {
-            try { Thread.sleep(1000); } catch (Exception ignored) {}
-            Runtime.getRuntime().halt(0);
+            try { Thread.sleep(3000); } catch (InterruptedException ignored) { return; }
+            if (System.getProperty("sv.dark.test.nohalt") == null) {
+                Runtime.getRuntime().halt(0);
+            }
         }, "KernelTerminator");
         terminator.setDaemon(true);
         terminator.start();
@@ -776,6 +788,7 @@ public final class EngineKernel {
         try {
             sv.dark.scene.DarkDeferredPipeline.destroy();
             sv.dark.scene.DarkComputeCullingSystem.destroy();
+            sv.dark.scene.DarkShaderLoader.stopHotReloadService();
             sv.dark.scene.DarkDeferredLightingSystem.destroy();
             sv.dark.scene.DarkLightSystem.destroy();
             sv.dark.scene.DarkClusteredSystem.destroy();
@@ -818,6 +831,7 @@ public final class EngineKernel {
         // [SHUTDOWN GUARANTEE]
         // Force Windows kernel to clear native memory descriptors and CPU Pinning
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING LOW-LEVEL SHUTDOWN (HALT)...");
+        terminator.interrupt();
         if (System.getProperty("sv.dark.test.nohalt") == null) {
             Runtime.getRuntime().halt(0);
         } else {
