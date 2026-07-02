@@ -22,8 +22,8 @@ import sv.dark.math.DarkMath;
 public final class DarkDeferredLightingSystem {
 
     private static int computeProgramId;
-    private static int sunDirLocation;
-    private static int sunColorLocation;
+    private static int envSSBO;
+    private static MemorySegment envMemory;
     private static int camPosLocation;
     private static int invViewProjLocation;
     private static int viewMatrixLocation;
@@ -45,30 +45,20 @@ public final class DarkDeferredLightingSystem {
 
     public static void init() {
         try {
-            DarkLogger.info("GRAPHICS", "Compilando Compute Shader (deferred_lighting.comp) en VRAM...");
-            
-            int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
-            
-            String source = DarkShaderLoader.loadShader("src/sv/dark/scene/deferred_lighting.comp");
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment srcPtr = arena.allocateFrom(source);
-                MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
-                DarkOpenGLLinker.glShaderSource.invokeExact(shaderId, 1, srcArrayPtr, MemorySegment.NULL);
-            }
-            
-            DarkOpenGLLinker.glCompileShader.invokeExact(shaderId);
-            
-            computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
-            DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
-            DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
-            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
+            DarkLogger.info("GRAPHICS", "Inicializando Deferred Lighting System...");
+            reloadShaders();
             
             try (Arena arenaLocal = Arena.ofConfined()) {
-                MemorySegment nameDir = arenaLocal.allocateFrom("sunDir");
-                sunDirLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameDir);
+                // Initialize Environment SSBO (Binding 5) for Dynamic Lights
+                MemorySegment bufferPtr = arenaLocal.allocate(ValueLayout.JAVA_INT);
+                DarkOpenGLLinker.glGenBuffers.invokeExact(1, bufferPtr);
+                envSSBO = bufferPtr.get(ValueLayout.JAVA_INT, 0);
                 
-                MemorySegment nameColor = arenaLocal.allocateFrom("sunColor");
-                sunColorLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameColor);
+                int flags = DarkOpenGLLinker.GL_MAP_WRITE_BIT | DarkOpenGLLinker.GL_MAP_PERSISTENT_BIT | DarkOpenGLLinker.GL_MAP_COHERENT_BIT;
+                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, envSSBO);
+                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 32L, MemorySegment.NULL, flags);
+                envMemory = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, 32L, flags);
+                envMemory = envMemory.reinterpret(32L);
 
                 MemorySegment nameCamPos = arenaLocal.allocateFrom("camPos");
                 camPosLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, nameCamPos);
@@ -85,11 +75,47 @@ public final class DarkDeferredLightingSystem {
                 lightSpaceMatricesLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("lightSpaceMatrices"));
             }
             
-            DarkLogger.info("GRAPHICS", "Deferred Lighting Compute Shader compilado.");
+            DarkLogger.info("GRAPHICS", "Deferred Lighting inicializado.");
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error inicializando DarkDeferredLightingSystem", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void reloadShaders() {
+        try {
+            if (computeProgramId != 0) {
+                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+            }
+            
+            int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
+            String source = DarkShaderLoader.loadShader("src/sv/dark/scene/deferred_lighting.comp");
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment srcPtr = arena.allocateFrom(source);
+                MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
+                DarkOpenGLLinker.glShaderSource.invokeExact(shaderId, 1, srcArrayPtr, MemorySegment.NULL);
+            }
+            DarkOpenGLLinker.glCompileShader.invokeExact(shaderId);
+            computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
+            DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
+            DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
+            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
+            
+            try (Arena arenaLocal = Arena.ofConfined()) {
+                camPosLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("camPos"));
+                invViewProjLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("invViewProj"));
+                viewMatrixLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("viewMatrix"));
+                zNearLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("zNear"));
+                zFarLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("zFar"));
+                cascadeSplit0Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[0]"));
+                cascadeSplit1Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[1]"));
+                cascadeSplit2Location = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("cascadeSplits[2]"));
+                lightSpaceMatricesLocation = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(computeProgramId, arenaLocal.allocateFrom("lightSpaceMatrices"));
+            }
+            DarkLogger.info("GRAPHICS", "Deferred Lighting Compute Shader re-compilado exitosamente.");
+        } catch (Throwable e) {
+            DarkLogger.error("GRAPHICS", "Error en Hot-Reload de Shader: " + e.getMessage());
         }
     }
 
@@ -112,8 +138,14 @@ public final class DarkDeferredLightingSystem {
             float sunY = currentSunDir[1] / length;
             float sunZ = currentSunDir[2] / length;
             
-            DarkOpenGLLinker.glUniform3f.invokeExact(sunDirLocation, sunX, sunY, sunZ);
-            DarkOpenGLLinker.glUniform3f.invokeExact(sunColorLocation, currentSunColor[0], currentSunColor[1], currentSunColor[2]);
+            // Write Environment Data to SSBO (Zero-Syscall)
+            envMemory.set(ValueLayout.JAVA_FLOAT, 0, sunX);
+            envMemory.set(ValueLayout.JAVA_FLOAT, 4, sunY);
+            envMemory.set(ValueLayout.JAVA_FLOAT, 8, sunZ);
+            envMemory.set(ValueLayout.JAVA_FLOAT, 16, currentSunColor[0]);
+            envMemory.set(ValueLayout.JAVA_FLOAT, 20, currentSunColor[1]);
+            envMemory.set(ValueLayout.JAVA_FLOAT, 24, currentSunColor[2]);
+            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 5, envSSBO);
             DarkOpenGLLinker.glUniform3f.invokeExact(camPosLocation, currentCamPos[0], currentCamPos[1], currentCamPos[2]);
 
             // Upload camera view matrix
@@ -205,6 +237,16 @@ public final class DarkDeferredLightingSystem {
             if (computeProgramId != 0) {
                 DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
                 computeProgramId = 0;
+            }
+            if (envSSBO != 0) {
+                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, envSSBO);
+                DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
+                try (Arena arenaLocal = Arena.ofConfined()) {
+                    MemorySegment bufferPtr = arenaLocal.allocateFrom(ValueLayout.JAVA_INT, envSSBO);
+                    DarkOpenGLLinker.glDeleteBuffers.invokeExact(1, bufferPtr);
+                }
+                envSSBO = 0;
+                envMemory = null;
             }
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error al destruir shader de Deferred Lighting", e);
