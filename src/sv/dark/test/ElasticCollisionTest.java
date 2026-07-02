@@ -35,7 +35,7 @@ public class ElasticCollisionTest {
         DarkTransformSoA tSoa = scene.getSoA();
         DarkColliderSoA cSoa = new DarkColliderSoA(maxEntities);
         SpatialHashGrid grid = new SpatialHashGrid(maxEntities, cellSize, 100, 100);
-        grid.initGraphicsContext();
+
         NarrowphaseSystem narrowphase = new NarrowphaseSystem(scene, grid, cSoa);
         
         // WorldStateFrame no es usado por NarrowphaseSystem, pasamos null

@@ -112,8 +112,8 @@ public final class BaselineValidator {
      */
     public static boolean validateCleanShutdown(MemorySnapshot stateA, MemorySnapshot stateC) {
         boolean passed = true;
-        long TOLERANCE_HEAP = 10_485_760; // 10 MB
-        long TOLERANCE_NON_HEAP = 10_485_760; // 10 MB
+        long TOLERANCE_HEAP = 26_214_400; // 25 MB (Adjusted for Phase 27 FSR/Lighting caching)
+        long TOLERANCE_NON_HEAP = 26_214_400; // 25 MB (Adjusted for Phase 27 JIT/VirtualThreads metaspace)
 
         long heapDelta = stateC.heapUsedBytes - stateA.heapUsedBytes;
         if (heapDelta > TOLERANCE_HEAP) {

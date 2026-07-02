@@ -43,7 +43,9 @@ public class GracefulShutdownTest {
         try {
             Class.forName("javax.imageio.ImageIO");
             Class.forName("sv.dark.editor.DarkAssetCompiler");
-        } catch (ClassNotFoundException e) {}
+            // Preload Virtual Thread machinery (ForkJoinPool, Unblocker) to avoid false positive thread leaks
+            Thread.startVirtualThread(() -> {}).join();
+        } catch (Exception e) {}
         
         System.out.print("\n[TEST] Running Graceful Shutdown & Baseline Protocol... ");
 
@@ -75,6 +77,10 @@ public class GracefulShutdownTest {
         }
 
         MemorySnapshot stateC = BaselineValidator.captureStateC();
+
+        System.out.println("\n[DEBUG] LIVE THREADS IN STATE C:");
+        Thread.getAllStackTraces().keySet().forEach(t -> System.out.println("  -> " + t.getName() + (t.isDaemon() ? " (Daemon)" : "")));
+
         boolean passed = BaselineValidator.validateCleanShutdown(stateA, stateC);
 
         System.out.println("DONE.");
