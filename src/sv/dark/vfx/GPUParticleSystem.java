@@ -6,7 +6,7 @@ package sv.dark.vfx;
 import sv.dark.core.AAACertified;
 import sv.dark.core.systems.GameSystem;
 import sv.dark.state.WorldStateFrame;
-import sv.dark.core.systems.DarkOpenGLLinker;
+import sv.dark.rhi.DarkRHI;
 
 /**
  * GPU Particle System (Phase 32).
@@ -44,20 +44,22 @@ public final class GPUParticleSystem implements GameSystem {
 
         try {
             // 1. Activar el Compute Shader
-            DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
+            DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
+            rhi.useProgram(computeProgramId);
             
             // 2. Inyectar deltaTime
-            // Supongamos que añadimos glUniform1f al Linker
-            // DarkOpenGLLinker.glUniform1f.invokeExact(deltaTimeLocation, (float) deltaTime);
+            if (deltaTimeLocation != -1) {
+                rhi.setUniform1f(deltaTimeLocation, (float) deltaTime);
+            }
             
             // 3. Despachar Hilos en la GPU
             // Grupos de trabajo de 256 hilos (Coincide con local_size_x = 256)
             int workGroupsX = (MAX_PARTICLES + 255) / 256;
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(workGroupsX, 1, 1);
+            rhi.dispatchCompute(workGroupsX, 1, 1);
             
             // 4. Barrera de Memoria
             // Bloquea el Vertex Shader de leer las partículas hasta que el Compute Shader termine de escribirlas
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            rhi.memoryBarrier(DarkRHI.BARRIER_SHADER_STORAGE);
             
             // Nota: El RenderSystem posteriormente usará glDrawArraysInstanced(..., MAX_PARTICLES)
             

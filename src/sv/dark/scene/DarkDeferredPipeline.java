@@ -41,112 +41,83 @@ public final class DarkDeferredPipeline {
             destroy();
         }
 
-        try (Arena arena = Arena.ofConfined()) {
-            DarkLogger.info("GRAPHICS", "Initializing Deferred G-Buffer (" + INTERNAL_WIDTH + "x" + INTERNAL_HEIGHT + ") in VRAM...");
+        try {
+            DarkLogger.info("GRAPHICS", "Initializing Deferred G-Buffer (" + INTERNAL_WIDTH + "x" + INTERNAL_HEIGHT + ") in VRAM via RHI...");
+
+            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
 
             // 1. Generate FBO
-            MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
-            DarkOpenGLLinker.glGenFramebuffers.invokeExact(1, fboPtr);
-            gBufferFBO = fboPtr.get(ValueLayout.JAVA_INT, 0);
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, gBufferFBO);
+            gBufferFBO = rhi.createFramebuffer();
+            rhi.bindFramebuffer(gBufferFBO);
 
-            // 2. Generate Textures (6 texturas ahora)
-            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT, 6);
-            DarkOpenGLLinker.glGenTextures.invokeExact(6, texPtr);
-            albedoTexture = texPtr.get(ValueLayout.JAVA_INT, 0);
-            normalTexture = texPtr.get(ValueLayout.JAVA_INT, 4);
-            pbrTexture = texPtr.get(ValueLayout.JAVA_INT, 8);
-            litTexture = texPtr.get(ValueLayout.JAVA_INT, 12);
-            presentationTexture = texPtr.get(ValueLayout.JAVA_INT, 16);
-            depthTexture = texPtr.get(ValueLayout.JAVA_INT, 20);
+            // 2. Generate Textures
+            int GL_RGBA8 = 0x8058;
+            int GL_RGBA = 0x1908;
+            int GL_UNSIGNED_BYTE = 0x1401;
+            int GL_NEAREST = 0x2600;
+            int GL_LINEAR = 0x2601;
+            int GL_RGBA16F = 0x881A;
+            int GL_FLOAT = 0x1406;
+            int GL_DEPTH_COMPONENT32F = 0x8CAC;
+            int GL_DEPTH_COMPONENT = 0x1902;
+            int GL_COLOR_ATTACHMENT0 = 0x8CE0;
+            int GL_COLOR_ATTACHMENT1 = 0x8CE1;
+            int GL_COLOR_ATTACHMENT2 = 0x8CE2;
+            int GL_DEPTH_ATTACHMENT = 0x8D00;
 
             // 3. Configure Albedo Texture (Color - 720p)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, albedoTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_COLOR_ATTACHMENT0, DarkOpenGLLinker.GL_TEXTURE_2D, albedoTexture, 0);
+            albedoTexture = rhi.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST);
+            rhi.framebufferTexture2D(GL_COLOR_ATTACHMENT0, albedoTexture, 0);
 
             // 4. Configure Normal Texture (Geometría / Vectores - 720p)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, normalTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA16F, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_COLOR_ATTACHMENT1, DarkOpenGLLinker.GL_TEXTURE_2D, normalTexture, 0);
+            normalTexture = rhi.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_NEAREST);
+            rhi.framebufferTexture2D(GL_COLOR_ATTACHMENT1, normalTexture, 0);
 
             // 4.5 Configure PBR Texture (Roughness/Metallic/AO - 720p)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, pbrTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_COLOR_ATTACHMENT2, DarkOpenGLLinker.GL_TEXTURE_2D, pbrTexture, 0);
+            pbrTexture = rhi.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST);
+            rhi.framebufferTexture2D(GL_COLOR_ATTACHMENT2, pbrTexture, 0);
 
             // 4.6 Configure Depth Texture (Depth - 720p)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, depthTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_DEPTH_COMPONENT32F, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_DEPTH_COMPONENT, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_DEPTH_ATTACHMENT, DarkOpenGLLinker.GL_TEXTURE_2D, depthTexture, 0);
+            depthTexture = rhi.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST);
+            rhi.framebufferTexture2D(GL_DEPTH_ATTACHMENT, depthTexture, 0);
 
             // 5. Configure Lit Texture (Salida Iluminada Computada - 720p)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, litTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA16F, INTERNAL_WIDTH, INTERNAL_HEIGHT, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_LINEAR);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_LINEAR);
+            litTexture = rhi.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_LINEAR);
 
             // 6. Configure Presentation Texture (Salida Final Upscaled FSR - 4K)
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, presentationTexture);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, DarkOpenGLLinker.GL_RGBA8, sv.dark.config.DarkDisplayConfig.targetWidth, sv.dark.config.DarkDisplayConfig.targetHeight, 0, DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_LINEAR);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_LINEAR);
+            presentationTexture = rhi.createTexture2D(sv.dark.config.DarkDisplayConfig.targetWidth, sv.dark.config.DarkDisplayConfig.targetHeight, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR);
 
             // 7. Verify FBO
-            int status = (int) DarkOpenGLLinker.glCheckFramebufferStatus.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER);
-            if (status != DarkOpenGLLinker.GL_FRAMEBUFFER_COMPLETE) {
-                DarkLogger.fatal("GRAPHICS", "G-Buffer Framebuffer is not complete. Status: " + status, null);
+            if (!rhi.checkFramebufferStatus()) {
+                DarkLogger.fatal("GRAPHICS", "G-Buffer Framebuffer is not complete.", null);
                 return;
             }
 
             // 8. Tell OpenGL which color attachments we'll use for rendering
-            MemorySegment drawBuffers = arena.allocate(ValueLayout.JAVA_INT, 3);
-            drawBuffers.set(ValueLayout.JAVA_INT, 0, DarkOpenGLLinker.GL_COLOR_ATTACHMENT0);
-            drawBuffers.set(ValueLayout.JAVA_INT, 4, DarkOpenGLLinker.GL_COLOR_ATTACHMENT1);
-            drawBuffers.set(ValueLayout.JAVA_INT, 8, DarkOpenGLLinker.GL_COLOR_ATTACHMENT2);
-            DarkOpenGLLinker.glDrawBuffers.invokeExact(3, drawBuffers);
+            rhi.setDrawBuffers(new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
 
             // Unbind to return to default screen framebuffer
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
+            rhi.bindFramebuffer(0);
 
             DarkLogger.info("GRAPHICS", "Deferred Pipeline Chassis Ready. Targets: Base 720p -> Presentation 4K");
             isInitialized = true;
         } catch (Throwable e) {
-            DarkLogger.fatal("GRAPHICS", "Failed to initialize Deferred Pipeline FFI.", e);
+            DarkLogger.fatal("GRAPHICS", "Failed to initialize Deferred Pipeline RHI.", e);
         }
     }
 
     public static void destroy() {
         if (!isInitialized) return;
         
-        try (Arena arena = Arena.ofConfined()) {
-            // Eliminar texturas
-            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT, 6);
-            texPtr.set(ValueLayout.JAVA_INT, 0, albedoTexture);
-            texPtr.set(ValueLayout.JAVA_INT, 4, normalTexture);
-            texPtr.set(ValueLayout.JAVA_INT, 8, pbrTexture);
-            texPtr.set(ValueLayout.JAVA_INT, 12, litTexture);
-            texPtr.set(ValueLayout.JAVA_INT, 16, presentationTexture);
-            texPtr.set(ValueLayout.JAVA_INT, 20, depthTexture);
-            DarkOpenGLLinker.glDeleteTextures.invokeExact(6, texPtr);
-
-            // Eliminar FBO
-            MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
-            fboPtr.set(ValueLayout.JAVA_INT, 0, gBufferFBO);
-            DarkOpenGLLinker.glDeleteFramebuffers.invokeExact(1, fboPtr);
+        try {
+            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
+            rhi.deleteTextures(new int[]{albedoTexture, normalTexture, pbrTexture, litTexture, presentationTexture, depthTexture});
+            rhi.deleteFramebuffer(gBufferFBO);
 
             DarkLogger.info("GRAPHICS", "Deferred Pipeline VRAM Buffers Released.");
             isInitialized = false;
         } catch (Throwable e) {
-            DarkLogger.fatal("GRAPHICS", "Failed to destroy Deferred Pipeline VRAM FFI.", e);
+            DarkLogger.fatal("GRAPHICS", "Failed to destroy Deferred Pipeline VRAM.", e);
         }
     }
 

@@ -6,7 +6,6 @@ package sv.dark.vfx.animation;
 import sv.dark.core.AAACertified;
 import sv.dark.core.systems.GameSystem;
 import sv.dark.state.WorldStateFrame;
-import sv.dark.core.systems.DarkOpenGLLinker;
 
 /**
  * Skeletal Animation System (Phase 32.2).
@@ -38,27 +37,23 @@ public final class SkeletalAnimationSystem implements GameSystem {
         if (computeProgramId == -1) return; // Esperar al Motor Grafico
 
         try {
-            // 1. Subida Masiva a VRAM (Zero-GC) usando glBufferSubData
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, boneSSBO);
-            DarkOpenGLLinker.glBufferSubData.invokeExact(
-                DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 
-                0L, // offset
-                skeletonMemory.getSizeBytes(), 
-                skeletonMemory.getRawBuffer()
-            );
+            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
+            
+            // 1. Subida Masiva a VRAM (Zero-GC) usando RHI
+            rhi.updateBufferSubData(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, boneSSBO, 0L, skeletonMemory.getRawBuffer(), skeletonMemory.getSizeBytes());
 
             // 2. Activar Skinning Compute Shader
-            DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
+            rhi.useProgram(computeProgramId);
             
             // 3. Despachar (1 hilo de GPU por cada vertice)
             int workGroupsX = (VERTICES_TO_SKIN + 255) / 256;
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(workGroupsX, 1, 1);
+            rhi.dispatchCompute(workGroupsX, 1, 1);
             
             // 4. Barrera de Sincronizacion antes de que el Vertex Shader los pinte
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            rhi.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
             
         } catch (Throwable e) {
-            // FFI Error
+            // RHI Error
         }
     }
 

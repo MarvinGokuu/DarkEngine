@@ -68,6 +68,9 @@ public final class DarkEngineWindow {
             // Cargar funciones de OpenGL a través del contexto activo (Phase 19)
             sv.dark.core.systems.DarkOpenGLLinker.init();
             
+            // Inicializar Capa Agnóstica RHI (Fase 28)
+            sv.dark.core.DarkRHIContext.init();
+            
             // Inicializar GPU Compute Culling System (Phase 19 - WIRED)
             // WHY: Compiles the GLSL Compute Shader into VRAM and allocates SSBOs.
             // Must run AFTER OpenGLLinker (needs glfwGetProcAddress pointers active).
