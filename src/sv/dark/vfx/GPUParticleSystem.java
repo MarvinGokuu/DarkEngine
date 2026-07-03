@@ -72,4 +72,9 @@ public final class GPUParticleSystem implements GameSystem {
     public String getName() {
         return "GPUParticleSystem";
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true; // Uses DarkRHI which dispatches OpenGL Compute Shaders
+    }
 }

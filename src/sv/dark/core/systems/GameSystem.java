@@ -203,6 +203,19 @@ public interface GameSystem {
     default String[] getDependencies() {
         return new String[0]; // No dependencies by default
     }
+
+    /**
+     * Defines whether this system requires execution exclusively on the Main Thread.
+     * 
+     * WHY: Systems invoking OpenGL/Vulkan APIs via FFI (Compute Shaders) will cause EXCEPTION_ACCESS_VIOLATION
+     * if executed on background worker threads, because graphics contexts are thread-local.
+     * 
+     * DEFAULT IMPLEMENTATION: false (fully parallelizable).
+     * OVERRIDE: Return true only if you make OpenGL calls.
+     */
+    default boolean requiresMainThread() {
+        return false;
+    }
 }
 // Created: 03/01/2026 23:35
 // Role: Software Architect applying Strategy Pattern + SOLID

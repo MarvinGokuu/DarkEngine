@@ -128,6 +128,15 @@ public final class DarkTaskDispatcher {
     private final AtomicInteger consumerHead = new AtomicInteger(0);
 
     // =========================================================================
+    // VYUKOV BOUNDED MPMC RING BUFFER (MAIN THREAD EXCLUSIVE)
+    // =========================================================================
+
+    private final DarkTaskNode[]  mainQueue     = new DarkTaskNode[QUEUE_CAPACITY];
+    private final int[] mainSequences = new int[QUEUE_CAPACITY * 16];
+    private final AtomicInteger mainProducerHead = new AtomicInteger(0);
+    private final AtomicInteger mainConsumerHead = new AtomicInteger(0);
+
+    // =========================================================================
     // FRAME COMPLETION TRACKING
     // =========================================================================
 
@@ -218,6 +227,7 @@ public final class DarkTaskDispatcher {
         this.sequences = new int[QUEUE_CAPACITY * 16];
         for (int i = 0; i < QUEUE_CAPACITY; i++) {
             this.sequences[i * 16] = i;
+            this.mainSequences[i * 16] = i;
         }
 
         // Spawn worker threads: (cores - 1) so the main thread remains available for rendering.
@@ -300,7 +310,10 @@ public final class DarkTaskDispatcher {
         // --- STEP 6: Main thread steals work + spins on completion ---
         // WHY main thread helps: reduces idle time when worker count < node count.
         while (remainingNodes.get() > 0) {
-            DarkTaskNode node = dequeue();
+            DarkTaskNode node = dequeueMain();
+            if (node == null) {
+                node = dequeue();
+            }
             if (node != null) {
                 executeNode(node);
             } else {
@@ -381,6 +394,10 @@ public final class DarkTaskDispatcher {
      * // [THREAD_SAFE] [LOCK_FREE] [ZERO_ALLOC]
      */
     private void enqueue(DarkTaskNode node) {
+        if (node.system.requiresMainThread()) {
+            enqueueMain(node);
+            return;
+        }
         while (true) {
             int pos  = producerHead.get();
             int slot = pos & QUEUE_MASK;
@@ -446,6 +463,46 @@ public final class DarkTaskDispatcher {
                 return null;
             }
             // diff > 0: another consumer is in the process of claiming this slot. Retry.
+        }
+    }
+
+    private void enqueueMain(DarkTaskNode node) {
+        while (true) {
+            int pos  = mainProducerHead.get();
+            int slot = pos & QUEUE_MASK;
+            int seq  = (int) SEQ_H.getVolatile(mainSequences, slot * 16);
+            int diff = seq - pos;
+
+            if (diff == 0) {
+                if (mainProducerHead.compareAndSet(pos, pos + 1)) {
+                    mainQueue[slot] = node;
+                    SEQ_H.setVolatile(mainSequences, slot * 16, pos + 1);
+                    return;
+                }
+            } else if (diff < 0) {
+                DarkLogger.error("TASKGRAPH", "[VYUKOV-MAIN] Ring buffer full — node: " + node.system.getName());
+                Thread.onSpinWait();
+            }
+        }
+    }
+
+    private DarkTaskNode dequeueMain() {
+        while (true) {
+            int pos  = mainConsumerHead.get();
+            int slot = pos & QUEUE_MASK;
+            int seq  = (int) SEQ_H.getVolatile(mainSequences, slot * 16);
+            int diff = seq - (pos + 1);
+
+            if (diff == 0) {
+                if (mainConsumerHead.compareAndSet(pos, pos + 1)) {
+                    DarkTaskNode node = mainQueue[slot];
+                    mainQueue[slot] = null;
+                    SEQ_H.setVolatile(mainSequences, slot * 16, pos + QUEUE_CAPACITY);
+                    return node;
+                }
+            } else if (diff < 0) {
+                return null;
+            }
         }
     }
 
