@@ -17,6 +17,10 @@ Dark-Engine-*/
 *.exe
 *.obj
 
+# Permitir librerias estaticas del motor
+!lib/*.jar
+!lib/*.dll
+
 # --- ESTADO Y TELEMETRÍA (VAULT) ---
 *.vault
 *.log
