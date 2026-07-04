@@ -9,9 +9,11 @@ public final class DarkOpenALBackend extends DarkAudioContext {
 
     private MemorySegment device;
     private MemorySegment context;
+    private DarkAudioSourceSoA activeSources;
 
     @Override
     public void init(DarkAudioSourceSoA sources) {
+        this.activeSources = sources;
         try {
             device = (MemorySegment) DarkAudioLinker.alcOpenDevice.invokeExact(MemorySegment.NULL);
             if (device.equals(MemorySegment.NULL)) {
@@ -72,6 +74,10 @@ public final class DarkOpenALBackend extends DarkAudioContext {
     @Override
     public void cleanup() {
         try {
+            if (activeSources != null && context != null && !context.equals(MemorySegment.NULL)) {
+                // Must delete sources before destroying the context
+                DarkAudioLinker.alDeleteSources.invokeExact(activeSources.getCapacity(), activeSources.sourceIds);
+            }
             if (context != null && !context.equals(MemorySegment.NULL)) {
                 byte dummy2 = (byte) DarkAudioLinker.alcMakeContextCurrent.invokeExact(MemorySegment.NULL);
                 DarkAudioLinker.alcDestroyContext.invokeExact(context);

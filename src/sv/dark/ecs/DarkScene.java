@@ -25,6 +25,11 @@ public final class DarkScene {
     
     private int activeEntityCount;
     
+    // [TOPOLOGICAL SORT MAPPING]
+    // Mapea ID Lógico (DarkEntity) -> Índice Físico (SoA)
+    private int[] logicalToPhysical;
+    private int[] physicalToLogical;
+    
     // [ZERO-GC FACADE POOL]
     private DarkEntity[] entityWrappers;
 
@@ -41,9 +46,14 @@ public final class DarkScene {
         
         this.freeList = new int[maxEntities];
         this.entitySignatures = new long[maxEntities];
+        this.logicalToPhysical = new int[maxEntities];
+        this.physicalToLogical = new int[maxEntities];
+        
         // Populate free list with all available IDs (reversed so we pop from 0 to max)
         for (int i = 0; i < maxEntities; i++) {
             freeList[i] = (maxEntities - 1) - i;
+            logicalToPhysical[i] = i; // Identidad inicial
+            physicalToLogical[i] = i;
         }
         this.freeListTail = maxEntities - 1;
         this.activeEntityCount = 0;
@@ -76,14 +86,19 @@ public final class DarkScene {
             throw new RuntimeException("DarkScene Capacity Reached! Max: " + maxEntities);
         }
         
-        int entityId = freeList[freeListTail--];
+        int logicalId = freeList[freeListTail--];
+        int physicalIdx = activeEntityCount; // Siempre se inserta al final de la memoria activa
+        
+        logicalToPhysical[logicalId] = physicalIdx;
+        physicalToLogical[physicalIdx] = logicalId;
+        
         activeEntityCount++;
         
         // Inicializar estado a 0 (Limpiar data basura de vidas pasadas)
-        soaMemory.setEntity(entityId, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f);
-        entitySignatures[entityId] = 0L; // Reiniciar bitmask
+        soaMemory.setEntity(physicalIdx, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f);
+        entitySignatures[logicalId] = 0L; // Reiniciar bitmask
         
-        return entityWrappers[entityId];
+        return entityWrappers[logicalId];
     }
 
     /**
@@ -99,15 +114,37 @@ public final class DarkScene {
      * GAME API: Destruye una entidad y libera su ID para reuso inmediato.
      * Complejidad: O(1)
      */
-    public void destroyEntity(int entityId) {
-        if (entityId < 0 || entityId >= maxEntities) return;
+    public void destroyEntity(int logicalId) {
+        if (logicalId < 0 || logicalId >= maxEntities) return;
         
-        freeList[++freeListTail] = entityId;
+        int physicalIdx = logicalToPhysical[logicalId];
+        int lastPhysicalIdx = activeEntityCount - 1;
+        
+        // Hacer Swap con el último activo para mantener la memoria contigua sin huecos
+        if (physicalIdx != lastPhysicalIdx) {
+            int lastLogicalId = physicalToLogical[lastPhysicalIdx];
+            
+            // Swap SoA
+            soaMemory.swap(physicalIdx, lastPhysicalIdx);
+            
+            // Update Mappings
+            logicalToPhysical[lastLogicalId] = physicalIdx;
+            physicalToLogical[physicalIdx] = lastLogicalId;
+        }
+        
+        freeList[++freeListTail] = logicalId;
         activeEntityCount--;
         
-        // Borramos del mundo visible empujándolo al infinito temporalmente
-        // El Culling Shader lo ignorará automáticamente.
-        soaMemory.setEntity(entityId, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, 0.0f, 0.0f, 0.0f);
+        // Borramos del mundo visible (ahora en lastPhysicalIdx)
+        soaMemory.setEntity(lastPhysicalIdx, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, 0.0f, 0.0f, 0.0f);
+    }
+    
+    public int getPhysicalIndex(int logicalId) {
+        return logicalToPhysical[logicalId];
+    }
+    
+    public int getLogicalId(int physicalIdx) {
+        return physicalToLogical[physicalIdx];
     }
 
     public int getActiveEntityCount() {
@@ -162,6 +199,72 @@ public final class DarkScene {
         return (entitySignatures[entityId] & (1L << componentId)) != 0;
     }
 
+    // ==========================================
+    // SCENE GRAPH: TOPOLOGICAL SORTING (Phase 2)
+    // ==========================================
+    
+    public void setParent(int childLogicalId, int parentLogicalId) {
+        int childPhys = logicalToPhysical[childLogicalId];
+        int parentPhys = parentLogicalId >= 0 ? logicalToPhysical[parentLogicalId] : -1;
+        
+        long childOff = childPhys * 4L;
+        soaMemory.parentIdx.set(java.lang.foreign.ValueLayout.JAVA_INT, childOff, parentPhys);
+        
+        if (parentPhys >= 0) {
+            long parentOff = parentPhys * 4L;
+            int firstChild = soaMemory.firstChildIdx.get(java.lang.foreign.ValueLayout.JAVA_INT, parentOff);
+            soaMemory.nextSiblingIdx.set(java.lang.foreign.ValueLayout.JAVA_INT, childOff, firstChild);
+            soaMemory.firstChildIdx.set(java.lang.foreign.ValueLayout.JAVA_INT, parentOff, childPhys);
+        }
+    }
+    
+    public void topologicalSort() {
+        int sortedCount = 0;
+        int[] queue = new int[activeEntityCount];
+        int head = 0;
+        int tail = 0;
+        
+        // 1. Encontrar Raíces (parent == -1)
+        for (int i = 0; i < activeEntityCount; i++) {
+            int parentId = soaMemory.parentIdx.get(java.lang.foreign.ValueLayout.JAVA_INT, i * 4L);
+            if (parentId == -1) {
+                queue[tail++] = i;
+            }
+        }
+        
+        // 2. BFS para ordenar topológicamente (Padres antes que Hijos)
+        while (head < tail) {
+            int currentPhys = queue[head++];
+            
+            // Swap si es necesario para mantener orden
+            if (currentPhys != sortedCount) {
+                int logicalA = physicalToLogical[currentPhys];
+                int logicalB = physicalToLogical[sortedCount];
+                
+                soaMemory.swap(currentPhys, sortedCount);
+                
+                logicalToPhysical[logicalA] = sortedCount;
+                physicalToLogical[sortedCount] = logicalA;
+                
+                logicalToPhysical[logicalB] = currentPhys;
+                physicalToLogical[currentPhys] = logicalB;
+                
+                // Actualizamos currentPhys al nuevo índice
+                currentPhys = sortedCount;
+            }
+            
+            // Encolar hijos
+            long off = currentPhys * 4L;
+            int child = soaMemory.firstChildIdx.get(java.lang.foreign.ValueLayout.JAVA_INT, off);
+            while (child != -1) {
+                queue[tail++] = child;
+                child = soaMemory.nextSiblingIdx.get(java.lang.foreign.ValueLayout.JAVA_INT, child * 4L);
+            }
+            
+            sortedCount++;
+        }
+    }
+
     public void destroy() {
         soaMemory.destroy();
         
@@ -177,5 +280,7 @@ public final class DarkScene {
         freeList = null;
         entitySignatures = null;
         entityWrappers = null;
+        logicalToPhysical = null;
+        physicalToLogical = null;
     }
 }

@@ -122,7 +122,10 @@ if %ERRORLEVEL% NEQ 0 goto :test_failed
 call :run_test "24/25" "UDP Networking Structure" "sv.dark.test.UDPZeroCopyTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
-call :run_test "25/25" "Telemetry Backpressure Stress" "sv.dark.test.TelemetryBackpressureStressTest" ""
+call :run_test "25/26" "Telemetry Backpressure Stress" "sv.dark.test.TelemetryBackpressureStressTest" ""
+if %ERRORLEVEL% NEQ 0 goto :test_failed
+
+call :run_test "26/26" "Scene Graph Hierarchy" "sv.dark.test.SceneGraphHierarchyTest" ""
 if %ERRORLEVEL% NEQ 0 goto :test_failed
 
 echo.

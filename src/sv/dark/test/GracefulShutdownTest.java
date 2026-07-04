@@ -78,8 +78,7 @@ public class GracefulShutdownTest {
 
         MemorySnapshot stateC = BaselineValidator.captureStateC();
 
-        System.out.println("\n[DEBUG] LIVE THREADS IN STATE C:");
-        Thread.getAllStackTraces().keySet().forEach(t -> System.out.println("  -> " + t.getName() + (t.isDaemon() ? " (Daemon)" : "")));
+        // No debug thread dump in production AAA+ tests
 
         boolean passed = BaselineValidator.validateCleanShutdown(stateA, stateC);
 
