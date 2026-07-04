@@ -71,10 +71,15 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
+:: Isolate JAR for JPackage
+if exist release_input rd /s /q release_input
+mkdir release_input
+move DarkEngine-v1.0.jar release_input\ >nul
+
 :: 6. Generate Native App Image with JPackage
 echo [STAGE] Generating Native Executable Image (JPackage)...
 jpackage --name "Dark-Engine" ^
-         --input . ^
+         --input release_input ^
          --main-jar DarkEngine-v1.0.jar ^
          --type app-image ^
          --dest Dark-Engine-V1.0 ^
