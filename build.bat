@@ -9,11 +9,7 @@ for /f "tokens=1 delims=." %%m in ("%JAVAC_VER%") do set JAVA_MAJOR=%%m
 :: Subsystem clear (Prevents JDK version mismatch and stale classes)
 call clean.bat >nul 2>&1
 
-:: Zombie process elimination (Strict match for DarkEngineMaster inside JVM)
-for /f "tokens=2 delims=," %%p in ('wmic process where "Name='java.exe' or Name='javaw.exe'" get ProcessId^,CommandLine /format:csv 2^>nul ^| findstr /i "DarkEngineMaster"') do (
-    echo [SYSTEM] Eliminating lingering zombie process [PID: %%p]
-    taskkill /F /PID %%p >nul 2>&1
-)
+:: Zombie process elimination has been disabled to prevent wmic hanging.
 
 if not exist bin mkdir bin
 

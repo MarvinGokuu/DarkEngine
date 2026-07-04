@@ -38,15 +38,21 @@ public final class DarkEntity {
     // GAME API: TRANSFORM (64-bit Logic)
     // ==========================================
 
-    public void setPosition(double x, double y) {
+    public void setPosition(double x, double y, double z) {
         long offset64 = id * 8L;
         soaMemory.globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, x);
         soaMemory.globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, y);
+        soaMemory.globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, z);
         
         // Sincronizar inmediatamente a VRAM view (32-bit)
         long offset32 = id * 4L;
         soaMemory.posX.set(ValueLayout.JAVA_FLOAT, offset32, (float) x);
         soaMemory.posY.set(ValueLayout.JAVA_FLOAT, offset32, (float) y);
+        soaMemory.posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float) z);
+    }
+
+    public void setPosition(double x, double y) {
+        setPosition(x, y, getPositionZ());
     }
 
     public double getPositionX() {
@@ -57,10 +63,19 @@ public final class DarkEntity {
         return soaMemory.globalPosY.get(ValueLayout.JAVA_DOUBLE, id * 8L);
     }
 
-    public void setVelocity(float vx, float vy) {
+    public double getPositionZ() {
+        return soaMemory.globalPosZ.get(ValueLayout.JAVA_DOUBLE, id * 8L);
+    }
+
+    public void setVelocity(float vx, float vy, float vz) {
         long offset = id * 4L;
         soaMemory.velX.set(ValueLayout.JAVA_FLOAT, offset, vx);
         soaMemory.velY.set(ValueLayout.JAVA_FLOAT, offset, vy);
+        soaMemory.velZ.set(ValueLayout.JAVA_FLOAT, offset, vz);
+    }
+
+    public void setVelocity(float vx, float vy) {
+        setVelocity(vx, vy, getVelocityZ());
     }
 
     public float getVelocityX() {
@@ -69,6 +84,10 @@ public final class DarkEntity {
 
     public float getVelocityY() {
         return soaMemory.velY.get(ValueLayout.JAVA_FLOAT, id * 4L);
+    }
+
+    public float getVelocityZ() {
+        return soaMemory.velZ.get(ValueLayout.JAVA_FLOAT, id * 4L);
     }
 
     // ==========================================

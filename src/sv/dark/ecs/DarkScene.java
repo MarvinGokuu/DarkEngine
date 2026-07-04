@@ -24,6 +24,9 @@ public final class DarkScene {
     private int freeListTail;
     
     private int activeEntityCount;
+    
+    // [ZERO-GC FACADE POOL]
+    private DarkEntity[] entityWrappers;
 
     // [ECS COMPONENT SYSTEM]
     // Máximo 64 tipos de componentes diferentes soportados
@@ -44,6 +47,12 @@ public final class DarkScene {
         }
         this.freeListTail = maxEntities - 1;
         this.activeEntityCount = 0;
+        
+        // Zero-GC Pre-allocation of Facades
+        this.entityWrappers = new DarkEntity[maxEntities];
+        for (int i = 0; i < maxEntities; i++) {
+            this.entityWrappers[i] = new DarkEntity(i, this.soaMemory, this);
+        }
         
         DarkLogger.info("ECS", "DarkScene Initialized. Capacity: " + maxEntities + " entities.");
     }
@@ -74,7 +83,16 @@ public final class DarkScene {
         soaMemory.setEntity(entityId, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f);
         entitySignatures[entityId] = 0L; // Reiniciar bitmask
         
-        return new DarkEntity(entityId, soaMemory, this);
+        return entityWrappers[entityId];
+    }
+
+    /**
+     * GAME API: Obtiene la Fachada (Wrapper) de una entidad existente sin alojar memoria.
+     * Complejidad: O(1)
+     */
+    public DarkEntity getEntity(int entityId) {
+        if (entityId < 0 || entityId >= maxEntities) return null;
+        return entityWrappers[entityId];
     }
 
     /**
@@ -158,5 +176,6 @@ public final class DarkScene {
         componentArrays = null;
         freeList = null;
         entitySignatures = null;
+        entityWrappers = null;
     }
 }
