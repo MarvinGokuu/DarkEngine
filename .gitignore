@@ -2,9 +2,6 @@
 
 # --- BINARIOS Y COMPILACIÓN ---
 bin/
-bin_jmh/
-src_jmh_generated/
-lib/jmh/
 out/
 target/
 Dark-Engine-*/
@@ -13,15 +10,16 @@ Dark-Engine-*/
 *.war
 *.ear
 
-# --- TEMPORALES DE SCRIPTS ---
-*.txt
-
 # --- ARTEFACTOS NATIVOS ---
 *.so
 *.dll
 *.dylib
 *.exe
 *.obj
+
+# Permitir librerias estaticas del motor
+!lib/*.jar
+!lib/*.dll
 
 # --- ESTADO Y TELEMETRÍA (VAULT) ---
 *.vault
@@ -33,7 +31,6 @@ telemetry_cache/
 # --- CONFIGURACIÓN DE ENTORNO ---
 .env
 .gemini/
-.agents/
 .idea/
 .vscode/
 *.iml
@@ -58,11 +55,9 @@ docs/management/PENDING_TASKS_ARCHIVE.md
 do_commits.ps1
 
 # --- HERRAMIENTAS Y AUDITORIAS INTERNAS (No versionar) ---
-tools/internal/.management/
-tools/internal/.audit_archive/
-tools/internal/.reports/
-tools/internal/.audit_scripts/
-tools/internal/.code-injector/
+tools/
+docs/audit_archive/
+docs/management/
 repomix-output*.xml
 *.repomix
 ceo_semantic_auditor.py

@@ -65,6 +65,23 @@ public final class DarkEngineMaster {
         // This DOES NOT block the hot-path, it runs in separate threads
         AdminController.startControlPlane(kernel, memoryVault);
 
+        // [NEURONA_048 STEP 4.5] INITIALIZE NATIVE CONTEXTS
+        try {
+            sv.dark.core.DarkPlatformContext.get();
+        } catch (IllegalStateException e) {
+            sv.dark.core.DarkPlatformContext.set(new sv.dark.platform.DarkGLFWBackend());
+        }
+        try {
+            sv.dark.core.DarkAudioContext.get();
+        } catch (IllegalStateException e) {
+            sv.dark.core.DarkAudioContext.set(new sv.dark.audio.DarkOpenALBackend());
+        }
+        try {
+            sv.dark.core.DarkUIContext.get();
+        } catch (IllegalStateException e) {
+            sv.dark.core.DarkUIContext.set(new sv.dark.ui.DarkImGuiBackend());
+        }
+
         // [NEURONA_048 STEP 5] CONFIGURE SYSTEMS
         configureSystems(kernel, memoryVault);
 
@@ -120,8 +137,8 @@ public final class DarkEngineMaster {
         registry.registerGameSystem(new sv.dark.vfx.animation.SkeletalAnimationSystem(skeletonMemory));
 
         // 9. Networking & State Replication (Phase 33)
-        // Cliente UDP en el puerto 27015, con un buffer RX/TX de 64KB (Zero-Allocation)
-        sv.dark.net.DarkNetworkClient netClient = new sv.dark.net.DarkNetworkClient(27015, 65536);
+        // Cliente UDP en el puerto 27020, con un buffer RX/TX de 64KB (Zero-Allocation)
+        sv.dark.net.DarkNetworkClient netClient = new sv.dark.net.DarkNetworkClient(27020, 65536);
         // Simulando una conexion entrante
         netClient.connect(new java.net.InetSocketAddress("127.0.0.1", 27016));
         sv.dark.net.DarkNetworkClient[] netClients = new sv.dark.net.DarkNetworkClient[]{ netClient };

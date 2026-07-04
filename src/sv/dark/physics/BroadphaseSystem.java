@@ -45,4 +45,9 @@ public final class BroadphaseSystem implements GameSystem {
     public void destroy() {
         grid.destroy();
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true; // Uses SpatialHashGrid which dispatches OpenGL Compute Shaders
+    }
 }

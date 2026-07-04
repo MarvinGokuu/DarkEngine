@@ -17,8 +17,10 @@ layout(std430, binding = 3) buffer LightIndexBuffer { uint lightIndices[]; };
 layout(std430, binding = 4) buffer LightGridBuffer { uvec2 lightGrid[]; };
 
 uniform mat4 lightSpaceMatrices[3]; // CSM Matrices
-uniform vec3 sunDir;
-uniform vec3 sunColor;
+layout(std430, binding = 5) buffer EnvironmentBuffer {
+    vec4 envSunDir;
+    vec4 envSunColor;
+};
 uniform vec3 camPos;
 uniform mat4 viewMatrix;
 uniform mat4 invViewProj; // Reconstruct world pos
@@ -108,7 +110,7 @@ void main() {
     // View vector based on actual world position
     vec3 V = normalize(camPos - FragPosWorld); 
     
-    vec3 L = normalize(sunDir);
+    vec3 L = normalize(envSunDir.xyz);
     vec3 H = normalize(V + L);
 
     // F0 es la reflectividad base. 0.04 aplica a los no metales (dieléctricos). 
@@ -139,7 +141,7 @@ void main() {
     }
 
     // Calcular ecuación de reflectancia (Radiance)
-    vec3 radiance = sunColor * (1.0 - shadow);
+    vec3 radiance = envSunColor.xyz * (1.0 - shadow);
 
     // BRDF Cook-Torrance
     float NDF = DistributionGGX(N, H, roughness);   

@@ -76,6 +76,18 @@ public final class DarkAudioLinker {
         FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
     );
 
+    // alDeleteSources(ALsizei n, const ALuint *sources)
+    public static final MethodHandle alDeleteSources = LINKER.downcallHandle(
+        OPENAL.find("alDeleteSources").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
+    );
+
+    // alDeleteBuffers(ALsizei n, const ALuint *buffers)
+    public static final MethodHandle alDeleteBuffers = LINKER.downcallHandle(
+        OPENAL.find("alDeleteBuffers").orElseThrow(),
+        FunctionDescriptor.ofVoid(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
+    );
+
     // alBufferData(ALuint buffer, ALenum format, const ALvoid *data, ALsizei size, ALsizei freq)
     public static final MethodHandle alBufferData = LINKER.downcallHandle(
         OPENAL.find("alBufferData").orElseThrow(),

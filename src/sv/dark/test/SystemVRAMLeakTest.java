@@ -35,6 +35,7 @@ public class SystemVRAMLeakTest {
 
             DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(window);
             DarkOpenGLLinker.init();
+            sv.dark.core.DarkRHIContext.init();
 
             // 2. Stress Test FBO Lifecycle
             int iterations = 5000;

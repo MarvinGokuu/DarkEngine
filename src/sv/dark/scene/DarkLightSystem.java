@@ -30,20 +30,12 @@ public final class DarkLightSystem {
     public static void init() {
         if (isInitialized) return;
         try {
-            try (Arena tempArena = Arena.ofConfined()) {
-                MemorySegment bufferPtr = tempArena.allocate(ValueLayout.JAVA_INT);
-                DarkOpenGLLinker.glGenBuffers.invokeExact(1, bufferPtr);
-                ssboLights = bufferPtr.get(ValueLayout.JAVA_INT, 0);
-                
-                long size = (long) MAX_LIGHTS * LIGHT_STRUCT_BYTES;
-                int flags = DarkOpenGLLinker.GL_MAP_WRITE_BIT | DarkOpenGLLinker.GL_MAP_PERSISTENT_BIT | DarkOpenGLLinker.GL_MAP_COHERENT_BIT;
-                
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboLights);
-                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, size, MemorySegment.NULL, flags);
-                
-                lightsMemory = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, size, flags);
-                lightsMemory = lightsMemory.reinterpret(size); // Cast to sized segment for direct Java writes
-            }
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
+            long size = (long) MAX_LIGHTS * LIGHT_STRUCT_BYTES;
+            int flags = sv.dark.rhi.DarkRHI.MAP_WRITE_BIT | sv.dark.rhi.DarkRHI.MAP_PERSISTENT_BIT | sv.dark.rhi.DarkRHI.MAP_COHERENT_BIT;
+            
+            ssboLights = device.createBuffer(size, flags);
+            lightsMemory = device.mapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboLights, 0L, size, flags);
             
             DarkLogger.info("GRAPHICS", "Light System AZDO SSBO initialized (Capacity: " + MAX_LIGHTS + ").");
             isInitialized = true;
@@ -94,13 +86,11 @@ public final class DarkLightSystem {
     public static void destroy() {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboLights);
-            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
-            
-            try (Arena tempArena = Arena.ofConfined()) {
-                MemorySegment bufferPtr = tempArena.allocate(ValueLayout.JAVA_INT);
-                bufferPtr.set(ValueLayout.JAVA_INT, 0, ssboLights);
-                DarkOpenGLLinker.glDeleteBuffers.invokeExact(1, bufferPtr);
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
+            if (ssboLights != 0) {
+                device.unmapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboLights);
+                device.deleteBuffers(new int[]{ssboLights});
+                ssboLights = 0;
             }
             lightsMemory = null;
             activeLightCount = 0;

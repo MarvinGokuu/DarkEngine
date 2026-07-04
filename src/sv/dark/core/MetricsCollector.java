@@ -76,7 +76,7 @@ public class MetricsCollector {
     static {
         try {
             telemetryChannel = FileChannel.open(
-                Path.of("telemetry_zero_alloc.log"), 
+                Path.of("logs", "telemetry_zero_alloc.log"), 
                 StandardOpenOption.CREATE, 
                 StandardOpenOption.WRITE, 
                 StandardOpenOption.APPEND

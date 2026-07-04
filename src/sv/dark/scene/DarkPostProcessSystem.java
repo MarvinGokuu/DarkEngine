@@ -23,25 +23,10 @@ public final class DarkPostProcessSystem {
     public static void init() {
         try {
             DarkLogger.info("GRAPHICS", "Compilando Compute Shader (post_process.comp) en VRAM...");
-            
-            int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
-            
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             String source = DarkShaderLoader.loadShader("src/sv/dark/scene/post_process.comp");
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment srcPtr = arena.allocateFrom(source);
-                MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
-                DarkOpenGLLinker.glShaderSource.invokeExact(shaderId, 1, srcArrayPtr, MemorySegment.NULL);
-            }
-            
-            DarkOpenGLLinker.glCompileShader.invokeExact(shaderId);
-            
-            computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
-            DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
-            DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
-            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
-            
+            computeProgramId = device.createComputePipeline(source);
             DarkLogger.info("GRAPHICS", "Post-Process (ACES HDR + Bloom) Compute Shader compilado.");
-
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error inicializando DarkPostProcessSystem", e);
             throw new RuntimeException(e);
@@ -50,19 +35,19 @@ public final class DarkPostProcessSystem {
 
     public static void dispatchPostProcess() {
         try {
-            DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindPipeline(computeProgramId);
 
             // Bind Lit HDR image (image unit 0) for IN-PLACE Read & Write
-            DarkOpenGLLinker.glBindImageTexture.invokeExact(0, DarkDeferredPipeline.getLitTexture(), 0, false, 0, DarkOpenGLLinker.GL_READ_WRITE, DarkOpenGLLinker.GL_RGBA16F);
+            cmd.bindImageTexture(0, DarkDeferredPipeline.getLitTexture(), 0, false, 0, sv.dark.rhi.DarkRHI.ACCESS_READ_WRITE, sv.dark.rhi.DarkRHI.FORMAT_RGBA16F);
 
             // Dispatch 1280x720 in 16x16 work groups
             int groupsX = (DarkDeferredPipeline.INTERNAL_WIDTH + 15) / 16;
             int groupsY = (DarkDeferredPipeline.INTERNAL_HEIGHT + 15) / 16;
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(groupsX, groupsY, 1);
+            cmd.dispatchCompute(groupsX, groupsY, 1);
 
             // Synchronize memory before FSR Upscaler
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_IMAGE);
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando Post-Processing", e);
         }
@@ -70,8 +55,9 @@ public final class DarkPostProcessSystem {
 
     public static void destroy() {
         try {
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             if (computeProgramId != 0) {
-                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+                device.deletePipeline(computeProgramId);
                 computeProgramId = 0;
             }
         } catch (Throwable e) {

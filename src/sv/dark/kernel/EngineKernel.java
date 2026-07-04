@@ -132,7 +132,7 @@ public final class EngineKernel {
         // [ECS PHASE 30] Init Scene Orchestrator with default capacity
         // Se usa 50_000 por defecto para no asfixiar el Heap Base en tests de Boot
         this.scene = new sv.dark.ecs.DarkScene(50_000);
-
+        
         // [FRAMEGRAPH] Initialize Render Graph Nodes
         this.frameGraph = new sv.dark.scene.graph.DarkFrameGraph();
         this.frameGraph.addPass(new sv.dark.scene.graph.GridCullingPass());
@@ -255,16 +255,13 @@ public final class EngineKernel {
         // -------------------------------------------------------------------------
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING JIT WARM-UP...");
         UltraFastBootSequence.warmUpWithStructuralIntegrity();
+        
+        // [PHASE 27] Start Shader Hot-Reloading Service (Virtual Thread)
+        sv.dark.scene.DarkShaderLoader.startHotReloadService();
 
         // [NEURONA_048 STEP 2.5] NATIVE WINDOW INIT (Main Thread FFI)
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] INITIALIZING NATIVE OS WINDOW (GLFW)...");
         sv.dark.ui.DarkEngineWindow.initNativeWindow();
-
-        // Initialize Graphics Context for Systems that require it
-        sv.dark.core.systems.GameSystem bpSystem = systemRegistry.getSystem(sv.dark.physics.BroadphaseSystem.class);
-        if (bpSystem != null) {
-            ((sv.dark.physics.BroadphaseSystem) bpSystem).getGrid().initGraphicsContext();
-        }
 
         // [APP EDITOR PAUSED] 
         // AWT/Java2D violates Zero-Garbage architecture. Reserved for WebSockets and FFI.
@@ -412,6 +409,13 @@ public final class EngineKernel {
                         Thread.onSpinWait(); // CPU Hint: release resources without sleeping
                     }
                 }
+            }
+
+            // -------------------------------------------------------------------------
+            // HOT-RELOAD CHECK (Phase 2.5)
+            // -------------------------------------------------------------------------
+            if (sv.dark.scene.DarkShaderLoader.isShaderDirty.getAndSet(false)) {
+                sv.dark.scene.DarkDeferredLightingSystem.reloadShaders();
             }
 
             // -------------------------------------------------------------------------
@@ -594,15 +598,6 @@ public final class EngineKernel {
      * PHASE 5: NATIVE RENDER (ImGui & GLFW)
      */
     private void phaseRender() {
-        // Clear default framebuffer to pitch black (hacker style base)
-        if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
-            try {
-                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
-            } catch (Throwable t) {
-                // Ignore
-            }
-        }
-
         float[] viewMatrix = sv.dark.scene.DarkCameraState.VIEW_MATRIX;
         float[] projMatrix = sv.dark.scene.DarkCameraState.PROJ_MATRIX;
 
@@ -613,7 +608,7 @@ public final class EngineKernel {
             if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
                 sv.dark.ui.DarkImGuiInput.newFrame(sv.dark.ui.DarkEngineWindow.getWindowPointer());
                 imgui.ImGui.newFrame();
-                
+                // [REMOVED] DarkProfiler call
                 imgui.ImGui.render();
                 imgui.ImDrawData drawData = imgui.ImGui.getDrawData();
                 if (drawData != null) {
@@ -627,6 +622,8 @@ public final class EngineKernel {
         // Swap buffers to display the frame
         if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
             try {
+                // Clear default framebuffer to pitch black (hacker style base)
+                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
                 sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
             } catch (Throwable t) {
                 sv.dark.core.DarkLogger.error("GRAPHICS", "Native panic during glfwSwapBuffers: " + t.getMessage());
@@ -677,8 +674,10 @@ public final class EngineKernel {
 
         // [TERMINATOR THREAD] Guarantees process death if shutdown freezes or throws an Error
         Thread terminator = new Thread(() -> {
-            try { Thread.sleep(1000); } catch (Exception ignored) {}
-            Runtime.getRuntime().halt(0);
+            try { Thread.sleep(3000); } catch (InterruptedException ignored) { return; }
+            if (System.getProperty("sv.dark.test.nohalt") == null) {
+                Runtime.getRuntime().halt(0);
+            }
         }, "KernelTerminator");
         terminator.setDaemon(true);
         terminator.start();
@@ -789,6 +788,7 @@ public final class EngineKernel {
         try {
             sv.dark.scene.DarkDeferredPipeline.destroy();
             sv.dark.scene.DarkComputeCullingSystem.destroy();
+            sv.dark.scene.DarkShaderLoader.stopHotReloadService();
             sv.dark.scene.DarkDeferredLightingSystem.destroy();
             sv.dark.scene.DarkLightSystem.destroy();
             sv.dark.scene.DarkClusteredSystem.destroy();
@@ -831,6 +831,7 @@ public final class EngineKernel {
         // [SHUTDOWN GUARANTEE]
         // Force Windows kernel to clear native memory descriptors and CPU Pinning
         sv.dark.core.DarkLogger.info("KERNEL", "[KERNEL] EXECUTING LOW-LEVEL SHUTDOWN (HALT)...");
+        terminator.interrupt();
         if (System.getProperty("sv.dark.test.nohalt") == null) {
             Runtime.getRuntime().halt(0);
         } else {

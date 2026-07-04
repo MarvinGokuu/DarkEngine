@@ -25,6 +25,9 @@ public class SpatialAudioStressTest {
 
         SectorMemoryVault vault = new SectorMemoryVault(1024);
         
+        // Initialize Audio Context for tests
+        sv.dark.core.DarkAudioContext.set(new sv.dark.audio.DarkOpenALBackend());
+        
         // Dummy init to force all static class loading (JNI, Project Panama, Loggers)
         sv.dark.audio.DarkAudioSourceSoA dummySrc = new sv.dark.audio.DarkAudioSourceSoA(1);
         DarkAudioSystem dummySys = new DarkAudioSystem(vault, dummySrc);
