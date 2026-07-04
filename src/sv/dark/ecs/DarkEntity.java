@@ -39,13 +39,18 @@ public final class DarkEntity {
     // ==========================================
 
     public void setPosition(double x, double y, double z) {
-        long offset64 = id * 8L;
+        int phys = scene.getPhysicalIndex(id);
+        long offset64 = phys * 8L;
+        soaMemory.localPosX.set(ValueLayout.JAVA_DOUBLE, offset64, x);
+        soaMemory.localPosY.set(ValueLayout.JAVA_DOUBLE, offset64, y);
+        soaMemory.localPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, z);
+        
         soaMemory.globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, x);
         soaMemory.globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, y);
         soaMemory.globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, z);
         
         // Sincronizar inmediatamente a VRAM view (32-bit)
-        long offset32 = id * 4L;
+        long offset32 = phys * 4L;
         soaMemory.posX.set(ValueLayout.JAVA_FLOAT, offset32, (float) x);
         soaMemory.posY.set(ValueLayout.JAVA_FLOAT, offset32, (float) y);
         soaMemory.posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float) z);
@@ -56,19 +61,19 @@ public final class DarkEntity {
     }
 
     public double getPositionX() {
-        return soaMemory.globalPosX.get(ValueLayout.JAVA_DOUBLE, id * 8L);
+        return soaMemory.globalPosX.get(ValueLayout.JAVA_DOUBLE, scene.getPhysicalIndex(id) * 8L);
     }
 
     public double getPositionY() {
-        return soaMemory.globalPosY.get(ValueLayout.JAVA_DOUBLE, id * 8L);
+        return soaMemory.globalPosY.get(ValueLayout.JAVA_DOUBLE, scene.getPhysicalIndex(id) * 8L);
     }
 
     public double getPositionZ() {
-        return soaMemory.globalPosZ.get(ValueLayout.JAVA_DOUBLE, id * 8L);
+        return soaMemory.globalPosZ.get(ValueLayout.JAVA_DOUBLE, scene.getPhysicalIndex(id) * 8L);
     }
 
     public void setVelocity(float vx, float vy, float vz) {
-        long offset = id * 4L;
+        long offset = scene.getPhysicalIndex(id) * 4L;
         soaMemory.velX.set(ValueLayout.JAVA_FLOAT, offset, vx);
         soaMemory.velY.set(ValueLayout.JAVA_FLOAT, offset, vy);
         soaMemory.velZ.set(ValueLayout.JAVA_FLOAT, offset, vz);
@@ -79,15 +84,23 @@ public final class DarkEntity {
     }
 
     public float getVelocityX() {
-        return soaMemory.velX.get(ValueLayout.JAVA_FLOAT, id * 4L);
+        return soaMemory.velX.get(ValueLayout.JAVA_FLOAT, scene.getPhysicalIndex(id) * 4L);
     }
 
     public float getVelocityY() {
-        return soaMemory.velY.get(ValueLayout.JAVA_FLOAT, id * 4L);
+        return soaMemory.velY.get(ValueLayout.JAVA_FLOAT, scene.getPhysicalIndex(id) * 4L);
     }
 
     public float getVelocityZ() {
-        return soaMemory.velZ.get(ValueLayout.JAVA_FLOAT, id * 4L);
+        return soaMemory.velZ.get(ValueLayout.JAVA_FLOAT, scene.getPhysicalIndex(id) * 4L);
+    }
+
+    // ==========================================
+    // GAME API: HIERARCHY
+    // ==========================================
+    
+    public void setParent(DarkEntity parent) {
+        scene.setParent(this.id, parent != null ? parent.getId() : -1);
     }
 
     // ==========================================

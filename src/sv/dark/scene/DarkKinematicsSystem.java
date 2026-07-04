@@ -50,9 +50,9 @@ public final class DarkKinematicsSystem {
             long offset64 = i * 8L;
             
             // 1. Memory Load (Interleaved para saturar el bus de memoria)
-            DoubleVector px = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosX, offset64, BO);
-            DoubleVector py = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosY, offset64, BO);
-            DoubleVector pz = DoubleVector.fromMemorySegment(D_SPECIES, soa.globalPosZ, offset64, BO);
+            DoubleVector px = DoubleVector.fromMemorySegment(D_SPECIES, soa.localPosX, offset64, BO);
+            DoubleVector py = DoubleVector.fromMemorySegment(D_SPECIES, soa.localPosY, offset64, BO);
+            DoubleVector pz = DoubleVector.fromMemorySegment(D_SPECIES, soa.localPosZ, offset64, BO);
             FloatVector vxFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velX, offset32, BO);
             FloatVector vyFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velY, offset32, BO);
             FloatVector vzFloat = FloatVector.fromMemorySegment(F_SPECIES, soa.velZ, offset32, BO);
@@ -66,41 +66,62 @@ public final class DarkKinematicsSystem {
             DoubleVector newPy = py.add(vy.mul(dt));
             DoubleVector newPz = pz.add(vz.mul(dt));
             
-            FloatVector finalVisualX = (FloatVector) newPx.sub(camX).castShape(F_SPECIES, 0);
-            FloatVector finalVisualY = (FloatVector) newPy.sub(camY).castShape(F_SPECIES, 0);
-            FloatVector finalVisualZ = (FloatVector) newPz.sub(camZ).castShape(F_SPECIES, 0);
+            // Note: SIMD phase only updates Local Position. 
+            // Global Position and Visual Position are calculated in the scalar phase below
+            // to properly resolve parent-child hierarchy in topological order.
 
-            // 3. Memory Store
-            newPx.intoMemorySegment(soa.globalPosX, offset64, BO);
-            newPy.intoMemorySegment(soa.globalPosY, offset64, BO);
-            newPz.intoMemorySegment(soa.globalPosZ, offset64, BO);
-            finalVisualX.intoMemorySegment(soa.posX, offset32, BO);
-            finalVisualY.intoMemorySegment(soa.posY, offset32, BO);
-            finalVisualZ.intoMemorySegment(soa.posZ, offset32, BO);
+            // 3. Memory Store (Local Pos Only)
+            newPx.intoMemorySegment(soa.localPosX, offset64, BO);
+            newPy.intoMemorySegment(soa.localPosY, offset64, BO);
+            newPz.intoMemorySegment(soa.localPosZ, offset64, BO);
         }
 
-        // Fase 2: Cola Escalar (Precisión Infinita 64-bits)
-        for (; i < capacity; i++) {
+        // Fase 2: Jerarquía y Transformaciones Globales (Escalar Topológico)
+        // Ya que la memoria está ordenada topológicamente, los padres siempre se procesan antes que los hijos.
+        for (i = 0; i < capacity; i++) {
             long offset32 = i * 4L;
             long offset64 = i * 8L;
             
-            double px = soa.globalPosX.get(ValueLayout.JAVA_DOUBLE, offset64);
-            float vx = soa.velX.get(ValueLayout.JAVA_FLOAT, offset32);
-            double newPx = px + (vx * dt);
-            soa.globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, newPx);
-            soa.posX.set(ValueLayout.JAVA_FLOAT, offset32, (float)(newPx - camX));
+            // 1. Actualizar Física Local si no fue cubierta por SIMD
+            if (i >= loopBound) {
+                double px = soa.localPosX.get(ValueLayout.JAVA_DOUBLE, offset64);
+                float vx = soa.velX.get(ValueLayout.JAVA_FLOAT, offset32);
+                soa.localPosX.set(ValueLayout.JAVA_DOUBLE, offset64, px + (vx * dt));
+                
+                double py = soa.localPosY.get(ValueLayout.JAVA_DOUBLE, offset64);
+                float vy = soa.velY.get(ValueLayout.JAVA_FLOAT, offset32);
+                soa.localPosY.set(ValueLayout.JAVA_DOUBLE, offset64, py + (vy * dt));
+                
+                double pz = soa.localPosZ.get(ValueLayout.JAVA_DOUBLE, offset64);
+                float vz = soa.velZ.get(ValueLayout.JAVA_FLOAT, offset32);
+                soa.localPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, pz + (vz * dt));
+            }
             
-            double py = soa.globalPosY.get(ValueLayout.JAVA_DOUBLE, offset64);
-            float vy = soa.velY.get(ValueLayout.JAVA_FLOAT, offset32);
-            double newPy = py + (vy * dt);
-            soa.globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, newPy);
-            soa.posY.set(ValueLayout.JAVA_FLOAT, offset32, (float)(newPy - camY));
+            // 2. Calcular Global Position resolviendo la jerarquía
+            double localX = soa.localPosX.get(ValueLayout.JAVA_DOUBLE, offset64);
+            double localY = soa.localPosY.get(ValueLayout.JAVA_DOUBLE, offset64);
+            double localZ = soa.localPosZ.get(ValueLayout.JAVA_DOUBLE, offset64);
             
-            double pz = soa.globalPosZ.get(ValueLayout.JAVA_DOUBLE, offset64);
-            float vz = soa.velZ.get(ValueLayout.JAVA_FLOAT, offset32);
-            double newPz = pz + (vz * dt);
-            soa.globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, newPz);
-            soa.posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float)(newPz - camZ));
+            int parentIdx = soa.parentIdx.get(ValueLayout.JAVA_INT, offset32);
+            double globalX = localX;
+            double globalY = localY;
+            double globalZ = localZ;
+            
+            if (parentIdx >= 0) {
+                long pOff = parentIdx * 8L;
+                globalX += soa.globalPosX.get(ValueLayout.JAVA_DOUBLE, pOff);
+                globalY += soa.globalPosY.get(ValueLayout.JAVA_DOUBLE, pOff);
+                globalZ += soa.globalPosZ.get(ValueLayout.JAVA_DOUBLE, pOff);
+            }
+            
+            // 3. Escribir Global y Camera-Relative Visual
+            soa.globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, globalX);
+            soa.globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, globalY);
+            soa.globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, globalZ);
+            
+            soa.posX.set(ValueLayout.JAVA_FLOAT, offset32, (float)(globalX - camX));
+            soa.posY.set(ValueLayout.JAVA_FLOAT, offset32, (float)(globalY - camY));
+            soa.posZ.set(ValueLayout.JAVA_FLOAT, offset32, (float)(globalZ - camZ));
         }
     }
 }

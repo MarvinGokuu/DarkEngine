@@ -33,9 +33,18 @@ public final class DarkTransformSoA {
     public final MemorySegment velZ;
 
     // 64-bits (Double) - Lógica y Cinemática del CPU (Precisión Infinita)
+    public final MemorySegment localPosX;
+    public final MemorySegment localPosY;
+    public final MemorySegment localPosZ;
+    
     public final MemorySegment globalPosX;
     public final MemorySegment globalPosY;
     public final MemorySegment globalPosZ;
+
+    // Jerarquía de Escena (Scene Graph) - Índices Físicos (32-bits)
+    public final MemorySegment parentIdx;
+    public final MemorySegment firstChildIdx;
+    public final MemorySegment nextSiblingIdx;
 
     /**
      * Aloja la memoria nativa requerida para la capacidad máxima de entidades.
@@ -57,11 +66,25 @@ public final class DarkTransformSoA {
         this.velZ = arena.allocate(bytesRequired32, 64);
 
         // Asignación de bloques (64-bit para simulaciones CPU)
+        this.localPosX = arena.allocate(bytesRequired64, 64);
+        this.localPosY = arena.allocate(bytesRequired64, 64);
+        this.localPosZ = arena.allocate(bytesRequired64, 64);
+        
         this.globalPosX = arena.allocate(bytesRequired64, 64);
         this.globalPosY = arena.allocate(bytesRequired64, 64);
         this.globalPosZ = arena.allocate(bytesRequired64, 64);
         
-        DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 6 + bytesRequired64 * 3) / 1024 / 1024) + " MB Off-Heap 3D LWC)");
+        // Asignación de bloques (Jerarquía de Escena)
+        this.parentIdx = arena.allocate(bytesRequired32, 64);
+        this.firstChildIdx = arena.allocate(bytesRequired32, 64);
+        this.nextSiblingIdx = arena.allocate(bytesRequired32, 64);
+        
+        // Inicializar jerarquía con -1 (Sin padre/hijo) usando relleno de bytes rápido (0xFFFFFFFF = -1 en int de 32-bits)
+        parentIdx.fill((byte) 0xFF);
+        firstChildIdx.fill((byte) 0xFF);
+        nextSiblingIdx.fill((byte) 0xFF);
+        
+        DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 9 + bytesRequired64 * 3) / 1024 / 1024) + " MB Off-Heap 3D LWC)");
     }
     
     public int getCapacity() {
@@ -76,6 +99,10 @@ public final class DarkTransformSoA {
         long offset64 = entityId * 8L;
         
         // Setear estado lógico en 64-bits
+        localPosX.set(ValueLayout.JAVA_DOUBLE, offset64, globalPx);
+        localPosY.set(ValueLayout.JAVA_DOUBLE, offset64, globalPy);
+        localPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, globalPz);
+        
         globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, globalPx);
         globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, globalPy);
         globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, globalPz);
@@ -88,6 +115,88 @@ public final class DarkTransformSoA {
         velX.set(ValueLayout.JAVA_FLOAT, offset32, vx);
         velY.set(ValueLayout.JAVA_FLOAT, offset32, vy);
         velZ.set(ValueLayout.JAVA_FLOAT, offset32, vz);
+        
+        parentIdx.set(ValueLayout.JAVA_INT, offset32, -1);
+        firstChildIdx.set(ValueLayout.JAVA_INT, offset32, -1);
+        nextSiblingIdx.set(ValueLayout.JAVA_INT, offset32, -1);
+    }
+    
+    /**
+     * Intercambia físicamente dos entidades en la memoria O(1).
+     * Crítico para el Topological Sort.
+     */
+    public void swap(int idA, int idB) {
+        if (idA == idB) return;
+        long offA32 = idA * 4L;
+        long offB32 = idB * 4L;
+        long offA64 = idA * 8L;
+        long offB64 = idB * 8L;
+
+        // Swap 64-bit
+        double tempD;
+        tempD = localPosX.get(ValueLayout.JAVA_DOUBLE, offA64);
+        localPosX.set(ValueLayout.JAVA_DOUBLE, offA64, localPosX.get(ValueLayout.JAVA_DOUBLE, offB64));
+        localPosX.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+        
+        tempD = localPosY.get(ValueLayout.JAVA_DOUBLE, offA64);
+        localPosY.set(ValueLayout.JAVA_DOUBLE, offA64, localPosY.get(ValueLayout.JAVA_DOUBLE, offB64));
+        localPosY.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+        
+        tempD = localPosZ.get(ValueLayout.JAVA_DOUBLE, offA64);
+        localPosZ.set(ValueLayout.JAVA_DOUBLE, offA64, localPosZ.get(ValueLayout.JAVA_DOUBLE, offB64));
+        localPosZ.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+        
+        tempD = globalPosX.get(ValueLayout.JAVA_DOUBLE, offA64);
+        globalPosX.set(ValueLayout.JAVA_DOUBLE, offA64, globalPosX.get(ValueLayout.JAVA_DOUBLE, offB64));
+        globalPosX.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+        
+        tempD = globalPosY.get(ValueLayout.JAVA_DOUBLE, offA64);
+        globalPosY.set(ValueLayout.JAVA_DOUBLE, offA64, globalPosY.get(ValueLayout.JAVA_DOUBLE, offB64));
+        globalPosY.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+        
+        tempD = globalPosZ.get(ValueLayout.JAVA_DOUBLE, offA64);
+        globalPosZ.set(ValueLayout.JAVA_DOUBLE, offA64, globalPosZ.get(ValueLayout.JAVA_DOUBLE, offB64));
+        globalPosZ.set(ValueLayout.JAVA_DOUBLE, offB64, tempD);
+
+        // Swap 32-bit (Floats)
+        float tempF;
+        tempF = posX.get(ValueLayout.JAVA_FLOAT, offA32);
+        posX.set(ValueLayout.JAVA_FLOAT, offA32, posX.get(ValueLayout.JAVA_FLOAT, offB32));
+        posX.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+        
+        tempF = posY.get(ValueLayout.JAVA_FLOAT, offA32);
+        posY.set(ValueLayout.JAVA_FLOAT, offA32, posY.get(ValueLayout.JAVA_FLOAT, offB32));
+        posY.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+        
+        tempF = posZ.get(ValueLayout.JAVA_FLOAT, offA32);
+        posZ.set(ValueLayout.JAVA_FLOAT, offA32, posZ.get(ValueLayout.JAVA_FLOAT, offB32));
+        posZ.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+        
+        tempF = velX.get(ValueLayout.JAVA_FLOAT, offA32);
+        velX.set(ValueLayout.JAVA_FLOAT, offA32, velX.get(ValueLayout.JAVA_FLOAT, offB32));
+        velX.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+        
+        tempF = velY.get(ValueLayout.JAVA_FLOAT, offA32);
+        velY.set(ValueLayout.JAVA_FLOAT, offA32, velY.get(ValueLayout.JAVA_FLOAT, offB32));
+        velY.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+        
+        tempF = velZ.get(ValueLayout.JAVA_FLOAT, offA32);
+        velZ.set(ValueLayout.JAVA_FLOAT, offA32, velZ.get(ValueLayout.JAVA_FLOAT, offB32));
+        velZ.set(ValueLayout.JAVA_FLOAT, offB32, tempF);
+
+        // Swap 32-bit (Ints - Hierarchy)
+        int tempI;
+        tempI = parentIdx.get(ValueLayout.JAVA_INT, offA32);
+        parentIdx.set(ValueLayout.JAVA_INT, offA32, parentIdx.get(ValueLayout.JAVA_INT, offB32));
+        parentIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
+        
+        tempI = firstChildIdx.get(ValueLayout.JAVA_INT, offA32);
+        firstChildIdx.set(ValueLayout.JAVA_INT, offA32, firstChildIdx.get(ValueLayout.JAVA_INT, offB32));
+        firstChildIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
+        
+        tempI = nextSiblingIdx.get(ValueLayout.JAVA_INT, offA32);
+        nextSiblingIdx.set(ValueLayout.JAVA_INT, offA32, nextSiblingIdx.get(ValueLayout.JAVA_INT, offB32));
+        nextSiblingIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
     }
     
     public void destroy() {
