@@ -37,20 +37,20 @@ public final class SkeletalAnimationSystem implements GameSystem {
         if (computeProgramId == -1) return; // Esperar al Motor Grafico
 
         try {
-            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
             
             // 1. Subida Masiva a VRAM (Zero-GC) usando RHI
-            rhi.updateBufferSubData(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, boneSSBO, 0L, skeletonMemory.getRawBuffer(), skeletonMemory.getSizeBytes());
+            cmd.updateBufferData(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, boneSSBO, 0L, skeletonMemory.getRawBuffer(), skeletonMemory.getSizeBytes());
 
             // 2. Activar Skinning Compute Shader
-            rhi.useProgram(computeProgramId);
+            cmd.bindPipeline(computeProgramId);
             
             // 3. Despachar (1 hilo de GPU por cada vertice)
             int workGroupsX = (VERTICES_TO_SKIN + 255) / 256;
-            rhi.dispatchCompute(workGroupsX, 1, 1);
+            cmd.dispatchCompute(workGroupsX, 1, 1);
             
             // 4. Barrera de Sincronizacion antes de que el Vertex Shader los pinte
-            rhi.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
             
         } catch (Throwable e) {
             // RHI Error

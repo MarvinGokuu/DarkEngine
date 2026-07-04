@@ -25,9 +25,9 @@ public final class DarkFSRSystem {
         try {
             DarkLogger.info("GRAPHICS", "Compilando Compute Shader (fsr_upscale.comp) en VRAM vía RHI...");
             
-            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             String source = DarkShaderLoader.loadShader("src/sv/dark/scene/fsr_upscale.comp");
-            computeProgramId = rhi.createComputeShader(source);
+            computeProgramId = device.createComputePipeline(source);
             
             DarkLogger.info("GRAPHICS", "FSR Upscale Compute Shader compilado. Target: 4K");
 
@@ -39,22 +39,22 @@ public final class DarkFSRSystem {
 
     public static void dispatchFSR() {
         try {
-            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
-            rhi.useProgram(computeProgramId);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindPipeline(computeProgramId);
 
             // Bind Lit texture (texture unit 0)
-            rhi.bindTexture2D(DarkDeferredPipeline.getLitTexture());
+            cmd.bindTexture2D(0, DarkDeferredPipeline.getLitTexture());
 
             // Bind Presentation 4K output image (image unit 1)
-            rhi.bindImageTexture(1, DarkDeferredPipeline.getPresentationTexture(), 0, false, 0, sv.dark.rhi.DarkRHI.ACCESS_READ_WRITE, sv.dark.rhi.DarkRHI.FORMAT_RGBA8);
+            cmd.bindImageTexture(1, DarkDeferredPipeline.getPresentationTexture(), 0, false, 0, sv.dark.rhi.DarkRHI.ACCESS_READ_WRITE, sv.dark.rhi.DarkRHI.FORMAT_RGBA8);
 
             // Dispatch 3840x2160 in 16x16 work groups
             int groupsX = (sv.dark.config.DarkDisplayConfig.targetWidth + 15) / 16;
             int groupsY = (sv.dark.config.DarkDisplayConfig.targetHeight + 15) / 16;
-            rhi.dispatchCompute(groupsX, groupsY, 1);
+            cmd.dispatchCompute(groupsX, groupsY, 1);
 
             // Synchronize memory before Window swap
-            rhi.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_IMAGE);
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_IMAGE);
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando FSR Upscale", e);
@@ -63,9 +63,9 @@ public final class DarkFSRSystem {
 
     public static void destroy() {
         try {
-            sv.dark.rhi.DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
-            if (rhi != null && computeProgramId != 0) {
-                rhi.deleteProgram(computeProgramId);
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
+            if (device != null && computeProgramId != 0) {
+                device.deletePipeline(computeProgramId);
                 computeProgramId = 0;
             }
         } catch (Throwable e) {

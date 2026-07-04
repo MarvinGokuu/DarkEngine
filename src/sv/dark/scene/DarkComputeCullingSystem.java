@@ -36,61 +36,29 @@ public final class DarkComputeCullingSystem {
         try {
             DarkLogger.info("GRAPHICS", "Compilando Compute Shader (culling_shader.comp) en VRAM...");
             
-            // 1. Crear Shader
-            int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             
-            // 2. Leer código fuente
+            // 1. Crear Shader Program
             String source = DarkShaderLoader.loadShader("src/sv/dark/scene/culling_shader.comp");
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment srcPtr = arena.allocateFrom(source);
-                MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
-                
-                DarkOpenGLLinker.glShaderSource.invokeExact(shaderId, 1, srcArrayPtr, MemorySegment.NULL);
-            }
+            computeProgramId = device.createComputePipeline(source);
             
-            // 3. Compilar
-            DarkOpenGLLinker.glCompileShader.invokeExact(shaderId);
+            // 2. Generar Buffers (SSBOs AZDO)
+            int flagsMap = sv.dark.rhi.DarkRHI.MAP_WRITE_BIT | sv.dark.rhi.DarkRHI.MAP_PERSISTENT_BIT | sv.dark.rhi.DarkRHI.MAP_COHERENT_BIT;
             
-            // 4. Crear Programa
-            computeProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
-            DarkOpenGLLinker.glAttachShader.invokeExact(computeProgramId, shaderId);
-            DarkOpenGLLinker.glLinkProgram.invokeExact(computeProgramId);
-            DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
+            // Mapear X
+            ssboX = device.createBuffer(BUFFER_SIZE, flagsMap);
+            mappedPosX = device.mapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboX, 0L, BUFFER_SIZE, flagsMap);
             
-            // 5. Generar Buffers (SSBOs AZDO)
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT, 4);
-                DarkOpenGLLinker.glGenBuffers.invokeExact(4, buffers);
-                ssboX = buffers.get(ValueLayout.JAVA_INT, 0);
-                ssboY = buffers.get(ValueLayout.JAVA_INT, 4);
-                ssboZ = buffers.get(ValueLayout.JAVA_INT, 8);
-                ssboVisible = buffers.get(ValueLayout.JAVA_INT, 12);
-                
-                int flagsMap = DarkOpenGLLinker.GL_MAP_WRITE_BIT | DarkOpenGLLinker.GL_MAP_PERSISTENT_BIT | DarkOpenGLLinker.GL_MAP_COHERENT_BIT;
-                
-                // Mapear X
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboX);
-                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, BUFFER_SIZE, MemorySegment.NULL, flagsMap);
-                mappedPosX = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, BUFFER_SIZE, flagsMap);
-                mappedPosX = mappedPosX.reinterpret(BUFFER_SIZE);
-                
-                // Mapear Y
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboY);
-                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, BUFFER_SIZE, MemorySegment.NULL, flagsMap);
-                mappedPosY = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, BUFFER_SIZE, flagsMap);
-                mappedPosY = mappedPosY.reinterpret(BUFFER_SIZE);
-                
-                // Mapear Z
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboZ);
-                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, BUFFER_SIZE, MemorySegment.NULL, flagsMap);
-                mappedPosZ = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, BUFFER_SIZE, flagsMap);
-                mappedPosZ = mappedPosZ.reinterpret(BUFFER_SIZE);
-                
-                // Visible (Solo GPU)
-                // Se lee desde Compute (Escritura) y Geometry (Lectura), no necesitamos mapearlo en CPU
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboVisible);
-                DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, BUFFER_SIZE, MemorySegment.NULL, 0);
-            }
+            // Mapear Y
+            ssboY = device.createBuffer(BUFFER_SIZE, flagsMap);
+            mappedPosY = device.mapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboY, 0L, BUFFER_SIZE, flagsMap);
+            
+            // Mapear Z
+            ssboZ = device.createBuffer(BUFFER_SIZE, flagsMap);
+            mappedPosZ = device.mapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboZ, 0L, BUFFER_SIZE, flagsMap);
+            
+            // Visible (Solo GPU)
+            ssboVisible = device.createBuffer(BUFFER_SIZE, 0);
             
             DarkLogger.info("GRAPHICS", "Compute Shader compilado y SSBOs AZDO alojados en VRAM.");
 
@@ -116,21 +84,23 @@ public final class DarkComputeCullingSystem {
             MemorySegment.copy(soa.posY, 0L, mappedPosY, 0L, bytes);
             MemorySegment.copy(soa.posZ, 0L, mappedPosZ, 0L, bytes);
 
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+
             // 2. Activar programa de GPU
-            DarkOpenGLLinker.glUseProgram.invokeExact(computeProgramId);
+            cmd.bindPipeline(computeProgramId);
 
             // 3. Bind SSBOs
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0, ssboX);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 1, ssboY);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 2, ssboZ);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 3, ssboVisible);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 0, ssboX);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 1, ssboY);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 2, ssboZ);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 3, ssboVisible);
 
             // 4. Despachar el Compute Shader (Grupos de 256 hilos)
             int numGroups = (capacity + 255) / 256;
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(numGroups, 1, 1);
+            cmd.dispatchCompute(numGroups, 1, 1);
 
             // 5. Sincronizar memoria de la GPU
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
 
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error despachando Compute Culling", e);
@@ -139,25 +109,19 @@ public final class DarkComputeCullingSystem {
 
     public static void destroy() {
         try {
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             if (computeProgramId != 0) {
-                DarkOpenGLLinker.glDeleteProgram.invokeExact(computeProgramId);
+                device.deletePipeline(computeProgramId);
                 computeProgramId = 0;
             }
             
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboX);
-            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboY);
-            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, ssboZ);
-            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER);
-            
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT, 4);
-                buffers.set(ValueLayout.JAVA_INT, 0L, ssboX);
-                buffers.set(ValueLayout.JAVA_INT, 4L, ssboY);
-                buffers.set(ValueLayout.JAVA_INT, 8L, ssboZ);
-                buffers.set(ValueLayout.JAVA_INT, 12L, ssboVisible);
-                DarkOpenGLLinker.glDeleteBuffers.invokeExact(4, buffers);
+            if (ssboX != 0) {
+                device.unmapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboX);
+                device.unmapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboY);
+                device.unmapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, ssboZ);
+                
+                device.deleteBuffers(new int[]{ssboX, ssboY, ssboZ, ssboVisible});
+                
                 ssboX = 0;
                 ssboY = 0;
                 ssboZ = 0;

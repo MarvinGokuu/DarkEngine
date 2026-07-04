@@ -44,22 +44,22 @@ public final class GPUParticleSystem implements GameSystem {
 
         try {
             // 1. Activar el Compute Shader
-            DarkRHI rhi = sv.dark.core.DarkRHIContext.get();
-            rhi.useProgram(computeProgramId);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindPipeline(computeProgramId);
             
             // 2. Inyectar deltaTime
             if (deltaTimeLocation != -1) {
-                rhi.setUniform1f(deltaTimeLocation, (float) deltaTime);
+                cmd.setUniform1f(deltaTimeLocation, (float) deltaTime);
             }
             
             // 3. Despachar Hilos en la GPU
             // Grupos de trabajo de 256 hilos (Coincide con local_size_x = 256)
             int workGroupsX = (MAX_PARTICLES + 255) / 256;
-            rhi.dispatchCompute(workGroupsX, 1, 1);
+            cmd.dispatchCompute(workGroupsX, 1, 1);
             
             // 4. Barrera de Memoria
             // Bloquea el Vertex Shader de leer las partículas hasta que el Compute Shader termine de escribirlas
-            rhi.memoryBarrier(DarkRHI.BARRIER_SHADER_STORAGE);
+            cmd.memoryBarrier(DarkRHI.BARRIER_SHADER_STORAGE);
             
             // Nota: El RenderSystem posteriormente usará glDrawArraysInstanced(..., MAX_PARTICLES)
             

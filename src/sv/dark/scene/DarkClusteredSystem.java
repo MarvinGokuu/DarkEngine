@@ -22,6 +22,7 @@ public final class DarkClusteredSystem {
     private static int clusterAABB_SSBO;
     private static int lightGrid_SSBO;
     private static int globalIndexCount_SSBO;
+    private static MemorySegment globalIndexMapped;
     
     // Uniform Locations
     private static int locInverseProj;
@@ -51,67 +52,36 @@ public final class DarkClusteredSystem {
         try {
             DarkLogger.info("GRAPHICS", "Initializing Clustered Shading Compute Shaders...");
             
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
+            
             // 1. Compile cluster_grid.comp
-            gridProgramId = compileComputeShader("src/sv/dark/scene/cluster_grid.comp");
+            gridProgramId = device.createComputePipeline(DarkShaderLoader.loadShader("src/sv/dark/scene/cluster_grid.comp"));
             
             // 2. Compile light_culling.comp
-            cullProgramId = compileComputeShader("src/sv/dark/scene/light_culling.comp");
+            cullProgramId = device.createComputePipeline(DarkShaderLoader.loadShader("src/sv/dark/scene/light_culling.comp"));
             
             // 3. Create SSBOs
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT, 3);
-                DarkOpenGLLinker.glGenBuffers.invokeExact(3, buffers);
-                clusterAABB_SSBO = buffers.get(ValueLayout.JAVA_INT, 0);
-                lightGrid_SSBO = buffers.get(ValueLayout.JAVA_INT, 4);
-                globalIndexCount_SSBO = buffers.get(ValueLayout.JAVA_INT, 8);
-                
-                // Cluster AABB Buffer (2 vec4 per cluster)
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, clusterAABB_SSBO);
-                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, (long)(NUM_CLUSTERS * 32), MemorySegment.NULL, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
-                
-                // Light Grid Buffer
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, lightGrid_SSBO);
-                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, (long)(NUM_CLUSTERS * 8), MemorySegment.NULL, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
-                
-                // Global Index Count Buffer (atomic counter + light index list)
-                DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, globalIndexCount_SSBO);
-                DarkOpenGLLinker.glBufferData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, (long)(4 + (NUM_CLUSTERS * MAX_LIGHTS_PER_CLUSTER * 4)), MemorySegment.NULL, DarkOpenGLLinker.GL_DYNAMIC_DRAW);
-                
-                // Get Uniform Locations
-                locInverseProj = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(gridProgramId, arena.allocateFrom("inverseProjection"));
-                locScreenSize = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(gridProgramId, arena.allocateFrom("screenSize"));
-                locZNear = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(gridProgramId, arena.allocateFrom("zNear"));
-                locZFar = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(gridProgramId, arena.allocateFrom("zFar"));
-                
-                locViewMatrix = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(cullProgramId, arena.allocateFrom("viewMatrix"));
-                locActiveLightCount = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(cullProgramId, arena.allocateFrom("activeLightCount"));
-            }
+            clusterAABB_SSBO = device.createBuffer((long)(NUM_CLUSTERS * 32), 0);
+            lightGrid_SSBO = device.createBuffer((long)(NUM_CLUSTERS * 8), 0);
+            globalIndexCount_SSBO = device.createBuffer((long)(4 + (NUM_CLUSTERS * MAX_LIGHTS_PER_CLUSTER * 4)), sv.dark.rhi.DarkRHI.MAP_WRITE_BIT | sv.dark.rhi.DarkRHI.MAP_PERSISTENT_BIT | sv.dark.rhi.DarkRHI.MAP_COHERENT_BIT);
+            
+            // Map the first 4 bytes of globalIndexCount_SSBO to reset the atomic counter every frame (AZDO)
+            globalIndexMapped = device.mapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, globalIndexCount_SSBO, 0L, 4L, sv.dark.rhi.DarkRHI.MAP_WRITE_BIT | sv.dark.rhi.DarkRHI.MAP_PERSISTENT_BIT | sv.dark.rhi.DarkRHI.MAP_COHERENT_BIT);
+            
+            // Get Uniform Locations
+            locInverseProj = device.getUniformLocation(gridProgramId, "inverseProjection");
+            locScreenSize = device.getUniformLocation(gridProgramId, "screenSize");
+            locZNear = device.getUniformLocation(gridProgramId, "zNear");
+            locZFar = device.getUniformLocation(gridProgramId, "zFar");
+            
+            locViewMatrix = device.getUniformLocation(cullProgramId, "viewMatrix");
+            locActiveLightCount = device.getUniformLocation(cullProgramId, "activeLightCount");
             
             DarkLogger.info("GRAPHICS", "Clustered Shading Initialized.");
             isInitialized = true;
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Failed to init DarkClusteredSystem", e);
         }
-    }
-
-    private static int compileComputeShader(String path) throws Throwable {
-        int shaderId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_COMPUTE_SHADER);
-        String source = DarkShaderLoader.loadShader(path);
-        
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment srcPtr = arena.allocateFrom(source);
-            MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
-            DarkOpenGLLinker.glShaderSource.invokeExact(shaderId, 1, srcArrayPtr, MemorySegment.NULL);
-        }
-        
-        DarkOpenGLLinker.glCompileShader.invokeExact(shaderId);
-        
-        int programId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
-        DarkOpenGLLinker.glAttachShader.invokeExact(programId, shaderId);
-        DarkOpenGLLinker.glLinkProgram.invokeExact(programId);
-        DarkOpenGLLinker.glDeleteShader.invokeExact(shaderId);
-        
-        return programId;
     }
 
     /**
@@ -126,8 +96,9 @@ public final class DarkClusteredSystem {
     public static void dispatchGrid(float[] projMatrix, float[] viewMatrix) {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glUseProgram.invokeExact(gridProgramId);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 1, clusterAABB_SSBO);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindPipeline(gridProgramId);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 1, clusterAABB_SSBO);
             
             // Set Uniforms — Zero-Alloc: use scratchpad instead of Arena.ofConfined()
             if (locInverseProj != -1) {
@@ -136,20 +107,20 @@ public final class DarkClusteredSystem {
                     sv.dark.math.DarkMath.identity(SCRATCH_INV_PROJ);
                 }
                 DarkRenderScratchpad.writeMatrix(SCRATCH_INV_PROJ);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(locInverseProj, 1, false, DarkRenderScratchpad.MATRIX_64B);
+                cmd.setUniformMatrix4fv(locInverseProj, 1, false, DarkRenderScratchpad.MATRIX_64B);
             }
             if (locScreenSize != -1) {
-                DarkOpenGLLinker.glUniform2f.invokeExact(locScreenSize, 1280.0f, 720.0f);
+                cmd.setUniform2f(locScreenSize, 1280.0f, 720.0f);
             }
             if (locZNear != -1) {
-                DarkOpenGLLinker.glUniform1f.invokeExact(locZNear, 0.1f);
+                cmd.setUniform1f(locZNear, 0.1f);
             }
             if (locZFar != -1) {
-                DarkOpenGLLinker.glUniform1f.invokeExact(locZFar, 1000.0f);
+                cmd.setUniform1f(locZFar, 1000.0f);
             }
             
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(1, 1, GRID_SIZE_Z);
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            cmd.dispatchCompute(1, 1, GRID_SIZE_Z);
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
         } catch (Throwable e) {
             DarkLogger.error("GRAPHICS", "Error dispatching Grid Compute");
         }
@@ -167,29 +138,28 @@ public final class DarkClusteredSystem {
     public static void dispatchCulling(float[] viewMatrix) {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glUseProgram.invokeExact(cullProgramId);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindPipeline(cullProgramId);
             
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 1, clusterAABB_SSBO);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 2, DarkLightSystem.getLightsSSBO());
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 3, globalIndexCount_SSBO);
-            DarkOpenGLLinker.glBindBufferBase.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 4, lightGrid_SSBO);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 1, clusterAABB_SSBO);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 2, DarkLightSystem.getLightsSSBO());
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 3, globalIndexCount_SSBO);
+            cmd.bindBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, 4, lightGrid_SSBO);
             
-            // Reset global atomic counter to 0 — Zero-Alloc: write int 0 into pre-allocated INT_4B.
-            DarkRenderScratchpad.INT_4B.set(ValueLayout.JAVA_INT, 0L, 0);
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, globalIndexCount_SSBO);
-            DarkOpenGLLinker.glBufferSubData.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BUFFER, 0L, 4L, DarkRenderScratchpad.INT_4B);
+            // Reset global atomic counter to 0 — Zero-Alloc: write int 0 directly to mapped memory
+            globalIndexMapped.set(ValueLayout.JAVA_INT, 0L, 0); // Since it's persistently mapped directly here in init()!
             
             // Set uniforms — Zero-Alloc
             if (locActiveLightCount != -1) {
-                DarkOpenGLLinker.glUniform1ui.invokeExact(locActiveLightCount, DarkLightSystem.getActiveLightCount());
+                cmd.setUniform1ui(locActiveLightCount, DarkLightSystem.getActiveLightCount());
             }
             if (locViewMatrix != -1) {
                 DarkRenderScratchpad.writeMatrix(viewMatrix);
-                DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(locViewMatrix, 1, false, DarkRenderScratchpad.MATRIX_64B);
+                cmd.setUniformMatrix4fv(locViewMatrix, 1, false, DarkRenderScratchpad.MATRIX_64B);
             }
             
-            DarkOpenGLLinker.glDispatchCompute.invokeExact(1, 1, GRID_SIZE_Z);
-            DarkOpenGLLinker.glMemoryBarrier.invokeExact(DarkOpenGLLinker.GL_SHADER_STORAGE_BARRIER_BIT);
+            cmd.dispatchCompute(1, 1, GRID_SIZE_Z);
+            cmd.memoryBarrier(sv.dark.rhi.DarkRHI.BARRIER_SHADER_STORAGE);
         } catch (Throwable e) {
             DarkLogger.error("GRAPHICS", "Error dispatching Light Culling Compute");
         }
@@ -210,20 +180,20 @@ public final class DarkClusteredSystem {
     public static void destroy() {
         if (!isInitialized) return;
         try {
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             if (gridProgramId != 0) {
-                DarkOpenGLLinker.glDeleteProgram.invokeExact(gridProgramId);
+                device.deletePipeline(gridProgramId);
                 gridProgramId = 0;
             }
             if (cullProgramId != 0) {
-                DarkOpenGLLinker.glDeleteProgram.invokeExact(cullProgramId);
+                device.deletePipeline(cullProgramId);
                 cullProgramId = 0;
             }
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT, 3);
-                buffers.set(ValueLayout.JAVA_INT, 0L, clusterAABB_SSBO);
-                buffers.set(ValueLayout.JAVA_INT, 4L, lightGrid_SSBO);
-                buffers.set(ValueLayout.JAVA_INT, 8L, globalIndexCount_SSBO);
-                DarkOpenGLLinker.glDeleteBuffers.invokeExact(3, buffers);
+            if (globalIndexCount_SSBO != 0 || clusterAABB_SSBO != 0 || lightGrid_SSBO != 0) {
+                if (globalIndexCount_SSBO != 0) {
+                    device.unmapBuffer(sv.dark.rhi.DarkRHI.BUFFER_TARGET_SSBO, globalIndexCount_SSBO);
+                }
+                device.deleteBuffers(new int[]{clusterAABB_SSBO, lightGrid_SSBO, globalIndexCount_SSBO});
                 clusterAABB_SSBO = 0;
                 lightGrid_SSBO = 0;
                 globalIndexCount_SSBO = 0;

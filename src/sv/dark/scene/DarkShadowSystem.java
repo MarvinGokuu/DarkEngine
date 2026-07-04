@@ -32,63 +32,47 @@ public final class DarkShadowSystem {
 
     public static void init() {
         if (isInitialized) return;
-        try (Arena arena = Arena.ofConfined()) {
+        try {
             DarkLogger.info("GRAPHICS", "Initializing Cascaded Shadow Mapping (CSM)...");
             
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
+            
             // 1. Create FBO
-            MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
-            DarkOpenGLLinker.glGenFramebuffers.invokeExact(1, fboPtr);
-            depthMapFBO = fboPtr.get(ValueLayout.JAVA_INT, 0);
+            depthMapFBO = device.createFramebuffer();
             
             // 2. Create Texture Array
-            MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT);
-            DarkOpenGLLinker.glGenTextures.invokeExact(1, texPtr);
-            depthMapArray = texPtr.get(ValueLayout.JAVA_INT, 0);
+            int GL_DEPTH_COMPONENT32F = 0x8CAC;
+            int GL_DEPTH_COMPONENT = 0x1902;
+            int GL_FLOAT = 0x1406;
+            int GL_NEAREST = 0x2600;
+            depthMapArray = device.createTexture2DArray(SHADOW_WIDTH, SHADOW_HEIGHT, CASCADE_COUNT, GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST);
             
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, depthMapArray);
-            DarkOpenGLLinker.glTexImage3D.invokeExact(
-                DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0, DarkOpenGLLinker.GL_DEPTH_COMPONENT32F, 
-                SHADOW_WIDTH, SHADOW_HEIGHT, CASCADE_COUNT, 
-                0, DarkOpenGLLinker.GL_DEPTH_COMPONENT, DarkOpenGLLinker.GL_FLOAT, MemorySegment.NULL
-            );
-            
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, DarkOpenGLLinker.GL_NEAREST);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, DarkOpenGLLinker.GL_NEAREST);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_S, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
             DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_T, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
-            
-            MemorySegment borderColor = arena.allocateFrom(ValueLayout.JAVA_FLOAT, new float[]{1.0f, 1.0f, 1.0f, 1.0f});
-            DarkOpenGLLinker.glTexParameterfv.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_BORDER_COLOR, borderColor);
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment borderColor = arena.allocateFrom(ValueLayout.JAVA_FLOAT, new float[]{1.0f, 1.0f, 1.0f, 1.0f});
+                DarkOpenGLLinker.glTexParameterfv.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_BORDER_COLOR, borderColor);
+            }
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0);
             
             // 3. Attach Texture to FBO
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, depthMapFBO);
-            DarkOpenGLLinker.glFramebufferTexture.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_DEPTH_ATTACHMENT, depthMapArray, 0);
+            int GL_DEPTH_ATTACHMENT = 0x8D00;
+            device.framebufferTexture(depthMapFBO, GL_DEPTH_ATTACHMENT, depthMapArray, 0);
             
             // No color output needed
-            DarkOpenGLLinker.glDrawBuffer.invokeExact(DarkOpenGLLinker.GL_NONE);
-            DarkOpenGLLinker.glReadBuffer.invokeExact(DarkOpenGLLinker.GL_NONE);
+            device.setDrawBufferNone(depthMapFBO);
             
-            if ((int)DarkOpenGLLinker.glCheckFramebufferStatus.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER) != DarkOpenGLLinker.GL_FRAMEBUFFER_COMPLETE) {
+            if (!device.checkFramebufferStatus(depthMapFBO)) {
                 DarkLogger.fatal("GRAPHICS", "Shadow FBO is not complete", null);
             }
             
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
-            
             // 4. Compile Shadow Shader
-            int vertId = (int) DarkOpenGLLinker.glCreateShader.invokeExact(DarkOpenGLLinker.GL_VERTEX_SHADER);
             String vertSource = DarkShaderLoader.loadShader("src/sv/dark/scene/shadow_pass.vert");
-            MemorySegment srcPtr = arena.allocateFrom(vertSource);
-            MemorySegment srcArrayPtr = arena.allocateFrom(ValueLayout.ADDRESS, srcPtr);
-            DarkOpenGLLinker.glShaderSource.invokeExact(vertId, 1, srcArrayPtr, MemorySegment.NULL);
-            DarkOpenGLLinker.glCompileShader.invokeExact(vertId);
+            shadowProgramId = device.createGraphicsPipeline(vertSource, null);
             
-            shadowProgramId = (int) DarkOpenGLLinker.glCreateProgram.invokeExact();
-            DarkOpenGLLinker.glAttachShader.invokeExact(shadowProgramId, vertId);
-            DarkOpenGLLinker.glLinkProgram.invokeExact(shadowProgramId);
-            DarkOpenGLLinker.glDeleteShader.invokeExact(vertId);
-            
-            modelLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shadowProgramId, arena.allocateFrom("model"));
-            lightSpaceMatrixLoc = (int) DarkOpenGLLinker.glGetUniformLocation.invokeExact(shadowProgramId, arena.allocateFrom("lightSpaceMatrix"));
+            modelLoc = device.getUniformLocation(shadowProgramId, "model");
+            lightSpaceMatrixLoc = device.getUniformLocation(shadowProgramId, "lightSpaceMatrix");
             
             DarkLogger.info("GRAPHICS", "CSM System Initialized. Arrays: " + CASCADE_COUNT + "x" + SHADOW_WIDTH + "p");
             isInitialized = true;
@@ -100,23 +84,24 @@ public final class DarkShadowSystem {
     public static void beginShadowPass(int cascadeIndex, float[] lightSpaceMatrix) {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glViewport.invokeExact(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, depthMapFBO);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.setViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+            cmd.bindFramebuffer(depthMapFBO);
             
             // Render specific layer of texture array
-            DarkOpenGLLinker.glFramebufferTextureLayer.invokeExact(
-                DarkOpenGLLinker.GL_FRAMEBUFFER, DarkOpenGLLinker.GL_DEPTH_ATTACHMENT, depthMapArray, 0, cascadeIndex
-            );
+            int GL_DEPTH_ATTACHMENT = 0x8D00;
+            cmd.bindFramebufferTextureLayer(depthMapFBO, GL_DEPTH_ATTACHMENT, depthMapArray, 0, cascadeIndex);
             
-            DarkOpenGLLinker.glClear.invokeExact(DarkOpenGLLinker.GL_DEPTH_BUFFER_BIT);
-            DarkOpenGLLinker.glUseProgram.invokeExact(shadowProgramId);
+            int GL_DEPTH_BUFFER_BIT = 0x00000100;
+            cmd.clear(GL_DEPTH_BUFFER_BIT);
+            cmd.bindPipeline(shadowProgramId);
             
             // Zero-Alloc matrix upload: reuse MATRIX_64B scratchpad, 0 OS syscalls.
             // WHY: This method is called 3x per frame (one per cascade). Old impl:
             // 3 Arena.ofConfined() = 6 mmap/munmap syscalls per frame = 360/second.
             // [NON_BLOCKING] [ZERO_ALLOCATION] [RENDER_THREAD_ONLY]
             DarkRenderScratchpad.writeMatrix(lightSpaceMatrix);
-            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(lightSpaceMatrixLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
+            cmd.setUniformMatrix4fv(lightSpaceMatrixLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
         } catch (Throwable e) {
             DarkLogger.error("GRAPHICS", "Error in beginShadowPass");
         }
@@ -129,15 +114,17 @@ public final class DarkShadowSystem {
      */
     public static void setModelMatrix(float[] modelMatrix) {
         try {
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
             DarkRenderScratchpad.writeMatrix(modelMatrix);
-            DarkOpenGLLinker.glUniformMatrix4fv.invokeExact(modelLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
+            cmd.setUniformMatrix4fv(modelLoc, 1, false, DarkRenderScratchpad.MATRIX_64B);
         } catch (Throwable e) {}
     }
 
     public static void endShadowPass() {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
+            sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
+            cmd.bindFramebuffer(0);
         } catch (Throwable e) {}
     }
     
@@ -272,19 +259,17 @@ public final class DarkShadowSystem {
     public static void destroy() {
         if (!isInitialized) return;
         try {
+            sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
             if (shadowProgramId != 0) {
-                DarkOpenGLLinker.glDeleteProgram.invokeExact(shadowProgramId);
+                device.deletePipeline(shadowProgramId);
                 shadowProgramId = 0;
             }
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment fboPtr = arena.allocate(ValueLayout.JAVA_INT);
-                fboPtr.set(ValueLayout.JAVA_INT, 0L, depthMapFBO);
-                DarkOpenGLLinker.glDeleteFramebuffers.invokeExact(1, fboPtr);
+            if (depthMapFBO != 0) {
+                device.deleteFramebuffers(new int[]{depthMapFBO});
                 depthMapFBO = 0;
-                
-                MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT);
-                texPtr.set(ValueLayout.JAVA_INT, 0L, depthMapArray);
-                DarkOpenGLLinker.glDeleteTextures.invokeExact(1, texPtr);
+            }
+            if (depthMapArray != 0) {
+                device.deleteTextures(new int[]{depthMapArray});
                 depthMapArray = 0;
             }
             isInitialized = false;
