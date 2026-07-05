@@ -44,7 +44,7 @@ public final class DarkEntityController {
      * [TECHNICAL NOTE]: Determinism depends on the vault being the only source
      * of input.
      */
-    public static void dispatch(int commandId, DarkStateVault vault) {
+    public static void dispatch(EntityHandle handle, int commandId, DarkStateVault vault) {
 
         switch (commandId) {
             case CMD_MOVE_SPRITE -> {
@@ -57,14 +57,16 @@ public final class DarkEntityController {
                 int nx = (tick * 13) % 800;
                 int ny = (tick * 7) % 600;
 
-                // Direct write to native memory (State Control)
-                vault.write(DarkStateLayout.PLAYER_X, nx);
-                vault.write(DarkStateLayout.PLAYER_Y, ny);
+                // Valhalla-ready DOD isolation: stride of 16 bytes per entity (X, Y, DIR, SCORE)
+                int offset = handle.id() * 16;
+                vault.write(DarkStateLayout.PLAYER_X + offset, nx);
+                vault.write(DarkStateLayout.PLAYER_Y + offset, ny);
             }
 
             case CMD_RESET_STATE -> {
-                vault.write(DarkStateLayout.PLAYER_X, 0);
-                vault.write(DarkStateLayout.PLAYER_Y, 0);
+                int offset = handle.id() * 16;
+                vault.write(DarkStateLayout.PLAYER_X + offset, 0);
+                vault.write(DarkStateLayout.PLAYER_Y + offset, 0);
             }
 
             default -> {

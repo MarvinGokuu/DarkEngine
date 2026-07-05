@@ -22,9 +22,6 @@ javac -d bin -encoding UTF-8 --enable-preview --source %JAVA_MAJOR% ^
     --add-modules jdk.incubator.vector ^
     -Xlint:-incubating ^
     -cp "src;lib\imgui-java-binding.jar" ^
-    -J-XX:+UseZGC ^
-    -J-Xms4G -J-Xmx4G ^
-    -J-XX:+AlwaysPreTouch ^
     @compile_list.txt > compile.log 2>&1
 
 if %errorlevel% neq 0 (

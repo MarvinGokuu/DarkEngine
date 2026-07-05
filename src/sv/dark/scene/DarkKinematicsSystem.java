@@ -43,9 +43,20 @@ public final class DarkKinematicsSystem {
         int capacity = soa.getCapacity();
         long loopBound = D_SPECIES.loopBound(capacity);
         long i = 0;
+        
+        long startTime = System.nanoTime();
+        // Límite Suave: 12 ms para abandonar la cinemática de entidades no críticas
+        long softLimitNs = 12_000_000L;
+        // Límite Duro: 15 ms para abandonar incluso el recálculo jerárquico y prevenir un cuelgue
+        long hardLimitNs = 15_000_000L;
 
         // Fase 1: Acelerador SIMD (Precisión Infinita 64-bits sin máscaras)
         for (; i < loopBound; i += D_SPECIES.length()) {
+            // Check de tiempo cada 1024 iteraciones para minimizar overhead de System.nanoTime()
+            if ((i & 1023) == 0 && (System.nanoTime() - startTime) > softLimitNs) {
+                break; // Soft Limit: Cortamos el procesamiento local SIMD (Time-Slicing)
+            }
+
             long offset32 = i * 4L;
             long offset64 = i * 8L;
             
@@ -66,24 +77,26 @@ public final class DarkKinematicsSystem {
             DoubleVector newPy = py.add(vy.mul(dt));
             DoubleVector newPz = pz.add(vz.mul(dt));
             
-            // Note: SIMD phase only updates Local Position. 
-            // Global Position and Visual Position are calculated in the scalar phase below
-            // to properly resolve parent-child hierarchy in topological order.
-
             // 3. Memory Store (Local Pos Only)
             newPx.intoMemorySegment(soa.localPosX, offset64, BO);
             newPy.intoMemorySegment(soa.localPosY, offset64, BO);
             newPz.intoMemorySegment(soa.localPosZ, offset64, BO);
         }
 
+        boolean simdCompleted = (i == loopBound);
+
         // Fase 2: Jerarquía y Transformaciones Globales (Escalar Topológico)
-        // Ya que la memoria está ordenada topológicamente, los padres siempre se procesan antes que los hijos.
         for (i = 0; i < capacity; i++) {
+            // Hard Limit Check
+            if ((i & 1023) == 0 && (System.nanoTime() - startTime) > hardLimitNs) {
+                break; // Hard Limit: Cortamos incluso el cálculo visual para salvar el framerate (Terminator)
+            }
+
             long offset32 = i * 4L;
             long offset64 = i * 8L;
             
-            // 1. Actualizar Física Local si no fue cubierta por SIMD
-            if (i >= loopBound) {
+            // 1. Actualizar Física Local residual (sólo si no hubo corte prematuro del SIMD por Soft Limit)
+            if (i >= loopBound && simdCompleted) {
                 double px = soa.localPosX.get(ValueLayout.JAVA_DOUBLE, offset64);
                 float vx = soa.velX.get(ValueLayout.JAVA_FLOAT, offset32);
                 soa.localPosX.set(ValueLayout.JAVA_DOUBLE, offset64, px + (vx * dt));

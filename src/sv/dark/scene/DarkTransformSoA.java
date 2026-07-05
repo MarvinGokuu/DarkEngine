@@ -43,8 +43,6 @@ public final class DarkTransformSoA {
 
     // Jerarquía de Escena (Scene Graph) - Índices Físicos (32-bits)
     public final MemorySegment parentIdx;
-    public final MemorySegment firstChildIdx;
-    public final MemorySegment nextSiblingIdx;
 
     /**
      * Aloja la memoria nativa requerida para la capacidad máxima de entidades.
@@ -76,13 +74,9 @@ public final class DarkTransformSoA {
         
         // Asignación de bloques (Jerarquía de Escena)
         this.parentIdx = arena.allocate(bytesRequired32, 64);
-        this.firstChildIdx = arena.allocate(bytesRequired32, 64);
-        this.nextSiblingIdx = arena.allocate(bytesRequired32, 64);
         
-        // Inicializar jerarquía con -1 (Sin padre/hijo) usando relleno de bytes rápido (0xFFFFFFFF = -1 en int de 32-bits)
+        // Inicializar jerarquía con -1 (Sin padre) usando relleno de bytes rápido (0xFFFFFFFF = -1 en int de 32-bits)
         parentIdx.fill((byte) 0xFF);
-        firstChildIdx.fill((byte) 0xFF);
-        nextSiblingIdx.fill((byte) 0xFF);
         
         DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 9 + bytesRequired64 * 3) / 1024 / 1024) + " MB Off-Heap 3D LWC)");
     }
@@ -117,8 +111,6 @@ public final class DarkTransformSoA {
         velZ.set(ValueLayout.JAVA_FLOAT, offset32, vz);
         
         parentIdx.set(ValueLayout.JAVA_INT, offset32, -1);
-        firstChildIdx.set(ValueLayout.JAVA_INT, offset32, -1);
-        nextSiblingIdx.set(ValueLayout.JAVA_INT, offset32, -1);
     }
     
     /**
@@ -189,14 +181,6 @@ public final class DarkTransformSoA {
         tempI = parentIdx.get(ValueLayout.JAVA_INT, offA32);
         parentIdx.set(ValueLayout.JAVA_INT, offA32, parentIdx.get(ValueLayout.JAVA_INT, offB32));
         parentIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
-        
-        tempI = firstChildIdx.get(ValueLayout.JAVA_INT, offA32);
-        firstChildIdx.set(ValueLayout.JAVA_INT, offA32, firstChildIdx.get(ValueLayout.JAVA_INT, offB32));
-        firstChildIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
-        
-        tempI = nextSiblingIdx.get(ValueLayout.JAVA_INT, offA32);
-        nextSiblingIdx.set(ValueLayout.JAVA_INT, offA32, nextSiblingIdx.get(ValueLayout.JAVA_INT, offB32));
-        nextSiblingIdx.set(ValueLayout.JAVA_INT, offB32, tempI);
     }
     
     public void destroy() {

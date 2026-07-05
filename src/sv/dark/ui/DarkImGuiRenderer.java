@@ -27,8 +27,7 @@ public final class DarkImGuiRenderer {
     }
 
     private static void createDeviceObjects() {
-        try {
-            Arena arena = Arena.ofAuto();
+        try (Arena arena = Arena.ofConfined()) {
             String vertexShader = 
                 "#version 330 core\n" +
                 "layout (location = 0) in vec2 Position;\n" +

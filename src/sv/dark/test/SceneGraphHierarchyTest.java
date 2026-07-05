@@ -55,9 +55,21 @@ public class SceneGraphHierarchyTest {
             if (pChildA > pGrandChild) throw new RuntimeException("ChildA must be before GrandChild!");
             System.out.println("Order Validation: PASSED");
             
+            // Warmup JIT to prevent DarkKinematicsSystem Hard-Limit (15ms) from aborting the first cold execution
+            System.out.println("[4.5] Warming up JIT Compiler...");
+            DarkTransformSoA soa = scene.getSoA();
+            for (int i = 0; i < 500; i++) {
+                DarkKinematicsSystem.update(soa, 0.0f, 0.0, 0.0, 0.0);
+            }
+            
+            // Reset positions after warmup in case they drifted
+            root.setPosition(10.0, 0.0, 0.0);
+            childA.setPosition(5.0, 0.0, 0.0);
+            childB.setPosition(0.0, 5.0, 0.0);
+            grandChild.setPosition(2.0, 0.0, 0.0);
+            
             // Execute Kinematics
             System.out.println("[5] Executing Kinematics System...");
-            DarkTransformSoA soa = scene.getSoA();
             DarkKinematicsSystem.update(soa, 1.0f, 0.0, 0.0, 0.0);
             
             // Validate Global Positions
