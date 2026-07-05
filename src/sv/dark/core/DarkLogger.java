@@ -7,8 +7,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Unified Telemetry Framework (AAA+ Logger).
@@ -26,7 +24,6 @@ public final class DarkLogger {
     
     private static PrintWriter metricsWriter;
     private static PrintWriter errorsWriter;
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static int errorCount = 0;
 
     static {

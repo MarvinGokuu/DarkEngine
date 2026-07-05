@@ -49,6 +49,7 @@ public final class ParallelSystemExecutor {
     // Fast-path lookups
     private PhysicsSystem physicsSystem;
     private sv.dark.core.systems.DarkAudioSystem darkAudioSystem;
+    private sv.dark.core.systems.DarkInputSystem darkInputSystem;
 
     private static final class SystemTask {
         final GameSystem system;
@@ -128,6 +129,7 @@ public final class ParallelSystemExecutor {
             for (GameSystem system : layer) {
                 if (system instanceof PhysicsSystem) this.physicsSystem = (PhysicsSystem) system;
                 else if (system instanceof sv.dark.core.systems.DarkAudioSystem) this.darkAudioSystem = (sv.dark.core.systems.DarkAudioSystem) system;
+                else if (system instanceof sv.dark.core.systems.DarkInputSystem) this.darkInputSystem = (sv.dark.core.systems.DarkInputSystem) system;
             }
         }
 
@@ -137,6 +139,7 @@ public final class ParallelSystemExecutor {
 
     public PhysicsSystem getPhysicsSystem() { return physicsSystem; }
     public sv.dark.core.systems.DarkAudioSystem getDarkAudioSystem() { return darkAudioSystem; }
+    public sv.dark.core.systems.DarkInputSystem getDarkInputSystem() { return darkInputSystem; }
 
     public void execute(WorldStateFrame state, float deltaTime) {
         long startTime = System.nanoTime();

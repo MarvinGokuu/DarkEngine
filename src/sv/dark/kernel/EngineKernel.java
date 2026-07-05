@@ -715,6 +715,11 @@ public final class EngineKernel {
             if (executor.getDarkAudioSystem() != null) {
                 executor.getDarkAudioSystem().cleanup();
             }
+            
+            // 3. Cerramos el Arena de Input nativo
+            if (executor.getDarkInputSystem() != null) {
+                executor.getDarkInputSystem().cleanup();
+            }
         }
 
         // Wait for loop to finish (maximum 1 second)

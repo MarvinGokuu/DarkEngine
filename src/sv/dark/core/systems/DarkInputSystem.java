@@ -82,4 +82,14 @@ public final class DarkInputSystem implements GameSystem {
             // Ignore native faults cleanly to prevent engine crash on input failure
         }
     }
+
+    public void cleanup() {
+        if (inputArena != null) {
+            try {
+                inputArena.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+    }
 }
