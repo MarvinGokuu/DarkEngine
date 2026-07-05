@@ -56,7 +56,8 @@ public final class DarkGraphicsLinker {
     
     public static final MethodHandle glfwPollEvents = LINKER.downcallHandle(
         GLFW.find("glfwPollEvents").orElseThrow(),
-        FunctionDescriptor.ofVoid()
+        FunctionDescriptor.ofVoid(),
+        Linker.Option.critical(false)
     );
 
     public static final MethodHandle glfwMakeContextCurrent = LINKER.downcallHandle(
@@ -71,7 +72,8 @@ public final class DarkGraphicsLinker {
 
     public static final MethodHandle glfwGetKey = LINKER.downcallHandle(
         GLFW.find("glfwGetKey").orElseThrow(),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+        Linker.Option.critical(false)
     );
 
     public static final MethodHandle glfwGetCursorPos = LINKER.downcallHandle(
@@ -86,7 +88,8 @@ public final class DarkGraphicsLinker {
 
     public static final MethodHandle glfwGetMouseButton = LINKER.downcallHandle(
         GLFW.find("glfwGetMouseButton").orElseThrow(),
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+        Linker.Option.critical(false)
     );
 
     public static final MethodHandle glfwWindowShouldClose = LINKER.downcallHandle(
@@ -96,7 +99,8 @@ public final class DarkGraphicsLinker {
 
     public static final MethodHandle glfwSwapBuffers = LINKER.downcallHandle(
         GLFW.find("glfwSwapBuffers").orElseThrow(),
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS),
+        Linker.Option.critical(false)
     );
 
     public static final MethodHandle glfwSwapInterval = LINKER.downcallHandle(

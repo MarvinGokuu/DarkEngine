@@ -7,7 +7,7 @@ import java.io.FileReader;
 public class SummaryGenerator {
 
     public static void main(String[] args) {
-        String logFile = "aaa_test_report.log";
+        String logFile = "logs/aaa_test_report.log";
 
         String dataAccelerator = "N/A";
         String atomicBus = "N/A";

@@ -120,6 +120,7 @@ public final class DarkAtomicBus implements IEventBus {
 
     private static final VarHandle HEAD_H;
     private static final VarHandle TAIL_H;
+    private static final VarHandle BUFFER_H = MethodHandles.arrayElementVarHandle(long[].class);
 
     // -------------------------------------------------------------------------
     // Barrier Determinism: Acquire/Release Memory Semantics
@@ -228,7 +229,7 @@ public final class DarkAtomicBus implements IEventBus {
 
             // Claim the slot via Compare-And-Swap on tail
             if (TAIL_H.compareAndSet(this, currentTail, currentTail + 1)) {
-                buffer[(int) (currentTail & mask)] = eventData;
+                BUFFER_H.setRelease(buffer, (int) (currentTail & mask), eventData);
                 return true;
             }
         }
@@ -294,7 +295,7 @@ public final class DarkAtomicBus implements IEventBus {
                 return -1L;
             }
 
-            long eventData = buffer[(int) (currentHead & mask)];
+            long eventData = (long) BUFFER_H.getAcquire(buffer, (int) (currentHead & mask));
             if (eventData == -1L) {
                 // Producer claimed the slot but hasn't written the data yet.
                 // Spin wait to preserve FIFO order and let the producer finish writing.
@@ -303,7 +304,7 @@ public final class DarkAtomicBus implements IEventBus {
             }
 
             // Reset slot to empty sentinel to prevent stale reads
-            buffer[(int) (currentHead & mask)] = -1L;
+            BUFFER_H.setRelease(buffer, (int) (currentHead & mask), -1L);
             HEAD_H.setRelease(this, currentHead + 1);
             return eventData;
         }
@@ -323,7 +324,7 @@ public final class DarkAtomicBus implements IEventBus {
             return -1L;
         }
 
-        long eventData = buffer[(int) (currentHead & mask)];
+        long eventData = (long) BUFFER_H.getAcquire(buffer, (int) (currentHead & mask));
         return eventData;
     }
 

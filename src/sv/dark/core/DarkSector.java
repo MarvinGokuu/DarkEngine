@@ -39,8 +39,10 @@ public final class DarkSector {
      * of active entities within the pre-allocated memory segment.
      */
     public void registerEntity() {
-        if (activeCount.get() < maxEntities) {
-            activeCount.incrementAndGet();
+        while (true) {
+            int current = activeCount.get();
+            if (current >= maxEntities) break;
+            if (activeCount.compareAndSet(current, current + 1)) break;
         }
     }
 
@@ -48,8 +50,10 @@ public final class DarkSector {
      * Decrements the count of active entities when leaving the sector.
      */
     public void unregisterEntity() {
-        if (activeCount.get() > 0) {
-            activeCount.decrementAndGet();
+        while (true) {
+            int current = activeCount.get();
+            if (current <= 0) break;
+            if (activeCount.compareAndSet(current, current - 1)) break;
         }
     }
 

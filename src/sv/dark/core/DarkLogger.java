@@ -51,9 +51,13 @@ public final class DarkLogger {
         }
     }
 
+    private static final ThreadLocal<StringBuilder> threadLocalBuilder = ThreadLocal.withInitial(() -> new StringBuilder(128));
+
     private static String formatMessage(String level, String component, String message) {
-        String timestamp = LocalDateTime.now().format(formatter);
-        return String.format("[%s] [%-5s] [%-15s] %s", timestamp, level, component, message);
+        StringBuilder sb = threadLocalBuilder.get();
+        sb.setLength(0);
+        sb.append('[').append(level).append("] [").append(component).append("] ").append(message);
+        return sb.toString();
     }
 
     /**
