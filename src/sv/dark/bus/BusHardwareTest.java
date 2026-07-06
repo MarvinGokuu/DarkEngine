@@ -93,7 +93,7 @@ public class BusHardwareTest {
         System.out.println("   [INFO] RingBus Padding Checksum: " + ringAudit);
         System.out.println("   [PASS] RingBus Padding Variables Accessible (Memory Layout OK).");
 
-        // --- 3. VALIDACION DE SEƒâ€˜AL ---
+        // --- 3. VALIDACION DE SEÑAL ---
         long testSignal = 0xCAFEBABECAFED00DL;
         atomicBus.offer(testSignal);
         if (atomicBus.poll() == testSignal) {
