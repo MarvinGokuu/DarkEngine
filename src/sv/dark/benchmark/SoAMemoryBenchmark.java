@@ -4,6 +4,8 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import sv.dark.scene.DarkTransformSoA;
 import sv.dark.memory.SectorMemoryVault;
+import sv.dark.ecs.DarkScene;
+import sv.dark.ecs.DarkEntity;
 
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
@@ -30,6 +32,10 @@ public class SoAMemoryBenchmark {
     // --- Data-Oriented (Struct of Arrays) ---
     private DarkTransformSoA soa;
 
+    // --- Hybrid ECS Abstraction (OOP over SoA) ---
+    private DarkScene scene;
+    private DarkEntity[] facadeArray;
+
     @Setup
     public void setup() {
         // Init OOP
@@ -43,6 +49,16 @@ public class SoAMemoryBenchmark {
         soa = new DarkTransformSoA(ENTITY_COUNT);
         for (int i = 0; i < ENTITY_COUNT; i++) {
             soa.setEntity(i, rand.nextDouble(), rand.nextDouble(), rand.nextDouble(), 0, 0, 0);
+        }
+
+        // Init Hybrid ECS
+        scene = new DarkScene(ENTITY_COUNT);
+        facadeArray = new DarkEntity[ENTITY_COUNT];
+        for (int i = 0; i < ENTITY_COUNT; i++) {
+            DarkEntity entity = scene.spawnEntity();
+            entity.setPosition(rand.nextDouble(), rand.nextDouble(), rand.nextDouble());
+            entity.setVelocity(0, 0, 0);
+            facadeArray[i] = entity;
         }
     }
 
@@ -79,8 +95,25 @@ public class SoAMemoryBenchmark {
         bh.consume(sum);
     }
 
+    @Benchmark
+    public void testHybrid_DarkEntity(Blackhole bh) {
+        double sum = 0;
+        for (int i = 0; i < ENTITY_COUNT; i++) {
+            DarkEntity e = facadeArray[i];
+            // Simulate physics translation
+            double x = e.getPositionX() + 1.0;
+            double y = e.getPositionY() + 1.0;
+            double z = e.getPositionZ() + 1.0;
+            
+            e.setPosition(x, y, z);
+            sum += x + y + z;
+        }
+        bh.consume(sum);
+    }
+
     @TearDown
     public void teardown() {
         soa.destroy();
+        scene.getSoA().destroy();
     }
 }
