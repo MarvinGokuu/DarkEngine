@@ -168,6 +168,7 @@ Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para c
 **[FASE 2.1 COMPLETADA]: Developer Experience (DX) & Valhalla Prep**
 * [x] **API Fachada (DOD Wrapper)**: Implementación de `DarkEntity` como puente OOP hacia la memoria DOD nativa, cimentando las bases del proyecto para Valhalla.
 * [x] **Zero-GC Object Pooling**: Implementación de *Free-List Allocator* para reciclar objetos envoltorio y mantener el rendimiento máximo en la creación de entidades.
+* [ ] **JMH Benchmark de Fachada OOP**: Agregar un test conjunto a `SoAMemoryBenchmark` para perfilar el overhead de invocar `DarkEntity` (la capa orientada a objetos) sobre el núcleo Data-Oriented, validando su rendimiento antes de Java 26.
 
 **[FASE 3 Y POSTERIORES]: GPU, Vulkan FFI & Distribución**
 * [ ] **Zero-Copy Streaming**: Habilitar I/O directo desde NVMe a VRAM para texturas masivas sin pasar por el Heap de Java.
