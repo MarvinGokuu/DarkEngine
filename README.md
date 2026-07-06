@@ -143,6 +143,8 @@ Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para c
 
 > ℹ️ **Nota sobre ImGui (UI del Editor)**: Es normal ver el mensaje `[ERROR] [IMGUI] lib/cimgui.dll NOT FOUND` en los logs. Esto simplemente indica que la interfaz visual nativa del editor está deshabilitada intencionalmente en producción, permitiendo que el motor corra en modo puramente *headless* o "juego final".
 
+> ℹ️ **Nota sobre Físicas**: El sistema de Físicas (Broadphase y Narrowphase) se encuentra temporalmente desconectado del Kernel debido a errores de cómputo en el Hashing Espacial. Se reconectará al concluir la fase actual.
+
 ---
 
 **Licencia**: [GNU Lesser General Public License v3.0](LICENSE)  
