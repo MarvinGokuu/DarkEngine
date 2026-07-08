@@ -1,0 +1,41 @@
+name: Auto Merge to Master
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  test-and-merge:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necesario para hacer merge
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'oracle'
+
+      - name: Validate Compilation & Run Tests
+        run: |
+          .\build.bat
+          .\test.bat
+        shell: cmd
+
+      - name: Merge develop into master
+        if: success()
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git restore .
+          git checkout -B master origin/master
+          git merge origin/develop -m "Auto-merge develop to master after passing tests [skip ci]"
+          git push origin master
