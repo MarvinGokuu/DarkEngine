@@ -20,6 +20,14 @@ if exist dist (
     set CLEAN_DIST=1
 )
 
+if exist bin_jmh (
+    rd /s /q bin_jmh >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
+)
+
+if exist src_jmh_generated (
+    rd /s /q src_jmh_generated >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
+)
+
 if exist Dark-Engine (
     rd /s /q Dark-Engine >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
     set CLEAN_PORTABLE=1
@@ -33,6 +41,10 @@ if exist DarkEngine.jar (
 if exist compile_list.txt (
     del /q compile_list.txt >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
     set CLEAN_LOGS=1
+)
+
+if exist compile_list_jmh.txt (
+    del /q compile_list_jmh.txt >>"%TMP_LOG%" 2>&1 || set HAS_ERRORS=1
 )
 
 if exist *.log (
