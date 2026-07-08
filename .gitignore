@@ -73,3 +73,7 @@ docs/13_SCRIPTS_AND_TOOLING.md
 
 # --- SECURITY ---
 .github/workflows/
+
+# --- JMH BENCHMARK ARTIFACTS ---
+bin_jmh/
+src_jmh_generated/
