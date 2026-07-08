@@ -70,3 +70,6 @@ MANUAL_METODOLOGIA_CEO.md
 docs/reports/
 tools/internal/
 docs/13_SCRIPTS_AND_TOOLING.md
+
+# --- SECURITY ---
+.github/workflows/
