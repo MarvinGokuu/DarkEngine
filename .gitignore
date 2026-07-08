@@ -76,3 +76,8 @@ docs/13_SCRIPTS_AND_TOOLING.md
 # --- JMH BENCHMARK ARTIFACTS ---
 bin_jmh/
 src_jmh_generated/
+
+# --- PRIVATE CONFIGS & GUIDES ---
+config/
+monitoring_guide.md
+PULL_REQUEST.md
