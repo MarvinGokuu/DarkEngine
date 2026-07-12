@@ -1,4 +1,5 @@
-// Reading Order: 00010001
+// Reading Order: 00111011
+//  59
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 // SPDX-License-Identifier: LGPL-3.0-or-later
 

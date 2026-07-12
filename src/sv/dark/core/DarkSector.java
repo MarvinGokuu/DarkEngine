@@ -1,4 +1,5 @@
-// Reading Order: 00010010
+// Reading Order: 00000111
+//  7
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.core; // Sincronizado con la ruta f­sica src/sv/dark/core/systems/

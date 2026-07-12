@@ -81,3 +81,7 @@ src_jmh_generated/
 config/
 monitoring_guide.md
 PULL_REQUEST.md
+
+# --- CUSTOM LOCAL COMPILERS ---
+bbuild.bat
+brun.bat

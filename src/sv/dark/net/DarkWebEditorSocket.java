@@ -1,4 +1,5 @@
-// Reading Order: 00010111
+// Reading Order: 01100111
+//  103
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 package sv.dark.net;
 

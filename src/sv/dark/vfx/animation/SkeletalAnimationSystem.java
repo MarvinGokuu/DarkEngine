@@ -1,4 +1,5 @@
-// Reading Order: 00100051
+// Reading Order: 10011010
+//  154
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.vfx.animation;
