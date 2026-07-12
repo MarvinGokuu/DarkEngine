@@ -1,5 +1,6 @@
 
-// Reading Order: 00011000
+// Reading Order: 10101100
+//  172
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.test;
@@ -37,9 +38,9 @@ import sv.dark.memory.SectorMemoryVault;
 public class PowerSavingTest {
 
     public static void main(String[] args) throws Exception {
-        System.out.println("=============================================================================================================================");
+        System.out.println("======================================================");
         System.out.println("TEST: POWER SAVING IDLE SCALING (3 TIERS)");
-        System.out.println("=============================================================================================================================\n");
+        System.out.println("======================================================\n");
 
         // Create engine infrastructure
         DarkEventDispatcher dispatcher = DarkEventDispatcher.createDefault(14);
@@ -53,14 +54,14 @@ public class PowerSavingTest {
         System.out.println("  2. Type: perfmon /res");
         System.out.println("  3. Go to the 'CPU' and 'Memory' tabs\n");
 
-        System.out.println("=============================================================================================================================");
+        System.out.println("======================================================");
         System.out.println("EXPECTED SCALING:");
-        System.out.println("=============================================================================================================================");
+        System.out.println("======================================================");
         System.out.println("  Tier 0 (Active):          CPU ~100% on 1 core");
         System.out.println("  Tier 1 (Spin Wait):       CPU ~50-70% after 10s idle");
         System.out.println("  Tier 2 (Light Sleep):     CPU ~5-10% after 20s idle");
         System.out.println("  Tier 3 (Deep Hibernation): CPU ~0-1% after 1min idle");
-        System.out.println("=============================================================================================================================\n");
+        System.out.println("======================================================\n");
 
         System.out.println("[INFO] The engine has NO events, so it will enter idle mode automatically.");
         System.out.println("[INFO] Watch how the CPU consumption drops progressively in the Monitor.\n");

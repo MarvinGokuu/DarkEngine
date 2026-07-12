@@ -1,4 +1,5 @@
 // Reading Order: 00011000
+//  24
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.test;
@@ -60,11 +61,11 @@ public class UltraFastBootTest {
             
             if (result.success && result.bootTimeNs < 1_000_000) {
                 System.out.println(" BOOT STATUS: [OK] AAA+ COMPLIANT");
-                System.out.println("======================================================================\n");
+                System.out.println("============================================\n");
                 System.exit(0);
             } else {
                 System.out.println(" BOOT STATUS: [FAILED] SYSTEM TOO SLOW OR BROKEN");
-                System.out.println("======================================================================\n");
+                System.out.println("============================================\n");
                 System.exit(1);
             }
 
