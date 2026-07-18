@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.5] - 2026-07-17
+
+### Architecture (Phase 2 & RHI Purification)
+
+#### 🟢 Large World Coordinates (LWC) Physics
+- **`SpatialHashGrid`**: Migrado el algoritmo de resolución espacial (Broadphase) desde el Compute Shader de GPU a la CPU pura usando memoria Off-Heap y tipo primitivo `double` (64-bits). Eliminación absoluta de `radix_sort.comp`, preparando el entorno de simulación física para coordenadas masivas planetarias.
+
+#### 🟢 RHI Zero Technical Debt (20% Cleaned)
+- **`DarkRHI` & `DarkOpenGLBackend`**: Erradicados el 100% de los números mágicos hexadecimales de OpenGL (`0x8058`, `0x8CAC`, etc.) y dependencias a `DarkOpenGLLinker` en los sistemas de escena (`DarkDeferredPipeline`, `DarkGeometrySystem`, `DarkShadowSystem`, etc). Todo el engine ahora utiliza constantes de abstracción RHI, logrando el desacoplamiento S.O.L.I.D. total de cara a Vulkan.
+
+---
+
 ## [4.6.4] - 2026-07-06
 
 ### Physics Subsystem

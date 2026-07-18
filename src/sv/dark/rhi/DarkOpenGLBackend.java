@@ -197,9 +197,9 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
             int tex = texPtr.get(ValueLayout.JAVA_INT, 0);
             
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, tex);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, filter);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, filter);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, mapFormat(internalFormat), width, height, 0, mapFormat(format), mapType(type), MemorySegment.NULL);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, mapFilter(filter));
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, mapFilter(filter));
             return tex;
         } catch(Throwable t){ throw new RuntimeException(t); }
     }
@@ -212,9 +212,9 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
             int tex = texPtr.get(ValueLayout.JAVA_INT, 0);
             
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, tex);
-            DarkOpenGLLinker.glTexImage3D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0, internalFormat, width, height, depth, 0, format, type, MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, filter);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, filter);
+            DarkOpenGLLinker.glTexImage3D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0, mapFormat(internalFormat), width, height, depth, 0, mapFormat(format), mapType(type), MemorySegment.NULL);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, mapFilter(filter));
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, mapFilter(filter));
             return tex;
         } catch(Throwable t){ throw new RuntimeException(t); }
     }
@@ -223,9 +223,9 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     public void resizeTexture2D(int textureId, int width, int height, int internalFormat, int format, int type) {
         try {
             DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, textureId);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, MemorySegment.NULL);
+            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, mapFormat(internalFormat), width, height, 0, mapFormat(format), mapType(type), MemorySegment.NULL);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in resizeTexture2D: " + t.getMessage());
         }
     }
 
@@ -253,10 +253,10 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     public void framebufferTexture2D(int fboId, int attachment, int textureId, int level) {
         try {
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, fboId);
-            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, attachment, DarkOpenGLLinker.GL_TEXTURE_2D, textureId, level);
+            DarkOpenGLLinker.glFramebufferTexture2D.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, mapAttachment(attachment), DarkOpenGLLinker.GL_TEXTURE_2D, textureId, level);
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in framebufferTexture2D: " + t.getMessage());
         }
     }
 
@@ -264,10 +264,10 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     public void framebufferTexture(int fboId, int attachment, int textureId, int level) {
         try {
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, fboId);
-            DarkOpenGLLinker.glFramebufferTexture.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, attachment, textureId, level);
+            DarkOpenGLLinker.glFramebufferTexture.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, mapAttachment(attachment), textureId, level);
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in framebufferTexture: " + t.getMessage());
         }
     }
 
@@ -286,11 +286,11 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
         try (Arena arena = Arena.ofConfined()) {
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, fboId);
             MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT, attachments.length);
-            for(int i=0; i<attachments.length; i++) buffers.set(ValueLayout.JAVA_INT, i*4, attachments[i]);
+            for(int i=0; i<attachments.length; i++) buffers.set(ValueLayout.JAVA_INT, i*4L, mapAttachment(attachments[i]));
             DarkOpenGLLinker.glDrawBuffers.invokeExact(attachments.length, buffers);
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, 0);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in setDrawBuffers: " + t.getMessage());
         }
     }
 
@@ -418,12 +418,12 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     @Override
     public void bindImageTexture(int unit, int textureId, int level, boolean layered, int layer, int access, int format) {
         try {
-            int glAccess = access == ACCESS_READ_WRITE ? DarkOpenGLLinker.GL_READ_WRITE : 0;
-            int glFormat = format == FORMAT_RGBA16F ? DarkOpenGLLinker.GL_RGBA16F : DarkOpenGLLinker.GL_RGBA8;
+            int glAccess = access == ACCESS_READ_WRITE ? DarkOpenGLLinker.GL_READ_WRITE : (access == 1 ? 0x88B9 : 0);
+            int glFormat = mapFormat(format);
             DarkOpenGLLinker.glActiveTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE0 + unit);
             DarkOpenGLLinker.glBindImageTexture.invokeExact(unit, textureId, level, layered, layer, glAccess, glFormat);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in bindImageTexture: " + t.getMessage());
         }
     }
 
@@ -456,25 +456,25 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
 
     @Override
     public void clear(int mask) {
-        try { DarkOpenGLLinker.glClear.invokeExact(mask); } catch(Throwable t){}
+        try { DarkOpenGLLinker.glClear.invokeExact(mapClearBit(mask)); } catch(Throwable t){}
     }
 
     @Override
     public void bindFramebufferTextureLayer(int fboId, int attachment, int textureId, int level, int layer) {
         try {
             DarkOpenGLLinker.glBindFramebuffer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, fboId);
-            DarkOpenGLLinker.glFramebufferTextureLayer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, attachment, textureId, level, layer);
+            DarkOpenGLLinker.glFramebufferTextureLayer.invokeExact(DarkOpenGLLinker.GL_FRAMEBUFFER, mapAttachment(attachment), textureId, level, layer);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in bindFramebufferTextureLayer: " + t.getMessage());
         }
     }
 
     @Override
     public void drawElementsInstanced(int mode, int count, int type, MemorySegment indices, int instancecount) {
         try {
-            DarkOpenGLLinker.glDrawElementsInstanced.invokeExact(mode, count, type, indices, instancecount);
+            DarkOpenGLLinker.glDrawElementsInstanced.invokeExact(mapPrimitive(mode), count, mapType(type), indices, instancecount);
         } catch(Throwable t) {
-            sv.dark.core.DarkLogger.error("RHI", "Error in deleteBuffers: " + t.getMessage());
+            sv.dark.core.DarkLogger.error("RHI", "Error in drawElementsInstanced: " + t.getMessage());
         }
     }
 
@@ -486,5 +486,72 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     @Override
     public void submit() {
         // No-op in OpenGL
+    }
+
+    @Override
+    public void configureShadowTextureArray(int textureId) {
+        try {
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, textureId);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_S, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_T, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment borderColor = arena.allocateFrom(ValueLayout.JAVA_FLOAT, new float[]{1.0f, 1.0f, 1.0f, 1.0f});
+                DarkOpenGLLinker.glTexParameterfv.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_BORDER_COLOR, borderColor);
+            }
+            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0);
+        } catch(Throwable t) {
+            sv.dark.core.DarkLogger.error("RHI", "Error in configureShadowTextureArray: " + t.getMessage());
+        }
+    }
+
+    private int mapFormat(int format) {
+        return switch (format) {
+            case FORMAT_RGBA16F -> 0x881A; // GL_RGBA16F
+            case FORMAT_RGBA8 -> 0x8058; // GL_RGBA8
+            case FORMAT_RGBA -> 0x1908; // GL_RGBA
+            case FORMAT_DEPTH_COMPONENT32F -> 0x8CAC; // GL_DEPTH_COMPONENT32F
+            case FORMAT_DEPTH_COMPONENT -> 0x1902; // GL_DEPTH_COMPONENT
+            default -> 0;
+        };
+    }
+
+    private int mapType(int type) {
+        return switch (type) {
+            case TYPE_UNSIGNED_BYTE -> 0x1401; // GL_UNSIGNED_BYTE
+            case TYPE_FLOAT -> 0x1406; // GL_FLOAT
+            case TYPE_UNSIGNED_INT -> 0x1405; // GL_UNSIGNED_INT
+            default -> 0;
+        };
+    }
+
+    private int mapFilter(int filter) {
+        return switch (filter) {
+            case FILTER_NEAREST -> 0x2600; // GL_NEAREST
+            case FILTER_LINEAR -> 0x2601; // GL_LINEAR
+            default -> 0;
+        };
+    }
+
+    private int mapAttachment(int attachment) {
+        return switch (attachment) {
+            case ATTACHMENT_COLOR0 -> 0x8CE0;
+            case ATTACHMENT_COLOR1 -> 0x8CE1;
+            case ATTACHMENT_COLOR2 -> 0x8CE2;
+            case ATTACHMENT_DEPTH -> 0x8D00;
+            default -> 0;
+        };
+    }
+
+    private int mapPrimitive(int primitive) {
+        return switch (primitive) {
+            case PRIMITIVE_TRIANGLES -> 4; // GL_TRIANGLES
+            default -> 0;
+        };
+    }
+
+    private int mapClearBit(int mask) {
+        int glMask = 0;
+        if ((mask & CLEAR_DEPTH_BUFFER_BIT) != 0) glMask |= 0x00000100; // GL_DEPTH_BUFFER_BIT
+        return glMask;
     }
 }

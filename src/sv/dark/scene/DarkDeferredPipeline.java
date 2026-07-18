@@ -6,7 +6,7 @@ package sv.dark.scene;
 
 import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
-import sv.dark.core.systems.DarkOpenGLLinker;
+import sv.dark.rhi.DarkRHI;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -50,42 +50,29 @@ public final class DarkDeferredPipeline {
             // 1. Generate FBO
             gBufferFBO = device.createFramebuffer();
 
-            // 2. Generate Textures
-            int GL_RGBA8 = 0x8058;
-            int GL_RGBA = 0x1908;
-            int GL_UNSIGNED_BYTE = 0x1401;
-            int GL_NEAREST = 0x2600;
-            int GL_LINEAR = 0x2601;
-            int GL_RGBA16F = 0x881A;
-            int GL_FLOAT = 0x1406;
-            int GL_DEPTH_COMPONENT32F = 0x8CAC;
-            int GL_DEPTH_COMPONENT = 0x1902;
-            int GL_COLOR_ATTACHMENT0 = 0x8CE0;
-            int GL_COLOR_ATTACHMENT1 = 0x8CE1;
-            int GL_COLOR_ATTACHMENT2 = 0x8CE2;
-            int GL_DEPTH_ATTACHMENT = 0x8D00;
-
+            // 2. Textures will use RHI constants directly inline.
+            
             // 3. Configure Albedo Texture (Color - 720p)
-            albedoTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST);
-            device.framebufferTexture2D(gBufferFBO, GL_COLOR_ATTACHMENT0, albedoTexture, 0);
+            albedoTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, DarkRHI.FORMAT_RGBA8, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_UNSIGNED_BYTE, DarkRHI.FILTER_NEAREST);
+            device.framebufferTexture2D(gBufferFBO, DarkRHI.ATTACHMENT_COLOR0, albedoTexture, 0);
 
             // 4. Configure Normal Texture (Geometría / Vectores - 720p)
-            normalTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_NEAREST);
-            device.framebufferTexture2D(gBufferFBO, GL_COLOR_ATTACHMENT1, normalTexture, 0);
+            normalTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, DarkRHI.FORMAT_RGBA16F, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_FLOAT, DarkRHI.FILTER_NEAREST);
+            device.framebufferTexture2D(gBufferFBO, DarkRHI.ATTACHMENT_COLOR1, normalTexture, 0);
 
             // 4.5 Configure PBR Texture (Roughness/Metallic/AO - 720p)
-            pbrTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST);
-            device.framebufferTexture2D(gBufferFBO, GL_COLOR_ATTACHMENT2, pbrTexture, 0);
+            pbrTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, DarkRHI.FORMAT_RGBA8, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_UNSIGNED_BYTE, DarkRHI.FILTER_NEAREST);
+            device.framebufferTexture2D(gBufferFBO, DarkRHI.ATTACHMENT_COLOR2, pbrTexture, 0);
 
             // 4.6 Configure Depth Texture (Depth - 720p)
-            depthTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST);
-            device.framebufferTexture2D(gBufferFBO, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+            depthTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, DarkRHI.FORMAT_DEPTH_COMPONENT32F, DarkRHI.FORMAT_DEPTH_COMPONENT, DarkRHI.TYPE_FLOAT, DarkRHI.FILTER_NEAREST);
+            device.framebufferTexture2D(gBufferFBO, DarkRHI.ATTACHMENT_DEPTH, depthTexture, 0);
 
             // 5. Configure Lit Texture (Salida Iluminada Computada - 720p)
-            litTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, GL_RGBA16F, GL_RGBA, GL_FLOAT, GL_LINEAR);
+            litTexture = device.createTexture2D(INTERNAL_WIDTH, INTERNAL_HEIGHT, DarkRHI.FORMAT_RGBA16F, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_FLOAT, DarkRHI.FILTER_LINEAR);
 
             // 6. Configure Presentation Texture (Salida Final Upscaled FSR - 4K)
-            presentationTexture = device.createTexture2D(sv.dark.config.DarkDisplayConfig.targetWidth, sv.dark.config.DarkDisplayConfig.targetHeight, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR);
+            presentationTexture = device.createTexture2D(sv.dark.config.DarkDisplayConfig.targetWidth, sv.dark.config.DarkDisplayConfig.targetHeight, DarkRHI.FORMAT_RGBA8, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_UNSIGNED_BYTE, DarkRHI.FILTER_LINEAR);
 
             // 7. Verify FBO
             if (!device.checkFramebufferStatus(gBufferFBO)) {
@@ -94,7 +81,7 @@ public final class DarkDeferredPipeline {
             }
 
             // 8. Tell OpenGL which color attachments we'll use for rendering
-            device.setDrawBuffers(gBufferFBO, new int[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2});
+            device.setDrawBuffers(gBufferFBO, new int[]{DarkRHI.ATTACHMENT_COLOR0, DarkRHI.ATTACHMENT_COLOR1, DarkRHI.ATTACHMENT_COLOR2});
 
             DarkLogger.info("GRAPHICS", "Deferred Pipeline Chassis Ready. Targets: Base 720p -> Presentation 4K");
             isInitialized = true;
@@ -149,10 +136,7 @@ public final class DarkDeferredPipeline {
             DarkLogger.info("GRAPHICS", "Resizing FSR Target to " + newWidth + "x" + newHeight);
             
             sv.dark.rhi.DarkRHIDevice device = sv.dark.core.DarkRHIContext.get().getDevice();
-            int GL_RGBA8 = 0x8058;
-            int GL_RGBA = 0x1908;
-            int GL_UNSIGNED_BYTE = 0x1401;
-            device.resizeTexture2D(presentationTexture, newWidth, newHeight, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+            device.resizeTexture2D(presentationTexture, newWidth, newHeight, DarkRHI.FORMAT_RGBA8, DarkRHI.FORMAT_RGBA, DarkRHI.TYPE_UNSIGNED_BYTE);
         } catch (Throwable e) {
             DarkLogger.error("GRAPHICS", "Failed to resize target texture");
         }

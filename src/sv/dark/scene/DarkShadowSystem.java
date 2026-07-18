@@ -4,9 +4,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.scene;
 
-import sv.dark.core.systems.DarkOpenGLLinker;
 import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
+import sv.dark.rhi.DarkRHI;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -42,24 +42,13 @@ public final class DarkShadowSystem {
             depthMapFBO = device.createFramebuffer();
             
             // 2. Create Texture Array
-            int GL_DEPTH_COMPONENT32F = 0x8CAC;
-            int GL_DEPTH_COMPONENT = 0x1902;
-            int GL_FLOAT = 0x1406;
-            int GL_NEAREST = 0x2600;
-            depthMapArray = device.createTexture2DArray(SHADOW_WIDTH, SHADOW_HEIGHT, CASCADE_COUNT, GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST);
+            depthMapArray = device.createTexture2DArray(SHADOW_WIDTH, SHADOW_HEIGHT, CASCADE_COUNT, DarkRHI.FORMAT_DEPTH_COMPONENT32F, DarkRHI.FORMAT_DEPTH_COMPONENT, DarkRHI.TYPE_FLOAT, DarkRHI.FILTER_NEAREST);
             
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, depthMapArray);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_S, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_WRAP_T, DarkOpenGLLinker.GL_CLAMP_TO_BORDER);
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment borderColor = arena.allocateFrom(ValueLayout.JAVA_FLOAT, new float[]{1.0f, 1.0f, 1.0f, 1.0f});
-                DarkOpenGLLinker.glTexParameterfv.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, DarkOpenGLLinker.GL_TEXTURE_BORDER_COLOR, borderColor);
-            }
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D_ARRAY, 0);
+            // Delegate specific texture wrapping and border configuration to RHI Backend
+            device.configureShadowTextureArray(depthMapArray);
             
             // 3. Attach Texture to FBO
-            int GL_DEPTH_ATTACHMENT = 0x8D00;
-            device.framebufferTexture(depthMapFBO, GL_DEPTH_ATTACHMENT, depthMapArray, 0);
+            device.framebufferTexture(depthMapFBO, DarkRHI.ATTACHMENT_DEPTH, depthMapArray, 0);
             
             // No color output needed
             device.setDrawBufferNone(depthMapFBO);
@@ -90,11 +79,9 @@ public final class DarkShadowSystem {
             cmd.bindFramebuffer(depthMapFBO);
             
             // Render specific layer of texture array
-            int GL_DEPTH_ATTACHMENT = 0x8D00;
-            cmd.bindFramebufferTextureLayer(depthMapFBO, GL_DEPTH_ATTACHMENT, depthMapArray, 0, cascadeIndex);
+            cmd.bindFramebufferTextureLayer(depthMapFBO, DarkRHI.ATTACHMENT_DEPTH, depthMapArray, 0, cascadeIndex);
             
-            int GL_DEPTH_BUFFER_BIT = 0x00000100;
-            cmd.clear(GL_DEPTH_BUFFER_BIT);
+            cmd.clear(DarkRHI.CLEAR_DEPTH_BUFFER_BIT);
             cmd.bindPipeline(shadowProgramId);
             
             // Zero-Alloc matrix upload: reuse MATRIX_64B scratchpad, 0 OS syscalls.

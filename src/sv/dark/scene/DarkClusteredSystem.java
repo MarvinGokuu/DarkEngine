@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2026 Marvin Alexander Flores Canales
 package sv.dark.scene;
 
-import sv.dark.core.systems.DarkOpenGLLinker;
+
 import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
 import java.lang.foreign.Arena;

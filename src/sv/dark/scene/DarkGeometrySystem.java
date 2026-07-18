@@ -4,9 +4,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 package sv.dark.scene;
 
-import sv.dark.core.systems.DarkOpenGLLinker;
 import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
+import sv.dark.rhi.DarkRHI;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -116,8 +116,7 @@ public final class DarkGeometrySystem {
         if (instanceCount == 0 || !isInitialized) return;
         try {
             sv.dark.rhi.DarkRHICommandList cmd = sv.dark.core.DarkRHIContext.get().getCommandList();
-            // 4 = GL_TRIANGLES, 0x1405 = GL_UNSIGNED_INT
-            cmd.drawElementsInstanced(4, indexCount, 0x1405, MemorySegment.NULL, instanceCount);
+            cmd.drawElementsInstanced(DarkRHI.PRIMITIVE_TRIANGLES, indexCount, DarkRHI.TYPE_UNSIGNED_INT, MemorySegment.NULL, instanceCount);
             instanceCount = 0; // Reset for next batch
         } catch (Throwable e) {
             DarkLogger.fatal("GRAPHICS", "Error flushing Geometry AZDO", e);

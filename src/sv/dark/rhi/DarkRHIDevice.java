@@ -21,6 +21,7 @@ public interface DarkRHIDevice {
     int createTexture2DArray(int width, int height, int depth, int internalFormat, int format, int type, int filter);
     void resizeTexture2D(int textureId, int width, int height, int internalFormat, int format, int type);
     void deleteTextures(int[] textureIds);
+    void configureShadowTextureArray(int textureId);
 
     int createFramebuffer();
     void framebufferTexture2D(int fboId, int attachment, int textureId, int level);

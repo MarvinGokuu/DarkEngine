@@ -62,7 +62,7 @@ public final class DarkGLFWBackend extends DarkPlatformContext {
                 Arena.global()
             );
             
-            DarkGraphicsLinker.glfwSetDropCallback.invokeExact(windowPointer, dropCallbackStub);
+            MemorySegment oldCallback = (MemorySegment) DarkGraphicsLinker.glfwSetDropCallback.invokeExact(windowPointer, dropCallbackStub);
             DarkLogger.info("UI", "Drag & Drop Asset Compiler link enabled.");
         } catch (Throwable t) {
             DarkLogger.error("UI", "Failed to init drop callback.");
