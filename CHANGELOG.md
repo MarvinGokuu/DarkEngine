@@ -14,8 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 🟢 Large World Coordinates (LWC) Physics
 - **`SpatialHashGrid`**: Migrado el algoritmo de resolución espacial (Broadphase) desde el Compute Shader de GPU a la CPU pura usando memoria Off-Heap y tipo primitivo `double` (64-bits). Eliminación absoluta de `radix_sort.comp`, preparando el entorno de simulación física para coordenadas masivas planetarias.
 
-#### 🟢 RHI Zero Technical Debt (20% Cleaned)
+#### 🟢 RHI Zero Technical Debt (100% Cleaned - Phase 3 Complete)
 - **`DarkRHI` & `DarkOpenGLBackend`**: Erradicados el 100% de los números mágicos hexadecimales de OpenGL (`0x8058`, `0x8CAC`, etc.) y dependencias a `DarkOpenGLLinker` en los sistemas de escena (`DarkDeferredPipeline`, `DarkGeometrySystem`, `DarkShadowSystem`, etc). Todo el engine ahora utiliza constantes de abstracción RHI, logrando el desacoplamiento S.O.L.I.D. total de cara a Vulkan.
+- **UI Abstraction & Inversion of Control**: Refactorización de la capa ImGui. `DarkImGuiRenderer` se transformó en `DarkOpenGLImGuiBackend`, confinando todas sus llamadas nativas bajo la interfaz limpia `DarkRHIRendererUI`. `DarkEngineWindow` ya no conoce el contexto OpenGL.
+- **Asynchronous AZDO Memory Streaming**: `DarkGPUStreamer` ahora utiliza los comandos agnósticos PBO (`createAsyncUploadBuffer`, `BUFFER_TARGET_UPLOAD`) de `DarkRHI` para inyección DMA directa a VRAM. Cero fugas nativas al kernel comprobadas.
 
 #### 🔴 Critical Fixes (OS Starvation & N-Body Collapse)
 - **`DarkTransformSoA`**: Resuelto el error catastrófico de inanición del OS ("Servidor No responde" y núcleo de CPU clavado al 100%) ocasionado por la degeneración algorítmica a O(N²) en el `NarrowphaseSystem`. El bug ocurría porque Project Panama inicializaba la arena de 1M de entidades con ceros (`0.0`), causando un *Hash Collapse* en la celda `0` del `BroadphaseSystem`. Inyectado un bucle nativo ultra-rápido en el constructor que setea todas las coordenadas globales y locales a `Double.MAX_VALUE`, desactivando limpiamente las entidades vírgenes y regresando el Kernel a su estado Idle natural.

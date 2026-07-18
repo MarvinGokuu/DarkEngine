@@ -1,4 +1,4 @@
-package sv.dark.ui;
+package sv.dark.rhi;
 
 import imgui.ImDrawData;
 import imgui.ImGui;
@@ -13,20 +13,21 @@ import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import sv.dark.core.DarkLogger;
 
-public final class DarkImGuiRenderer {
+public final class DarkOpenGLImGuiBackend implements DarkRHIRendererUI {
     
-    private static int g_ShaderHandle = 0;
-    private static int g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-    private static int g_VboHandle = 0, g_ElementsHandle = 0;
-    private static int g_FontTexture = 0;
-    private static final float[] orthoProjection = new float[16];
+    private int g_ShaderHandle = 0;
+    private int g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
+    private int g_VboHandle = 0, g_ElementsHandle = 0;
+    private int g_FontTexture = 0;
+    private final float[] orthoProjection = new float[16];
 
-    public static void init() {
+    @Override
+    public void init() {
         createDeviceObjects();
         DarkLogger.info("IMGUI", "Renderer Nativo Inicializado (Project Panama + imgui-java).");
     }
 
-    private static void createDeviceObjects() {
+    private void createDeviceObjects() {
         try (Arena arena = Arena.ofConfined()) {
             String vertexShader = 
                 "#version 330 core\n" +
@@ -70,7 +71,7 @@ public final class DarkImGuiRenderer {
         }
     }
 
-    private static void createFontsTexture(Arena arena) throws Throwable {
+    private void createFontsTexture(Arena arena) throws Throwable {
         ImGuiIO io = ImGui.getIO();
         ImFontAtlas fonts = io.getFonts();
         
@@ -93,7 +94,8 @@ public final class DarkImGuiRenderer {
         fonts.setTexID(g_FontTexture);
     }
 
-    public static void renderDrawData(ImDrawData drawData) {
+    @Override
+    public void renderDrawData(ImDrawData drawData) {
         if (drawData == null || drawData.getCmdListsCount() == 0) return;
         
         try {
@@ -195,7 +197,8 @@ public final class DarkImGuiRenderer {
         return program;
     }
 
-    public static void destroy() {
+    @Override
+    public void destroy() {
         try {
             if (g_ShaderHandle != 0) {
                 DarkOpenGLLinker.glDeleteProgram.invokeExact(g_ShaderHandle);

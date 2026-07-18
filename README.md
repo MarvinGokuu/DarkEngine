@@ -20,7 +20,7 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 6.  **GPU-Driven Compute (Phase 19 & Phase 3)**: Descarte masivo de geometría (Culling) y **Spatial Hashing** 100% en VRAM vía Compute Shaders y SSBOs AZDO con `atomicExchange`.
 7.  **Streaming Zero-Copy (Phase 3)**: Ingestión de memoria desde disco directo a la GPU. Los *DarkAssets* saltan directo a un *Pixel Unpack Buffer* (PBO) de 64MB mapeado de forma persistente.
 8.  **Clustered Deferred Shading (Phase 29)**: G-Buffers, *Light Culling* por Compute Shaders y partición espacial en clústeres. Cálculo de sombras CSM exactas mediante inversión matricial pura para erradicar el *Shadow Shimmering*.
-9.  **0 Deuda Técnica y VRAM Safe (Phase 28)**: Destrucción de recursos gráficos controlada.
+9.  **Render Hardware Interface (RHI)**: 100% abstraído. Cero dependencias en el Core atadas a APIs Gráficas (Zero OpenGL Leaks). El motor es completamente agnóstico y está *Vulkan-Ready*.
 10. **Zero-GC Telemetry (Phase 1)**: Reemplazo absoluto del `HttpServer` por un Gateway NIO Asíncrono. Parseo ASCII directo a *ByteBuffers* precompilados sin crear objetos `String`.
 11. **DAG Task Dispatcher (Phase 4)**: Destrucción de las barreras globales multicore. Las dependencias se resuelven atómicamente, despertando hilos elásticamente vía `LockSupport`.
 12. **Lock-Free Arrays & FFI Trivialization (Global Audit)**: Implementación de `VarHandle` en arreglos primitivos para Memory Visibility pura. Inyección de directivas `critical(false)` en llamadas pesadas de GLFW para liberar al Garbage Collector nativo de bloqueos por V-Sync.
@@ -92,7 +92,7 @@ El desarrollo de runtimes tradicionales está plagado de cuellos de botella (Gar
 6.  **GPU-Driven Compute (Phase 19 & Phase 3)**: Descarte masivo de geometría (Culling) y **Spatial Hashing** 100% en VRAM vía Compute Shaders y SSBOs AZDO con `atomicExchange`.
 7.  **Streaming Zero-Copy (Phase 3)**: Ingestión de memoria desde disco directo a la GPU. Los *DarkAssets* saltan directo a un *Pixel Unpack Buffer* (PBO) de 64MB mapeado de forma persistente.
 8.  **Clustered Deferred Shading (Phase 29)**: G-Buffers, *Light Culling* por Compute Shaders y partición espacial en clústeres. Cálculo de sombras CSM exactas mediante inversión matricial pura para erradicar el *Shadow Shimmering*.
-9.  **0 Deuda Técnica y VRAM Safe (Phase 28)**: Destrucción de recursos gráficos controlada.
+9.  **Render Hardware Interface (RHI)**: 100% abstraído. Cero dependencias en el Core atadas a APIs Gráficas (Zero OpenGL Leaks). El motor es completamente agnóstico y está *Vulkan-Ready*.
 10. **Zero-GC Telemetry (Phase 1)**: Reemplazo absoluto del `HttpServer` por un Gateway NIO Asíncrono. Parseo ASCII directo a *ByteBuffers* precompilados sin crear objetos `String`.
 11. **DAG Task Dispatcher (Phase 4)**: Destrucción de las barreras globales multicore. Las dependencias se resuelven atómicamente, despertando hilos elásticamente vía `LockSupport`.
 

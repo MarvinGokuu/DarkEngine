@@ -20,6 +20,7 @@ public interface DarkRHICommandList {
     void bindTexture2D(int unit, int textureId);
     void bindTexture2DArray(int unit, int textureId);
     void bindImageTexture(int unit, int textureId, int level, boolean layered, int layer, int access, int format);
+    void copyUploadBufferToTexture2D(int bufferId, int textureId, int width, int height, long offset);
 
     void dispatchCompute(int groupsX, int groupsY, int groupsZ);
     void memoryBarrier(int flags);

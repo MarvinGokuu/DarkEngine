@@ -28,7 +28,8 @@ public class SpatialHashGridTest {
 
         System.out.println("[TEST] Initializing GPU Context for Broadphase...");
         sv.dark.ui.DarkEngineWindow.initNativeWindow();
-        sv.dark.core.systems.DarkOpenGLLinker.init();
+        sv.dark.core.DarkRHIContext.init();
+        sv.dark.core.DarkRHIContext.get().getDevice().initializeContext(sv.dark.ui.DarkEngineWindow.getWindowPointer());
 
         System.out.println("[TEST] Allocating off-heap arrays for " + maxEntities + " entities...");
         DarkTransformSoA soa = new DarkTransformSoA(maxEntities);

@@ -2,16 +2,23 @@ package sv.dark.ui;
 
 import java.lang.foreign.MemorySegment;
 import sv.dark.core.DarkUIContext;
+import sv.dark.core.DarkRHIContext;
+import sv.dark.rhi.DarkRHIRendererUI;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 
 public final class DarkImGuiBackend extends DarkUIContext {
 
+    private DarkRHIRendererUI renderer;
+
     @Override
     public void init() {
         ImGui.createContext();
         DarkImGuiInput.init();
-        DarkImGuiRenderer.init();
+        renderer = DarkRHIContext.get().getUIRenderer();
+        if (renderer != null) {
+            renderer.init();
+        }
     }
 
     @Override
@@ -23,7 +30,9 @@ public final class DarkImGuiBackend extends DarkUIContext {
     @Override
     public void render() {
         ImGui.render();
-        DarkImGuiRenderer.renderDrawData(ImGui.getDrawData());
+        if (renderer != null) {
+            renderer.renderDrawData(ImGui.getDrawData());
+        }
     }
 
     @Override
@@ -33,7 +42,9 @@ public final class DarkImGuiBackend extends DarkUIContext {
 
     @Override
     public void cleanup() {
-        DarkImGuiRenderer.destroy();
+        if (renderer != null) {
+            renderer.destroy();
+        }
         ImGui.destroyContext();
     }
 }

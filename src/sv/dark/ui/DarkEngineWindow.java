@@ -42,14 +42,13 @@ public final class DarkEngineWindow {
             DarkLogger.info("GRAPHICS", "Initializing Native Graphics Pipeline...");
             
             platform.initWindow("DarkEngine - Servidor de Conexion (Daemon)", 900, 520);
-            platform.makeContextCurrent();
             platform.setSwapInterval(0); // V-Sync Off
 
-            // Cargar funciones de OpenGL a través del contexto activo (Phase 19)
-            sv.dark.core.systems.DarkOpenGLLinker.init();
-            
             // Inicializar Capa Agnóstica RHI (Fase 28)
             sv.dark.core.DarkRHIContext.init();
+            
+            // Initialize Graphics Context using RHI
+            sv.dark.core.DarkRHIContext.get().getDevice().initializeContext(getWindowPointer());
             
             // Inicializar GPU Compute Culling System (Phase 19)
             sv.dark.scene.DarkComputeCullingSystem.init();

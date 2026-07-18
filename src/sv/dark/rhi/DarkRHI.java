@@ -13,6 +13,7 @@ public interface DarkRHI {
     int BUFFER_TARGET_UBO = 1;
     int BUFFER_TARGET_ARRAY = 2;
     int BUFFER_TARGET_ELEMENT = 3;
+    int BUFFER_TARGET_UPLOAD = 4; // Para Streaming Asincrono (PBO)
 
     int BARRIER_SHADER_STORAGE = 1;
     int BARRIER_SHADER_IMAGE = 2;
@@ -47,7 +48,9 @@ public interface DarkRHI {
     int PRIMITIVE_TRIANGLES = 0;
     
     int CLEAR_DEPTH_BUFFER_BIT = 1;
+    int CLEAR_COLOR_BUFFER_BIT = 2;
     
     DarkRHIDevice getDevice();
     DarkRHICommandList getCommandList();
+    DarkRHIRendererUI getUIRenderer();
 }

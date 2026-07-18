@@ -8,7 +8,7 @@ import java.lang.foreign.ValueLayout;
 
 public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommandList {
 
-    @Override
+    private DarkRHIRendererUI uiRenderer;
     public DarkRHIDevice getDevice() {
         return this;
     }
@@ -18,10 +18,26 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
         return this;
     }
 
-    // --- DarkRHIDevice Implementation ---
+    @Override
+    public DarkRHIRendererUI getUIRenderer() {
+        return uiRenderer;
+    }
+
     @Override
     public void init() {
         DarkLogger.info("RHI", "Inicializando DarkOpenGLBackend...");
+        this.uiRenderer = new DarkOpenGLImGuiBackend();
+    }
+
+    @Override
+    public void initializeContext(MemorySegment windowPtr) {
+        try {
+            sv.dark.core.systems.DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(windowPtr);
+            DarkOpenGLLinker.init();
+        } catch (Throwable e) {
+            DarkLogger.fatal("RHI", "Failed to initialize OpenGL Context", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -116,6 +132,17 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
         };
     }
 
+    private int getNativeBufferTarget(int target) {
+        switch (target) {
+            case DarkRHI.BUFFER_TARGET_SSBO: return 0x90D2; // GL_SHADER_STORAGE_BUFFER
+            case DarkRHI.BUFFER_TARGET_UBO: return 0x8A11; // GL_UNIFORM_BUFFER
+            case DarkRHI.BUFFER_TARGET_ARRAY: return 0x8892; // GL_ARRAY_BUFFER
+            case DarkRHI.BUFFER_TARGET_ELEMENT: return 0x8893; // GL_ELEMENT_ARRAY_BUFFER
+            case DarkRHI.BUFFER_TARGET_UPLOAD: return 0x88EB; // GL_PIXEL_UNPACK_BUFFER
+            default: return 0x90D2;
+        }
+    }
+
     @Override
     public int createBuffer(long sizeBytes, int flags) {
         try (Arena arena = Arena.ofConfined()) {
@@ -191,17 +218,26 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
 
     @Override
     public int createTexture2D(int width, int height, int internalFormat, int format, int type, int filter) {
+        return createTexture2D(width, height, internalFormat, format, type, filter, MemorySegment.NULL);
+    }
+
+    @Override
+    public int createTexture2D(int width, int height, int internalFormat, int format, int type, int filter, MemorySegment data) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment texPtr = arena.allocate(ValueLayout.JAVA_INT);
             DarkOpenGLLinker.glGenTextures.invokeExact(1, texPtr);
-            int tex = texPtr.get(ValueLayout.JAVA_INT, 0);
-            
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, tex);
-            DarkOpenGLLinker.glTexImage2D.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, 0, mapFormat(internalFormat), width, height, 0, mapFormat(format), mapType(type), MemorySegment.NULL);
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MIN_FILTER, mapFilter(filter));
-            DarkOpenGLLinker.glTexParameteri.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, DarkOpenGLLinker.GL_TEXTURE_MAG_FILTER, mapFilter(filter));
-            return tex;
-        } catch(Throwable t){ throw new RuntimeException(t); }
+            int texId = texPtr.get(ValueLayout.JAVA_INT, 0);
+
+            DarkOpenGLLinker.glBindTexture.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, texId);
+            DarkOpenGLLinker.glTexParameteri.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, 0x2801 /* GL_TEXTURE_MIN_FILTER */, mapFilter(filter));
+            DarkOpenGLLinker.glTexParameteri.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, 0x2800 /* GL_TEXTURE_MAG_FILTER */, mapFilter(filter));
+            DarkOpenGLLinker.glTexImage2D.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, 0, mapFormat(internalFormat), width, height, 0, mapFormat(format), mapType(type), data);
+
+            return texId;
+        } catch (Throwable e) {
+            DarkLogger.fatal("RHI", "Error creando textura 2D", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -428,6 +464,19 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     }
 
     @Override
+    public void copyUploadBufferToTexture2D(int bufferId, int textureId, int width, int height, long offset) {
+        try {
+            DarkOpenGLLinker.glBindTexture.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, textureId);
+            DarkOpenGLLinker.glBindBuffer.invokeExact(0x88EB /* GL_PIXEL_UNPACK_BUFFER */, bufferId);
+            MemorySegment offsetPtr = MemorySegment.ofAddress(offset);
+            DarkOpenGLLinker.glTexSubImage2D.invokeExact(0x0DE1 /* GL_TEXTURE_2D */, 0, 0, 0, width, height, 0x1908 /* GL_RGBA */, 0x1401 /* GL_UNSIGNED_BYTE */, offsetPtr);
+            DarkOpenGLLinker.glBindBuffer.invokeExact(0x88EB /* GL_PIXEL_UNPACK_BUFFER */, 0);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void dispatchCompute(int groupsX, int groupsY, int groupsZ) {
         try { DarkOpenGLLinker.glDispatchCompute.invokeExact(groupsX, groupsY, groupsZ); } catch(Throwable t){}
     }
@@ -552,6 +601,7 @@ public class DarkOpenGLBackend implements DarkRHI, DarkRHIDevice, DarkRHICommand
     private int mapClearBit(int mask) {
         int glMask = 0;
         if ((mask & CLEAR_DEPTH_BUFFER_BIT) != 0) glMask |= 0x00000100; // GL_DEPTH_BUFFER_BIT
+        if ((mask & CLEAR_COLOR_BUFFER_BIT) != 0) glMask |= 0x00004000; // GL_COLOR_BUFFER_BIT
         return glMask;
     }
 }

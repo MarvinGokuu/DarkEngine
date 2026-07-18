@@ -4,6 +4,7 @@ import java.lang.foreign.MemorySegment;
 
 public interface DarkRHIDevice {
     void init();
+    void initializeContext(MemorySegment windowPtr);
     void destroy();
 
     int createComputePipeline(String source);
@@ -18,6 +19,7 @@ public interface DarkRHIDevice {
     void deleteBuffers(int[] bufferIds);
 
     int createTexture2D(int width, int height, int internalFormat, int format, int type, int filter);
+    int createTexture2D(int width, int height, int internalFormat, int format, int type, int filter, MemorySegment data);
     int createTexture2DArray(int width, int height, int depth, int internalFormat, int format, int type, int filter);
     void resizeTexture2D(int textureId, int width, int height, int internalFormat, int format, int type);
     void deleteTextures(int[] textureIds);

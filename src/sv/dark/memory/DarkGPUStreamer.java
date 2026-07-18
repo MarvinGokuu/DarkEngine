@@ -6,11 +6,11 @@ package sv.dark.memory;
 
 import sv.dark.core.AAACertified;
 import sv.dark.core.DarkLogger;
-import sv.dark.core.systems.DarkOpenGLLinker;
+import sv.dark.core.DarkRHIContext;
+import sv.dark.rhi.DarkRHI;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
 
 /**
  * RESPONSIBILITY: Asynchronous Zero-Copy Asset transfers to VRAM.
@@ -33,18 +33,11 @@ public final class DarkGPUStreamer {
         try (Arena arena = Arena.ofConfined()) {
             DarkLogger.info("STREAMER", "Initializing AZDO GPU PBO Streamer (64MB)...");
 
-            MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT);
-            DarkOpenGLLinker.glGenBuffers.invokeExact(1, buffers);
-            pboId = buffers.get(ValueLayout.JAVA_INT, 0);
-
-            int flagsMap = DarkOpenGLLinker.GL_MAP_WRITE_BIT | DarkOpenGLLinker.GL_MAP_PERSISTENT_BIT | DarkOpenGLLinker.GL_MAP_COHERENT_BIT;
-
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, pboId);
-            DarkOpenGLLinker.glBufferStorage.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, PBO_SIZE, MemorySegment.NULL, flagsMap);
-            mappedPBO = (MemorySegment) DarkOpenGLLinker.glMapBufferRange.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, 0L, PBO_SIZE, flagsMap);
-            mappedPBO = mappedPBO.reinterpret(PBO_SIZE);
+            int flagsMap = DarkRHI.MAP_WRITE_BIT | DarkRHI.MAP_PERSISTENT_BIT | DarkRHI.MAP_COHERENT_BIT;
             
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, 0);
+            pboId = DarkRHIContext.get().getDevice().createBuffer(PBO_SIZE, flagsMap);
+            mappedPBO = DarkRHIContext.get().getDevice().mapBuffer(DarkRHI.BUFFER_TARGET_UPLOAD, pboId, 0L, PBO_SIZE, flagsMap);
+            mappedPBO = mappedPBO.reinterpret(PBO_SIZE);
 
             isInitialized = true;
         } catch (Throwable e) {
@@ -69,17 +62,7 @@ public final class DarkGPUStreamer {
     public static void uploadTextureAsync(int targetTexId, int width, int height, long pboOffset) {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glBindTexture.invokeExact(DarkOpenGLLinker.GL_TEXTURE_2D, targetTexId);
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, pboId);
-            
-            // The memory pointer is an offset integer cast to pointer when PBO is bound
-            MemorySegment offsetPtr = MemorySegment.ofAddress(pboOffset);
-            DarkOpenGLLinker.glTexSubImage2D.invokeExact(
-                DarkOpenGLLinker.GL_TEXTURE_2D, 0, 0, 0, width, height, 
-                DarkOpenGLLinker.GL_RGBA, DarkOpenGLLinker.GL_UNSIGNED_BYTE, offsetPtr
-            );
-            
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, 0);
+            DarkRHIContext.get().getCommandList().copyUploadBufferToTexture2D(pboId, targetTexId, width, height, pboOffset);
         } catch (Throwable e) {
             DarkLogger.error("STREAMER", "Failed to upload texture async: " + e.getMessage());
         }
@@ -88,15 +71,9 @@ public final class DarkGPUStreamer {
     public static void destroy() {
         if (!isInitialized) return;
         try {
-            DarkOpenGLLinker.glBindBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER, pboId);
-            DarkOpenGLLinker.glUnmapBuffer.invokeExact(DarkOpenGLLinker.GL_PIXEL_UNPACK_BUFFER);
-            
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment buffers = arena.allocate(ValueLayout.JAVA_INT);
-                buffers.set(ValueLayout.JAVA_INT, 0L, pboId);
-                DarkOpenGLLinker.glDeleteBuffers.invokeExact(1, buffers);
-                pboId = 0;
-            }
+            DarkRHIContext.get().getDevice().unmapBuffer(DarkRHI.BUFFER_TARGET_UPLOAD, pboId);
+            DarkRHIContext.get().getDevice().deleteBuffer(pboId);
+            pboId = 0;
             mappedPBO = null;
             isInitialized = false;
         } catch (Throwable e) {

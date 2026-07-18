@@ -613,7 +613,9 @@ public final class EngineKernel {
                 imgui.ImGui.render();
                 imgui.ImDrawData drawData = imgui.ImGui.getDrawData();
                 if (drawData != null) {
-                    sv.dark.ui.DarkImGuiRenderer.renderDrawData(drawData);
+                    if (sv.dark.core.DarkRHIContext.get().getUIRenderer() != null) {
+                        sv.dark.core.DarkRHIContext.get().getUIRenderer().renderDrawData(drawData);
+                    }
                 }
             }
         } catch (Throwable t) {
@@ -623,8 +625,8 @@ public final class EngineKernel {
         // Swap buffers to display the frame
         if (sv.dark.ui.DarkEngineWindow.getWindowPointer() != null) {
             try {
-                // Clear default framebuffer to pitch black (hacker style base)
-                sv.dark.core.systems.DarkOpenGLLinker.glClear.invokeExact(0x00004000); // GL_COLOR_BUFFER_BIT = 0x4000
+                // Clear using RHI abstraction instead of raw OpenGL
+                sv.dark.core.DarkRHIContext.get().getCommandList().clear(sv.dark.rhi.DarkRHI.CLEAR_COLOR_BUFFER_BIT);
                 sv.dark.core.systems.DarkGraphicsLinker.glfwSwapBuffers.invokeExact(sv.dark.ui.DarkEngineWindow.getWindowPointer());
             } catch (Throwable t) {
                 sv.dark.core.DarkLogger.error("GRAPHICS", "Native panic during glfwSwapBuffers: " + t.getMessage());
@@ -801,7 +803,9 @@ public final class EngineKernel {
             sv.dark.scene.DarkShadowSystem.destroy();
             sv.dark.scene.DarkPostProcessSystem.destroy();
             sv.dark.scene.DarkFSRSystem.destroy();
-            sv.dark.ui.DarkImGuiRenderer.destroy();
+            if (sv.dark.core.DarkRHIContext.get().getUIRenderer() != null) {
+                sv.dark.core.DarkRHIContext.get().getUIRenderer().destroy();
+            }
             sv.dark.core.DarkLogger.info("KERNEL", "[STEP 6.5/7] VRAM objects destroyed [OK]");
         } catch (Throwable e) {
             System.err.println("[STEP 6.5/7] Error destroying VRAM objects: " + e.getMessage());
@@ -863,44 +867,17 @@ public final class EngineKernel {
         sv.dark.memory.DarkAsset asset;
         while ((asset = pendingAssets.poll()) != null) {
             try {
-                // Generate Texture
-                java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined();
-                java.lang.foreign.MemorySegment texPtr = tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-                sv.dark.core.systems.DarkOpenGLLinker.glGenTextures.invokeExact(1, texPtr);
-                int textureId = texPtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-                
-                // Bind and Upload
-                sv.dark.core.systems.DarkOpenGLLinker.glBindTexture.invokeExact(
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
-                    textureId
-                );
-                
-                // Set parameters (Linear filtering)
-                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
-                    0x2801, // GL_TEXTURE_MIN_FILTER
-                    0x2601  // GL_LINEAR
-                );
-                sv.dark.core.systems.DarkOpenGLLinker.glTexParameteri.invokeExact(
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D, 
-                    0x2800, // GL_TEXTURE_MAG_FILTER
-                    0x2601  // GL_LINEAR
-                );
-
-                // Direct DMA from mapped file payload to VRAM
-                sv.dark.core.systems.DarkOpenGLLinker.glTexImage2D.invokeExact(
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_TEXTURE_2D,
-                    0,
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA8,
-                    asset.width(),
-                    asset.height(),
-                    0,
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_RGBA,
-                    sv.dark.core.systems.DarkOpenGLLinker.GL_UNSIGNED_BYTE,
+                // Upload using RHI Abstraction (Direct DMA from mapped file payload to VRAM)
+                int textureId = sv.dark.core.DarkRHIContext.get().getDevice().createTexture2D(
+                    asset.width(), 
+                    asset.height(), 
+                    sv.dark.rhi.DarkRHI.FORMAT_RGBA8, 
+                    sv.dark.rhi.DarkRHI.FORMAT_RGBA, 
+                    sv.dark.rhi.DarkRHI.TYPE_UNSIGNED_BYTE, 
+                    sv.dark.rhi.DarkRHI.FILTER_LINEAR, 
                     asset.payload()
                 );
                 
-                tempArena.close();
                 sv.dark.core.DarkLogger.info("RENDERER", "Successfully uploaded texture to VRAM (ID: " + textureId + ") [" + asset.width() + "x" + asset.height() + "]");
                 
             } catch (Throwable t) {

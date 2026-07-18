@@ -8,8 +8,8 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.Arena;
 
 import sv.dark.core.DarkLogger;
+import sv.dark.core.DarkRHIContext;
 import sv.dark.core.systems.DarkGraphicsLinker;
-import sv.dark.core.systems.DarkOpenGLLinker;
 import sv.dark.scene.DarkDeferredPipeline;
 
 public class SystemVRAMLeakTest {
@@ -34,9 +34,8 @@ public class SystemVRAMLeakTest {
                 throw new RuntimeException("Failed to create GLFW window for test.");
             }
 
-            DarkGraphicsLinker.glfwMakeContextCurrent.invokeExact(window);
-            DarkOpenGLLinker.init();
-            sv.dark.core.DarkRHIContext.init();
+            DarkRHIContext.init();
+            DarkRHIContext.get().getDevice().initializeContext(window);
 
             // 2. Stress Test FBO Lifecycle
             int iterations = 5000;
