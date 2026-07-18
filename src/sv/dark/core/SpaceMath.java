@@ -50,7 +50,7 @@ public final class SpaceMath {
      * Converts a world coordinate (float) to a sector index (int).
      * [OPTIMIZATION]: Uses bit-shifting instead of division.
      */
-    public static int getSectorIndex(float worldCoord) {
+    public static int getSectorIndex(double worldCoord) {
         // Casting to int truncates (positive floor), then shift.
         // Equivalent to: floor(worldCoord / 128)
         return (int) worldCoord >> SECTOR_SHIFT;

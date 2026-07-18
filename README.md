@@ -143,7 +143,6 @@ Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para c
 
 > ℹ️ **Nota sobre ImGui (UI del Editor)**: Es normal ver el mensaje `[ERROR] [IMGUI] lib/cimgui.dll NOT FOUND` en los logs. Esto simplemente indica que la interfaz visual nativa del editor está deshabilitada intencionalmente en producción, permitiendo que el motor corra en modo puramente *headless* o "juego final".
 
-> ℹ️ **Nota sobre Físicas**: El sistema de Físicas (Broadphase y Narrowphase) se encuentra temporalmente desconectado del Kernel debido a errores de cómputo en el Hashing Espacial. Se reconectará al concluir la fase actual.
 
 ---
 
@@ -161,14 +160,14 @@ Desde la terminal, utiliza los scripts provistos en la raíz del proyecto para c
 * [x] **Purga de Sistemas Legacy**: Destrucción total de `AudioSystem`, `MovementSystem`, `RenderSystem` y `SpriteSystem`, consolidando el motor 100% sobre la arquitectura Data-Oriented pura.
 
 **[FASE 2 EN PREPARACIÓN]: Mega-Estructuras y Precisión Absoluta**
-* [ ] **Large World Coordinates (LWC)**: Migrar el núcleo matemático de `float` (32-bit) a `double` (64-bit) para soportar mundos de escala planetaria sin *vertex jittering*.
+* [x] **Large World Coordinates (LWC)**: Migrar el núcleo matemático de `float` (32-bit) a `double` (64-bit) para soportar mundos de escala planetaria sin *vertex jittering*.
 * [ ] **TDR Recovery (GL_ARB_robustness)**: Implementar recuperación a nivel driver para evitar crasheos catastróficos del motor si el GPU se reinicia.
 * [x] **Topological Sorting (Grafo de Escena)**: Memoria contigua y ordenamiento topológico para jerarquías complejas (Padre-Hijo) garantizando coalescencia de caché durante las multiplicaciones de matrices locales a globales.
 
 **[FASE 2.1 COMPLETADA]: Developer Experience (DX) & Valhalla Prep**
 * [x] **API Fachada (DOD Wrapper)**: Implementación de `DarkEntity` como puente OOP hacia la memoria DOD nativa, cimentando las bases del proyecto para Valhalla.
 * [x] **Zero-GC Object Pooling**: Implementación de *Free-List Allocator* para reciclar objetos envoltorio y mantener el rendimiento máximo en la creación de entidades.
-* [ ] **JMH Benchmark de Fachada OOP**: Agregar un test conjunto a `SoAMemoryBenchmark` para perfilar el overhead de invocar `DarkEntity` (la capa orientada a objetos) sobre el núcleo Data-Oriented, validando su rendimiento antes de Java 26.
+* [x] **JMH Benchmark de Fachada OOP**: Agregar un test conjunto a `SoAMemoryBenchmark` para perfilar el overhead de invocar `DarkEntity` (la capa orientada a objetos) sobre el núcleo Data-Oriented, validando su rendimiento antes de Java 26.
 
 **[FASE 3 Y POSTERIORES]: GPU, Vulkan FFI & Distribución**
 * [ ] **Zero-Copy Streaming**: Habilitar I/O directo desde NVMe a VRAM para texturas masivas sin pasar por el Heap de Java.

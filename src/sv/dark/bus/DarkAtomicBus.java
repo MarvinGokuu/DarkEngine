@@ -191,12 +191,12 @@ public final class DarkAtomicBus implements IEventBus {
      * @return true if the signature is intact, false if corrupted.
      */
     public boolean validateMemorySignature() {
-        return headShield_L1_slot1 == MEMORY_SIGNATURE &&
-                headShield_L1_slot7 == MEMORY_SIGNATURE &&
-                isolationBridge_slot1 == MEMORY_SIGNATURE &&
-                isolationBridge_slot7 == MEMORY_SIGNATURE &&
-                tailShield_L1_slot1 == MEMORY_SIGNATURE &&
-                tailShield_L1_slot7 == MEMORY_SIGNATURE;
+        return headShield_L1_slot1   == MEMORY_SIGNATURE &&
+               headShield_L1_slot7   == MEMORY_SIGNATURE &&
+               isolationBridge_slot1 == MEMORY_SIGNATURE &&
+               isolationBridge_slot7 == MEMORY_SIGNATURE &&
+               tailShield_L1_slot1   == MEMORY_SIGNATURE &&
+               tailShield_L1_slot7   == MEMORY_SIGNATURE;
     }
 
     /**
