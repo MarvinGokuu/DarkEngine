@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 🟢 RHI Zero Technical Debt (20% Cleaned)
 - **`DarkRHI` & `DarkOpenGLBackend`**: Erradicados el 100% de los números mágicos hexadecimales de OpenGL (`0x8058`, `0x8CAC`, etc.) y dependencias a `DarkOpenGLLinker` en los sistemas de escena (`DarkDeferredPipeline`, `DarkGeometrySystem`, `DarkShadowSystem`, etc). Todo el engine ahora utiliza constantes de abstracción RHI, logrando el desacoplamiento S.O.L.I.D. total de cara a Vulkan.
 
+#### 🔴 Critical Fixes (OS Starvation & N-Body Collapse)
+- **`DarkTransformSoA`**: Resuelto el error catastrófico de inanición del OS ("Servidor No responde" y núcleo de CPU clavado al 100%) ocasionado por la degeneración algorítmica a O(N²) en el `NarrowphaseSystem`. El bug ocurría porque Project Panama inicializaba la arena de 1M de entidades con ceros (`0.0`), causando un *Hash Collapse* en la celda `0` del `BroadphaseSystem`. Inyectado un bucle nativo ultra-rápido en el constructor que setea todas las coordenadas globales y locales a `Double.MAX_VALUE`, desactivando limpiamente las entidades vírgenes y regresando el Kernel a su estado Idle natural.
+
 ---
 
 ## [4.6.4] - 2026-07-06

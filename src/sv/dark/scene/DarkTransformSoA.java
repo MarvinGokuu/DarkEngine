@@ -79,6 +79,17 @@ public final class DarkTransformSoA {
         // Inicializar jerarquía con -1 (Sin padre) usando relleno de bytes rápido (0xFFFFFFFF = -1 en int de 32-bits)
         parentIdx.fill((byte) 0xFF);
         
+        // [CRITICAL FIX] Inicializar coordenadas a Double.MAX_VALUE para desactivar físicas (Evita colapso O(N²))
+        for (int i = 0; i < capacity; i++) {
+            long offset64 = i * 8L;
+            localPosX.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+            localPosY.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+            localPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+            globalPosX.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+            globalPosY.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+            globalPosZ.set(ValueLayout.JAVA_DOUBLE, offset64, Double.MAX_VALUE);
+        }
+        
         DarkLogger.info("ECS", "SoA Allocator: " + capacity + " entities (" + ((bytesRequired32 * 9 + bytesRequired64 * 3) / 1024 / 1024) + " MB Off-Heap 3D LWC)");
     }
     
