@@ -121,12 +121,12 @@ public final class DarkEngineMaster {
         registry.registerGameSystem(new sv.dark.ecs.SceneKinematicsSystem(kernel.getScene()));
         
         // 5. Physics Broadphase Culling (Data-Oriented Spatial Hash)
-        // sv.dark.physics.BroadphaseSystem broadphase = new sv.dark.physics.BroadphaseSystem(kernel.getScene());
-        // registry.registerGameSystem(broadphase);
+        sv.dark.physics.BroadphaseSystem broadphase = new sv.dark.physics.BroadphaseSystem(kernel.getScene());
+        registry.registerGameSystem(broadphase);
 
         // 6. Physics Narrowphase Solver (Circle/AABB Fast-Paths + Rigidbody Dynamics)
-        // sv.dark.physics.DarkColliderSoA colliderMemory = new sv.dark.physics.DarkColliderSoA(kernel.getScene().getSoA().getCapacity());
-        // registry.registerGameSystem(new sv.dark.physics.NarrowphaseSystem(kernel.getScene(), broadphase.getGrid(), colliderMemory));
+        sv.dark.physics.DarkColliderSoA colliderMemory = new sv.dark.physics.DarkColliderSoA(kernel.getScene().getSoA().getCapacity());
+        registry.registerGameSystem(new sv.dark.physics.NarrowphaseSystem(kernel.getScene(), broadphase.getGrid(), colliderMemory));
 
         // 7. GPU Particle System (Phase 32)
         sv.dark.vfx.DarkParticleEmitterSoA emitterMemory = new sv.dark.vfx.DarkParticleEmitterSoA(512); // Soporta hasta 512 Spawners (que emiten N millones de particulas en GPU)

@@ -45,7 +45,7 @@ public class GovernorTest {
         // Should upshift to Gear 2 (120 FPS) and then Gear 3 (144 FPS) if fast enough
         simulateFrames(timeKeeper, 180, 1_000_000); // 1ms load (very light)
 
-        System.out.println("\n[PHASE 2] Stress Test (Simulating 'Cyberpunk' Load)...");
+        System.out.println("\n[PHASE 2] Stress Test (Simulating 'Heavy' Load)...");
         // Simulate a heavy 12ms frame.
         // At 144 FPS (7ms budget) this is unacceptable -> Should downshift to Gear 1 (60 FPS, 16ms budget)
         simulateFrames(timeKeeper, 60, 12_000_000); // 12ms load
@@ -54,14 +54,14 @@ public class GovernorTest {
         // Should gradually recover gears
         simulateFrames(timeKeeper, 200, 2_000_000); // 2ms load
 
-        System.out.println("\n[PHASE 4] TNT OVERLOAD (Simulating massive explosion in Minecraft)...");
+        System.out.println("\n[PHASE 4] TNT OVERLOAD (Simulating massive explosion)...");
         // 50ms load per frame. This breaks even the 60 FPS budget (16ms).
         // The system must stay in Gear 1 and report warnings, without collapsing.
         simulateFrames(timeKeeper, 30, 50_000_000); // 50ms load
 
-        System.out.println("\n=============================================================================================================================");
+        System.out.println("\n===========");
         System.out.println("TEST COMPLETE");
-        System.out.println("=============================================================================================================================");
+        System.out.println("=============");
     }
 
     private static void simulateFrames(TimeKeeper tk, int frames, long workloadNs) {
